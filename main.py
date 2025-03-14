@@ -1,59 +1,40 @@
 #!/usr/bin/env python3
 import sys
-import os
-import libtorrent
-from torrent_utils import calculate_optimal_piece_size
+from torrent_utils import create_torrent, create_directory_torrents
 
-if len(sys.argv) < 3:
-    print('usage make_torrent.py file [path to file or directory] tracker-url')
-    sys.exit(1)
+def print_usage():
+    print("""Usage:
+    Single file/directory:
+        main.py file [path to file or directory] [tracker-url]
+    
+    Batch directory processing:
+        main.py batch [parent directory] [tracker-url]""")
 
-input = os.path.abspath(sys.argv[1])
+def main():
+    if len(sys.argv) < 4:
+        print_usage()
+        sys.exit(1)
+    
+    command = sys.argv[1]
+    path = sys.argv[2]
+    tracker_url = sys.argv[3]
+    
+    try:
+        if command == "file":
+            torrent_path = create_torrent(path, tracker_url)
+            print(f"\nTorrent created: {torrent_path}")
+        
+        elif command == "batch":
+            create_directory_torrents(path, tracker_url)
+        
+        else:
+            print(f"Unknown command: {command}")
+            print_usage()
+            sys.exit(1)
+    
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        sys.exit(1)
 
-fs = libtorrent.file_storage()
-
-parent_input = os.path.split(input)[0]
-
-# if we have a single file, use it because os.walk does not work on a single files
-if os.path.isfile(input):
-    size = os.path.getsize(input)
-    fs.add_file(input, size)
-
-for root, dirs, files in os.walk(input):
-    # skip directories starting with .
-    if os.path.split(root)[1][0] == '.':
-        continue
-
-    for f in files:
-        # skip files starting with .
-        if f[0] == '.':
-            continue
-
-        # skip thumbs.db on windows
-        if f == 'Thumbs.db':
-            continue
-
-        fname = os.path.join(root[len(parent_input) + 1:], f)
-        size = os.path.getsize(os.path.join(parent_input, fname))
-        print('%10d kiB  %s' % (size / 1024, fname))
-        fs.add_file(fname, size)
-
-if fs.num_files() == 0:
-    print('no files added')
-    sys.exit(1)
-
-# Calculate optimal piece size
-optimal_piece_size = calculate_optimal_piece_size(fs.total_size())
-print(f'Using piece size: {optimal_piece_size / 1024 / 1024:.2f} MiB')
-
-t = libtorrent.create_torrent(fs, optimal_piece_size)
-
-t.add_tracker(sys.argv[2])
-t.set_creator('libtorrent %s' % libtorrent.__version__)
-
-libtorrent.set_piece_hashes(t, parent_input, lambda x: sys.stdout.write('.'))
-sys.stdout.write('\n')
-
-f = open('out.torrent', 'wb+')
-f.write(libtorrent.bencode(t.generate()))
-f.close()
+if __name__ == "__main__":
+    main()
