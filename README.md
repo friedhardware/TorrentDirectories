@@ -10,10 +10,21 @@ A Python tool for creating torrent files from directories or single files with o
 - Configurable piece size bounds (256 KiB - 16 MiB)
 - Batch creation of torrents from subdirectories
 
-## Requirements
 
-- Python 3.x
-- libtorrent
+
+## Prerequisite
+
+Install the Python libtorrent bindings using the installation script from [python-libtorrent-binding](https://github.com/userdocs/python-libtorrent-binding):
+
+```bash
+curl -sLO https://raw.githubusercontent.com/userdocs/python-libtorrent-binding/refs/heads/master/libtorrent-python.bash
+chmod +x libtorrent-python.bash
+./libtorrent-python.bash
+```
+
+Using sudo or root, install the dependencies using `sudo ./libtorrent-python.bash install`. After the dependencies are setup, exit root and then procede to install the libtorrent-python-bindings.
+
+`./libtorrent-python.bash all`
 
 ## Usage
 
@@ -83,3 +94,5 @@ Create a torrent file from a single file or directory.
 ### `create_directory_torrents(parent_dir: str, tracker_url: str, output_dir: Optional[str] = None) -> list[str]`
 
 Create torrent files for each subdirectory in the specified directory. If `output_dir` is not provided, it will create a directory named "[parent_dir]_torrents". 
+
+
