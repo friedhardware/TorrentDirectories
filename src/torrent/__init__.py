@@ -40,5 +40,5 @@ from torrent.manifest import ManifestError, ManifestManager
 from torrent.torrent_creator import TorrentCreator
 
 # This is the single source of truth for the package version
-__version__ = "0.7.0"
+__version__ = "1.0.0"
 __all__ = ["TorrentCreator", "ManifestManager", "ManifestError", "cli_main"]

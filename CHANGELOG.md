@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.0.0 (2025-03-15)
+
+
+### Features
+* Improve version management and testing - Add version management in pyproject.toml, update release script, add comprehensive tests, fix test_process_batch_manifest_config ([115e77f])(https://github.com/friedhardware/TorrentDirectories/commit/115e77f) (friedhardware)
+
+### Bug Fixes
+* add missing return types and ensure format_size always returns ([82ebf44])(https://github.com/friedhardware/TorrentDirectories/commit/82ebf44) (friedhardware)
+* add missing List import from typing ([a76392d])(https://github.com/friedhardware/TorrentDirectories/commit/a76392d) (friedhardware)
+
+### Documentation
+* add code style section to Contributing guide ([d270d16])(https://github.com/friedhardware/TorrentDirectories/commit/d270d16) (friedhardware)
+* reorganize changelog with categorized entries and commit links ([f3ead16])(https://github.com/friedhardware/TorrentDirectories/commit/f3ead16) (friedhardware)
+
+### Other Changes
+* chore: Add .cursor/ to .gitignore ([99b62cf])(https://github.com/friedhardware/TorrentDirectories/commit/99b62cf) (friedhardware)
+* style: improve code formatting and organization - Consistent line spacing, indentation, quote usage, import organization, docstring formatting, and newline handling ([cc11960])(https://github.com/friedhardware/TorrentDirectories/commit/cc11960) (friedhardware)
+* refactor: comprehensive type annotation improvements ([bd1f21f])(https://github.com/friedhardware/TorrentDirectories/commit/bd1f21f) (friedhardware)
+* refactor: rename fname to relative_path for clarity in TorrentCreator ([918ca7d])(https://github.com/friedhardware/TorrentDirectories/commit/918ca7d) (friedhardware)
+* chore: update pre-commit config and dev dependencies ([f732ed3])(https://github.com/friedhardware/TorrentDirectories/commit/f732ed3) (friedhardware)
+* chore: add pre-commit hooks for code quality tools ([78467f2])(https://github.com/friedhardware/TorrentDirectories/commit/78467f2) (friedhardware)
+* refactor: expand system file detection with more Unix/macOS and network share files ([c341997])(https://github.com/friedhardware/TorrentDirectories/commit/c341997) (friedhardware)
+* refactor: expand system file detection to include network share files ([3d5cce9])(https://github.com/friedhardware/TorrentDirectories/commit/3d5cce9) (friedhardware)
+* refactor: remove Windows-specific hidden file detection ([078c167])(https://github.com/friedhardware/TorrentDirectories/commit/078c167) (friedhardware)
+* refactor: remove unused imports from file_utils, parser, and release scripts ([e0287dc])(https://github.com/friedhardware/TorrentDirectories/commit/e0287dc) (friedhardware)
 ## 0.7.0 (2025-03-15)
 
 ### Features
