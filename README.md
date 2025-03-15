@@ -22,6 +22,7 @@ A Python tool for creating torrent files from directories with optimal settings 
   - [TorrentCreator](#torrentcreator)
   - [ManifestManager](#manifestmanager)
 - [Contributing](#contributing)
+- [Release Process](#release-process)
 - [License](#license)
 - [Testing](#testing)
   - [Setting Up the Test Environment](#setting-up-the-test-environment)
@@ -72,7 +73,6 @@ pip install -e .
 
 - Python 3.7 or later
 - libtorrent 2.0.0 or later
-- pywin32 (Windows only)
 
 ## Usage
 
@@ -362,6 +362,49 @@ is_processed = manifest.is_directory_processed(directory_path)
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Release Process
+
+The project uses a single source of truth for version numbers in `src/torrent/__init__.py`. The version is automatically propagated to other files (like `setup.py` and `pyproject.toml`) through dynamic version detection.
+
+### Making a Release
+
+1. Ensure all changes are committed and tested
+2. Run the release script with the new version number:
+   ```bash
+   ./scripts/release.py 0.4.0
+   ```
+   This will:
+   - Update the version in `src/torrent/__init__.py`
+   - Create a git tag for the release
+   - Print the next steps
+
+3. Follow the printed instructions to:
+   - Review the changes: `git diff`
+   - Commit the version update: `git commit -am 'Release v0.4.0'`
+   - Push changes: `git push`
+   - Push the tag: `git push --tags`
+   - Build and publish: `python -m build && python -m twine upload dist/*`
+
+### Version Management
+
+The project uses semantic versioning (MAJOR.MINOR.PATCH):
+- MAJOR: Breaking changes
+- MINOR: New features, no breaking changes
+- PATCH: Bug fixes only
+
+The version is managed in the following files:
+- `src/torrent/__init__.py`: Source of truth
+- `setup.py`: Dynamically reads version from `__init__.py`
+- `pyproject.toml`: Dynamically reads version using `scripts/get_version.py`
+
+### Development Workflow
+
+1. Make changes in feature branches
+2. Run tests: `pytest`
+3. Update version if needed using the release script
+4. Create pull request
+5. After merge, create release using the release script
 
 ## License
 

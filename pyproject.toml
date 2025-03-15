@@ -1,10 +1,10 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "torrent-directories"
-version = "0.1.0"
+version = { script = "scripts/get_version.py" }
 description = "A tool for creating torrent files from directories"
 readme = "README.md"
 requires-python = ">=3.8"

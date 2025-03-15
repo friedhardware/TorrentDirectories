@@ -2,10 +2,21 @@
 Setup configuration for TorrentDirectories package.
 """
 from setuptools import setup, find_packages
+from pathlib import Path
+import re
+
+# Read the version from __init__.py
+def get_version():
+    init_file = Path(__file__).parent / "src" / "torrent" / "__init__.py"
+    with open(init_file) as f:
+        version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M)
+        if version_match:
+            return version_match.group(1)
+    raise RuntimeError("Unable to find version string.")
 
 setup(
     name="torrent-directories",
-    version="0.1.0",
+    version=get_version(),
     description="A tool for creating torrent files from directories",
     author="Josh S",
     author_email="friedhardware@gmail.com",
@@ -14,7 +25,6 @@ setup(
     python_requires=">=3.7",
     install_requires=[
         "libtorrent>=2.0.0",
-        "pywin32>=228; platform_system=='Windows'",
     ],
     extras_require={
         "dev": [
@@ -31,14 +41,11 @@ setup(
     },
     classifiers=[
         "Development Status :: 4 - Beta",
-        "Intended Audience :: End Users/Desktop",
         "License :: OSI Approved :: MIT License",
-        "Operating System :: OS Independent",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
-        "Topic :: Internet :: File Transfer Protocol (FTP)",
     ],
 ) 
