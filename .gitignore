@@ -28,4 +28,9 @@ wheels/
 *.swo
 
 # Project specific
-*.torrent 
+*.torrent
+
+# Coverage
+.coverage
+coverage.xml
+htmlcov/ 
