@@ -7,6 +7,7 @@ import os
 import re
 import shutil
 from datetime import datetime
+from typing import List
 
 def is_hidden(path: str) -> bool:
     """
