@@ -78,10 +78,11 @@ def process_single(path: str, tracker_url: str, output: Optional[str] = None,
         logger.error(f"Error creating torrent: {e}")
         return 1
 
-def process_batch(directory: str, tracker_url: str, clean: bool = False,
+def process_batch(directory: str, tracker_url: str,
                  config: Optional[TorrentConfig] = None,
                  output_dir: str = 'torrents/',
                  dry_run: bool = False,
+                 clean: bool = False,
                  force: bool = False,
                  max_failures: int = 0) -> int:
     """
@@ -90,10 +91,10 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
     Args:
         directory: Parent directory to process
         tracker_url: Tracker URL to use
-        clean: Whether to clean the manifest
         config: Optional torrent configuration
         output_dir: Directory to store torrent files and manifest (defaults to 'torrents/')
         dry_run: Whether to show what would be done without making changes
+        clean: Whether to clean the manifest
         force: Whether to overwrite existing torrent files
         max_failures: Maximum allowed failures before stopping
         
