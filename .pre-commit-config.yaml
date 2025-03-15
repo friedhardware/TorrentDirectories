@@ -34,4 +34,9 @@ repos:
     rev: v1.8.0
     hooks:
     -   id: mypy
-        additional_dependencies: [types-all] 
+        additional_dependencies: [
+            "types-setuptools",
+            "types-PyYAML",
+            "types-requests",
+            "types-urllib3"
+        ]

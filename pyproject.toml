@@ -26,6 +26,10 @@ dev = [
     "mypy>=1.0.0",
     "ruff>=0.1.0",
     "pre-commit>=3.6.0",
+    "types-setuptools",
+    "types-PyYAML",
+    "types-requests",
+    "types-urllib3",
 ]
 
 [project.scripts]
@@ -58,4 +62,4 @@ disallow_untyped_defs = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py38" 
+target-version = "py38"
