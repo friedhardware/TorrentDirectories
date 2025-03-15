@@ -29,14 +29,41 @@ def is_system_file(path: str) -> bool:
         path: Path to check
         
     Returns:
-        True if the file is a system file (e.g. Thumbs.db, .DS_Store)
+        True if the file is a system file (e.g. .DS_Store, .nfs, .smb)
     """
     system_files = {
-        'Thumbs.db',
+        # macOS system files
         '.DS_Store',
-        'desktop.ini',
-        '$RECYCLE.BIN',
-        'System Volume Information'
+        '.localized',
+        '.Spotlight-V100',
+        '.Trashes',
+        '.fseventsd',
+        
+        # Network share system files
+        '.smb',  # SMB temporary files
+        '.nfs',  # NFS temporary files
+        '.afp',  # AFP temporary files
+        '.AppleDouble',  # AFP resource forks
+        '.AppleDB',  # AFP database
+        '.AppleDesktop',  # AFP desktop settings
+        '@eaDir',  # Synology NAS extended attributes
+        
+        # Unix/Linux system files
+        '.directory',  # KDE directory settings
+        '.Trash',  # Linux trash directory
+        '.thumbnails',  # Thumbnail cache
+        '.cache',  # Cache directory
+        '.config',  # Config directory
+        '.local',  # Local data directory
+        
+        # Temporary files
+        '.tmp',
+        '.temp',
+        '.swp',  # Vim swap files
+        '.swo',  # Vim swap files
+        '.bak',  # Backup files
+        '.old',  # Old files
+        '.orig'  # Original files
     }
     return os.path.basename(path) in system_files
 
