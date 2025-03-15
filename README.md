@@ -1,147 +1,499 @@
-# Torrent Directories
+# TorrentDirectories
 
-A Python tool for creating torrent files from directories or single files with optimal piece size calculation.
+A Python tool for creating torrent files from directories with optimal settings and batch processing capabilities.
 
 ## Features
 
-- Create torrents from single files or entire directories
-- Automatically calculate optimal piece size based on total content size
-- Skip hidden files and system files (like Thumbs.db)
-- Configurable piece size bounds (256 KiB - 16 MiB)
-- Batch creation of torrents from subdirectories
-- Resume support for batch processing using manifest tracking
+- Create torrents from single files or directories
+- Batch process multiple directories with resume support
+- Optimal piece size calculation:
+  - Smaller pieces (256 KiB) for better granular downloading
+  - Larger pieces (16 MiB) for reduced overhead
+  - Targets 1000-2000 pieces for optimal client performance
+- Skip hidden and system files (configurable)
+- Progress reporting and detailed logging
+- Manifest system for tracking processed directories
+- Torrent verification after creation
+- Cross-platform support (Windows, macOS, Linux)
 
-## Prerequisite
+## Installation
 
-Install the Python libtorrent bindings using the installation script from [python-libtorrent-binding](https://github.com/userdocs/python-libtorrent-binding):
+### From Source
 
 ```bash
-curl -sLO https://raw.githubusercontent.com/userdocs/python-libtorrent-binding/refs/heads/master/libtorrent-python.bash
-chmod +x libtorrent-python.bash
-./libtorrent-python.bash
+# Clone the repository
+git clone https://github.com/friedhardware/TorrentDirectories.git
+cd TorrentDirectories
+
+# Install in development mode
+pip install -e .
 ```
 
-Using sudo or root, install the dependencies using `sudo ./libtorrent-python.bash install`. After the dependencies are setup, exit root and then procede to install the libtorrent-python-bindings.
+### Requirements
 
-`./libtorrent-python.bash all`
+- Python 3.7 or later
+- libtorrent 2.0.0 or later
+- pywin32 (Windows only)
 
 ## Usage
 
-The script supports two modes of operation:
+The tool can be run either as an installed command or as a Python module:
+
+```bash
+# As an installed command
+torrent-directories [command] [options]
+
+# As a Python module
+python -m torrent.cli [command] [options]
+```
+
+### Basic Commands
+
+1. Create a torrent from a single file or directory:
+```bash
+torrent-directories file path/to/content http://tracker.example.com:6969/announce
+```
+
+2. Process all subdirectories in a parent directory:
+```bash
+torrent-directories batch path/to/parent http://tracker.example.com:6969/announce
+```
+
+### Common Options
+
+Global options that work with all commands:
+```bash
+# Show version
+torrent-directories --version
+
+# Enable verbose output
+torrent-directories -v [command] [args]
+
+# Write logs to file
+torrent-directories --log-file path/to/log.txt [command] [args]
+
+# Preview changes without making them
+torrent-directories --dry-run [command] [args]
+```
+
+### Torrent Creation Options
+
+Configure how torrents are created:
+```bash
+# Custom piece sizes
+torrent-directories file --min-piece-size 512K --max-piece-size 32M path/to/content tracker-url
+
+# Custom target piece count
+torrent-directories file --target-pieces 1000-2000 path/to/content tracker-url
+
+# Include hidden/system files
+torrent-directories file --include-hidden --include-system path/to/content tracker-url
+```
 
 ### Single File/Directory Mode
 
-Create a torrent for a single file or directory:
+Options specific to the `file` command:
 ```bash
-python main.py file [path to file or directory] [tracker-url]
+# Custom output path
+torrent-directories file -o output.torrent path/to/content tracker-url
+
+# Force overwrite existing torrent
+torrent-directories file --force path/to/content tracker-url
 ```
 
-Example:
+### Batch Processing Mode
+
+Options specific to the `batch` command:
 ```bash
-python main.py file "/path/to/content" "http://tracker.example.com/announce"
+# Clean manifest of missing entries
+torrent-directories batch --clean path/to/parent tracker-url
+
+# Use custom manifest file
+torrent-directories batch --manifest custom_manifest.csv path/to/parent tracker-url
+
+# Force rebuild of existing torrents
+torrent-directories batch --force path/to/parent tracker-url
+
+# Stop after 3 failures
+torrent-directories batch --max-failures 3 path/to/parent tracker-url
 ```
 
-### Batch Directory Mode
+### Example Workflows
 
-Process all subdirectories in a parent directory, creating a separate torrent for each:
+1. Create a torrent with detailed logging:
 ```bash
-python main.py batch [parent directory] [tracker-url]
+torrent-directories -v --log-file create.log file \
+    --min-piece-size 1M \
+    --max-piece-size 16M \
+    path/to/movie \
+    http://tracker.example.com:6969/announce
 ```
 
-Example:
+2. Preview batch processing with custom settings:
 ```bash
-python main.py batch /movies "http://tracker.example.com/announce"
+torrent-directories --dry-run batch \
+    --include-hidden \
+    --target-pieces 1500-3000 \
+    --manifest custom.csv \
+    /path/to/movies \
+    http://tracker.example.com:6969/announce
 ```
 
-This will:
-1. Scan the parent directory for subdirectories
-2. Create an output directory named "[parent_dir]_torrents" (e.g., "movies_torrents")
-3. Generate a separate .torrent file for each subdirectory
-4. Name each .torrent file after its corresponding subdirectory
-5. Maintain a manifest file to track processed directories
+3. Process a directory with error handling:
+```bash
+torrent-directories -v batch \
+    --clean \
+    --max-failures 5 \
+    --force \
+    /path/to/movies \
+    http://tracker.example.com:6969/announce
+```
 
-The manifest tracking allows you to safely interrupt and resume batch processing. When you run the batch command again:
-- Previously processed directories will be skipped
-- Only new directories will be processed
-- The manifest file (`manifest.csv`) is automatically maintained in the output directory
+## Manifest System
 
-### Manifest File
+The tool maintains a CSV manifest file (`manifest.csv`) to track processed directories:
 
-The tool uses a CSV manifest file (`manifest.csv`) to track which directories have been processed. The manifest contains:
-- Full path to the source directory
-- Name of the created torrent file
-- Timestamp when the torrent was created (in ISO 8601 format)
-
-Example manifest.csv:
 ```csv
-"directory_path","torrent_file","processed_at"
-"/path/to/movies/The Matrix (1999)","The Matrix (1999).torrent","2024-03-14T15:30:45"
-"/path/to/movies/Alien (1979)","Alien (1979).torrent","2024-03-14T15:31:12"
+directory_path,torrent_file,processed_at
+/path/to/movie1,movie1.torrent,2024-03-15T14:30:00
+/path/to/movie2,movie2.torrent,2024-03-15T14:35:00
 ```
 
-The manifest is append-only for better resilience against interruptions. Each entry is written immediately after its torrent is created.
+### Safety Features
 
-### Manifest Validation
+- Append-only writes for data integrity
+- Immediate entry recording after successful torrent creation
+- Header validation on file load
+- Backup creation before modifications
+- Validation states:
+  1. Fresh start (no manifest)
+  2. Perfect match (all torrents exist)
+  3. Discrepancies found (missing torrents)
 
-The tool performs thorough validation of the manifest state against the actual files:
+## Project Structure
 
-1. **Fresh Start (Valid)**
-   - No manifest file and no torrent files exist
-   - This is considered a valid first run
-
-2. **Perfect Match (Valid)**
-   - All torrent files listed in manifest exist on disk
-   - All torrent files on disk are listed in manifest
-   - Processing continues normally, skipping previously processed directories
-
-3. **Discrepancies Found (Warning)**
-   The tool will detect and report:
-   - Torrent files listed in manifest but missing from disk
-   - Torrent files found but not listed in manifest
-   
-   For each discrepancy, it shows:
-   - The torrent filename
-   - The source directory path (for missing files)
-   - When it was processed (for missing files)
-   
-   You will be prompted to:
-   - Proceed and rebuild missing torrents/update manifest (type 'y')
-   - Cancel without making changes (type 'N', default)
-
-For example, if your movies directory contains:
 ```
-/movies/
-  ├── Hanna (2009)/
-  ├── Alien (1979)/
-  └── The Matrix (1999)/
+TorrentDirectories/
+├── src/
+│   ├── torrent/
+│   │   ├── core.py       # Core torrent creation
+│   │   ├── manifest.py   # Manifest management
+│   │   └── cli.py        # Command-line interface
+│   └── utils/
+│       ├── config.py     # Configuration classes
+│       └── file_utils.py # File system utilities
+├── tests/               # Test modules
+├── setup.py            # Package configuration
+└── README.md          # Documentation
 ```
 
-It will create:
+## API Reference
+
+### TorrentCreator
+
+```python
+from torrent import TorrentCreator
+
+# Create with custom configuration
+config = TorrentConfig(
+    min_piece_size=1024 * 1024,  # 1 MiB
+    max_piece_size=16 * 1024 * 1024,  # 16 MiB
+    skip_hidden=True,
+    skip_system_files=True
+)
+
+creator = TorrentCreator(tracker_url, config)
+torrent_path = creator.create_torrent(input_path, output_path=None)
 ```
-/movies_torrents/
-  ├── manifest.csv
-  ├── Hanna (2009).torrent
-  ├── Alien (1979).torrent
-  └── The Matrix (1999).torrent
+
+### ManifestManager
+
+```python
+from torrent import ManifestManager
+
+# Create with custom configuration
+config = ManifestConfig(
+    filename="custom_manifest.csv",
+    encoding="utf-8"
+)
+
+manifest = ManifestManager(config)
+
+# Track new torrent
+manifest.add_entry(directory_path, torrent_file)
+
+# Find missing torrents
+missing = manifest.get_missing_torrents()
+
+# Clean invalid entries
+manifest.clean_manifest(output_dir)
+
+# Check if directory was processed
+is_processed = manifest.is_directory_processed(directory_path)
 ```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Testing
 
-Run the test suite:
+The project uses pytest for testing and includes a comprehensive test suite with fixtures and configuration for different test scenarios.
+
+### Setting Up the Test Environment
+
+1. Install test dependencies:
 ```bash
-python -m unittest test_torrent_utils.py -v
+# Install all development dependencies
+pip install -e ".[dev]"
+
+# Or install specific test requirements
+pip install pytest pytest-cov pytest-mock
 ```
 
-## API
+2. Install optional dependencies for specific tests:
+```bash
+# For Windows-specific tests
+pip install pywin32  # Windows only
 
-The `torrent_utils` module provides the following functions:
+# For integration tests
+pip install requests  # For tracker communication tests
+```
 
-### `create_torrent(input_path: str, tracker_url: str, output_path: Optional[str] = None) -> str`
+3. Configure environment variables (optional):
+```bash
+# Set test tracker URL (for integration tests)
+export TEST_TRACKER_URL="http://localhost:6969/announce"
 
-Create a torrent file from a single file or directory.
+# Set test data directory (for integration tests)
+export TEST_DATA_DIR="/path/to/test/data"
+```
 
-### `create_directory_torrents(parent_dir: str, tracker_url: str, output_dir: Optional[str] = None) -> list[str]`
+4. Verify the test environment:
+```bash
+# Check pytest installation and plugins
+pytest --version
 
-Create torrent files for each subdirectory in the specified directory. If `output_dir` is not provided, it will create a directory named "[parent_dir]_torrents". 
+# List available markers
+pytest --markers
+
+# Show test collection without running
+pytest --collect-only
+```
+
+#### Development Setup
+
+For development, we recommend setting up a virtual environment:
+
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate it (Unix/macOS)
+source venv/bin/activate
+
+# Activate it (Windows)
+venv\Scripts\activate
+
+# Install in development mode with test dependencies
+pip install -e ".[dev]"
+```
+
+#### IDE Integration
+
+For VS Code users, add these settings to `.vscode/settings.json`:
+```json
+{
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "python.testing.nosetestsEnabled": false,
+    "python.testing.pytestArgs": [
+        "tests",
+        "-v",
+        "--tb=short"
+    ]
+}
+```
+
+For PyCharm users:
+1. Go to Settings → Tools → Python Integrated Tools
+2. Set Default Test Runner to "pytest"
+3. Configure pytest options in Run/Debug Configurations
+
+#### Pre-commit Hooks
+
+We recommend setting up pre-commit hooks to ensure tests pass before committing:
+
+1. Install pre-commit:
+```bash
+pip install pre-commit
+```
+
+2. Create `.pre-commit-config.yaml`:
+```yaml
+repos:
+-   repo: local
+    hooks:
+    -   id: pytest
+        name: pytest
+        entry: pytest
+        language: system
+        types: [python]
+        pass_filenames: false
+```
+
+3. Install the hooks:
+```bash
+pre-commit install
+```
+
+### Running Tests
+
+Basic test execution:
+```bash
+# Run all tests
+pytest
+
+# Run with detailed output
+pytest -v
+
+# Run and show test coverage
+pytest --cov
+
+# Run specific test file
+pytest tests/torrent/cli/test_commands.py
+```
+
+### Test Categories
+
+Tests are automatically categorized using markers:
+
+```bash
+# Run only CLI tests
+pytest -m cli
+
+# Run only integration tests
+pytest -m integration
+
+# Skip slow tests
+pytest -m "not slow"
+```
+
+### Test Structure
+
+The test suite is organized to mirror the source code structure:
+
+```
+tests/
+├── conftest.py           # Shared fixtures and configuration
+├── torrent/
+│   ├── cli/             # CLI-related tests
+│   │   ├── test_parser.py
+│   │   ├── test_config.py
+│   │   ├── test_commands.py
+│   │   └── test_main.py
+│   ├── test_core.py     # Core functionality tests
+│   └── test_manifest.py # Manifest handling tests
+└── utils/               # Utility function tests
+```
+
+### Fixtures
+
+The test suite provides several reusable fixtures:
+
+- `temp_dir`: Creates a temporary directory that's automatically cleaned up
+- `sample_files`: Provides a sample directory structure with various file types
+- `default_config`: Default TorrentConfig instance
+- `manifest_config`: ManifestConfig with temporary file
+- `clean_env`: Cleans environment variables that might affect tests
+- `assert_logs`: Enhanced logging assertions
+
+Example usage:
+```python
+def test_something(sample_files, clean_env, assert_logs):
+    # sample_files is a Path to a directory with test files
+    result = process_single(str(sample_files), "http://tracker.com/announce")
+    assert result == 0
+    assert caplog.has_info("Success message")
+```
+
+### Test Configuration
+
+The project uses `pytest.ini` for test configuration:
+
+- Verbose test output
+- Short traceback format
+- Code coverage reporting (terminal and HTML)
+- Detailed logging during tests
+- Custom test markers
+
+### Writing Tests
+
+When writing new tests:
+
+1. Use appropriate markers:
+   ```python
+   @pytest.mark.slow  # For time-consuming tests
+   @pytest.mark.integration  # For integration tests
+   ```
+
+2. Use fixtures for common setup:
+   ```python
+   def test_file_processing(sample_files, clean_env):
+       # Test implementation
+   ```
+
+3. Use logging assertions:
+   ```python
+   def test_with_logs(assert_logs):
+       # Run code
+       assert caplog.has_error("Expected error")
+       assert "Message" in caplog.messages
+   ```
+
+4. Mock external dependencies:
+   ```python
+   @pytest.fixture
+   def mock_dependency():
+       with patch('module.Dependency') as mock:
+           yield mock
+   ```
+
+### Coverage Reports
+
+Test coverage reports are generated in two formats:
+- Terminal output showing uncovered lines
+- HTML report for detailed coverage analysis
+
+To view the HTML coverage report:
+```bash
+# Run tests with coverage
+pytest
+
+# Open the report
+open htmlcov/index.html
+```
+
+### Debugging Tests
+
+For debugging failing tests:
+
+```bash
+# Show full traceback
+pytest --tb=long
+
+# Show logging output
+pytest --log-cli-level=DEBUG
+
+# Drop into debugger on failure
+pytest --pdb
+
+# Show local variables in traceback
+pytest --showlocals
+```
 
 
