@@ -2,6 +2,38 @@
 
 A Python tool for creating torrent files from directories with optimal settings and batch processing capabilities.
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+  - [From Source](#from-source)
+  - [Requirements](#requirements)
+- [Usage](#usage)
+  - [Command Structure](#command-structure)
+  - [Global Options](#global-options)
+  - [Commands](#commands)
+    - [1. File Command](#1-file-command)
+    - [2. Batch Command](#2-batch-command)
+  - [Environment Variables](#environment-variables)
+- [Manifest System](#manifest-system)
+  - [Safety Features](#safety-features)
+- [Project Structure](#project-structure)
+- [API Reference](#api-reference)
+  - [TorrentCreator](#torrentcreator)
+  - [ManifestManager](#manifestmanager)
+- [Contributing](#contributing)
+- [License](#license)
+- [Testing](#testing)
+  - [Setting Up the Test Environment](#setting-up-the-test-environment)
+  - [Running Tests](#running-tests)
+  - [Test Categories](#test-categories)
+  - [Test Structure](#test-structure)
+  - [Fixtures](#fixtures)
+  - [Test Configuration](#test-configuration)
+  - [Writing Tests](#writing-tests)
+  - [Coverage Reports](#coverage-reports)
+  - [Debugging Tests](#debugging-tests)
+
 ## Features
 
 - Create torrents from single files or directories
