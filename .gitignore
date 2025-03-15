@@ -34,4 +34,6 @@ examples/TestBatch1/
 # Coverage
 .coverage
 coverage.xml
-htmlcov/ .DS_Store
+htmlcov/ 
+
+.DS_Store
