@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import pytest
 from unittest import mock
+import libtorrent
 
 from torrent.cli.commands import process_single, process_batch
 from torrent.utils.config import TorrentConfig
@@ -265,3 +266,28 @@ def test_process_batch_manifest_config(tmp_path, mocker):
     # Verify manifest manager was initialized correctly
     mock_manifest.assert_called_once_with(str(output_dir))
     assert result == 0 
+
+def test_private_flag_set(tmp_path):
+    """Test that created torrents have the private flag set."""
+    # Create test directory with files
+    input_dir = tmp_path / "sample"
+    input_dir.mkdir()
+    (input_dir / "file1.txt").write_text("test1")
+    (input_dir / "file2.txt").write_text("test2")
+    
+    # Create torrent
+    output_file = tmp_path / "output.torrent"
+    tracker_url = "http://example.com/announce"
+    
+    # Process should succeed
+    process_single(
+        path=str(input_dir),
+        output=str(output_file),
+        tracker_url=tracker_url
+    )
+    assert output_file.exists()
+    
+    # Verify private flag is set
+    with open(output_file, 'rb') as f:
+        torrent_data = libtorrent.bdecode(f.read())
+        assert torrent_data[b'info'][b'private'] == 1 

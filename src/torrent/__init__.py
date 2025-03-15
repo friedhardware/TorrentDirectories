@@ -34,7 +34,7 @@ For programmatic usage, see the TorrentCreator and ManifestManager classes.
 """
 from __future__ import annotations
 
-from torrent.core import TorrentCreator
+from torrent.torrent_creator import TorrentCreator
 from torrent.manifest import ManifestManager, ManifestError
 from torrent.cli import main as cli_main
 

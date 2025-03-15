@@ -7,7 +7,7 @@ import logging
 import os
 from typing import Optional
 
-from ..core import TorrentCreator
+from ..torrent_creator import TorrentCreator
 from ..manifest import ManifestManager, ManifestError
 from ..utils.config import TorrentConfig
 from ..utils.file_utils import format_size, get_total_size, list_files
