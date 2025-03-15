@@ -42,8 +42,8 @@ Examples:
     torrent_group.add_argument(
         '--min-piece-size',
         type=str,
-        help='Minimum piece size (e.g. 16K, 1M). Default: 16K. Must be at least 16K.',
-        default='16K'
+        help='Minimum piece size (e.g. 16K, 1M). Default: 256K. Must be at least 16K.',
+        default='256K'
     )
     torrent_group.add_argument(
         '--max-piece-size',

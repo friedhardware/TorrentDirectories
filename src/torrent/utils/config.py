@@ -11,12 +11,13 @@ from typing import Optional
 MIN_PIECE_SIZE = 16 * 1024  # 16 KiB
 MAX_PIECE_SIZE = 64 * 1024 * 1024  # 64 MiB
 DEFAULT_MAX_PIECE_SIZE = 16 * 1024 * 1024  # 16 MiB (default)
+DEFAULT_MIN_PIECE_SIZE = 256 * 1024  # 256 KiB (default)
 
 @dataclass
 class TorrentConfig:
     """Configuration for torrent creation."""
     
-    min_piece_size: int = MIN_PIECE_SIZE
+    min_piece_size: int = DEFAULT_MIN_PIECE_SIZE
     max_piece_size: int = DEFAULT_MAX_PIECE_SIZE
     target_pieces_min: int = 1000
     target_pieces_max: int = 2000

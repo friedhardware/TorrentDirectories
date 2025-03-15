@@ -9,7 +9,7 @@ A Python tool for creating torrent files from directories with optimal settings 
 - Optimal piece size calculation:
   - Minimum piece size: 16 KiB (hard limit)
   - Maximum piece size: 64 MiB (hard limit)
-  - Default: 16 MiB maximum piece size
+  - Default: 256 KiB minimum, 16 MiB maximum piece size
   - Targets 1000-2000 pieces for optimal client performance
 - Skip hidden and system files (configurable)
 - Progress reporting and detailed logging
