@@ -161,29 +161,32 @@ Required arguments:
 
 Options:
 ```bash
-# Clean manifest of missing entries before processing
---clean                   # Example: --clean
-
-# Specify output directory for torrent files and manifest
+# Specify output directory for torrent files and manifest (defaults to 'torrents/')
 -o, --output PATH        # Example: -o /path/to/output
 
+# Preview changes without making them
+--dry-run               # Example: --dry-run
+
+# Clean manifest of missing entries before processing
+--clean                 # Example: --clean
+
 # Force rebuild existing torrents
---force                  # Example: --force
+--force                 # Example: --force
 
 # Stop processing after N failures (0 = unlimited)
---max-failures N         # Example: --max-failures 3
+--max-failures N        # Example: --max-failures 3
 
 # All torrent creation options from file command also work:
---min-piece-size SIZE    # Example: --min-piece-size 256K
---max-piece-size SIZE    # Example: --max-piece-size 16M
---target-pieces RANGE    # Example: --target-pieces 1000-2000
+--min-piece-size SIZE   # Example: --min-piece-size 256K
+--max-piece-size SIZE   # Example: --max-piece-size 16M
+--target-pieces RANGE   # Example: --target-pieces 1000-2000
 --include-hidden
 --include-system
 ```
 
 Examples:
 ```bash
-# Basic usage - process all subdirectories
+# Basic usage - process all subdirectories (output to 'torrents/' directory)
 torrent-directories batch ./movies http://tracker.example.com/announce
 
 # Use custom output directory for all files
@@ -192,15 +195,16 @@ torrent-directories batch \
     ./movies \
     http://tracker.example.com/announce
 
-# Use output directory with failure limit
+# Preview changes with custom output directory
 torrent-directories batch \
+    --dry-run \
     -o /path/to/output \
-    --max-failures 3 \
     ./movies \
     http://tracker.example.com/announce
 
 # Clean manifest and force rebuild with custom settings
 torrent-directories batch \
+    -o /path/to/output \
     --clean \
     --force \
     --min-piece-size 1M \
@@ -208,11 +212,11 @@ torrent-directories batch \
     ./movies \
     http://tracker.example.com/announce
 
-# Preview batch processing with detailed logging
-torrent-directories -v --dry-run batch \
+# Process with failure limit and custom piece count
+torrent-directories batch \
     -o /path/to/output \
-    --target-pieces 1000-2000 \
     --max-failures 5 \
+    --target-pieces 1000-2000 \
     ./movies \
     http://tracker.example.com/announce
 ```
@@ -234,8 +238,8 @@ export TORRENT_SKIP_SYSTEM=0     # Include system files
 ## Manifest System
 
 The tool maintains a CSV manifest file to track processed directories. The manifest file is named `manifest.csv` and is stored in:
-- The current directory when no output directory is specified
-- The output directory when specified with `-o/--output`
+- The 'torrents/' directory by default
+- The specified output directory when using `-o/--output`
 
 The manifest file format is:
 
@@ -245,9 +249,9 @@ directory_path,torrent_file,processed_at
 /path/to/movie2,movie2.torrent,2024-03-15T14:35:00
 ```
 
-When using the batch command with an output directory:
-1. All torrent files are created in the output directory
-2. The manifest file is stored in the output directory by default
+When using the batch command:
+1. All torrent files are created in the output directory ('torrents/' by default)
+2. The manifest file is stored in the same directory as the torrent files
 
 ### Safety Features
 
