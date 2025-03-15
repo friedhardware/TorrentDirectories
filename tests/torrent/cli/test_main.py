@@ -130,3 +130,29 @@ def test_main_verbose_error_handling(mock_process, caplog, capsys):
         captured = capsys.readouterr()
         assert "Unexpected error: Test error" in captured.err
         assert "Traceback" in captured.err 
+
+@patch('torrent.cli.main.process_batch')
+def test_main_batch_command_with_output_dir(mock_process, tmp_path):
+    """Test batch command with output directory manifest handling."""
+    directory = tmp_path / "input"
+    directory.mkdir()
+    output_dir = tmp_path / "output"
+    
+    mock_process.return_value = 0
+    
+    result = main([
+        "batch",
+        str(directory),
+        "http://tracker.example.com",
+        "-o", str(output_dir)
+    ])
+    
+    assert result == 0
+    mock_process.assert_called_once()
+    
+    # Get positional and keyword arguments
+    args, kwargs = mock_process.call_args
+    assert args[0] == str(directory)  # First positional arg is directory
+    assert kwargs['output_dir'] == str(output_dir)
+    assert not kwargs['force']
+    assert not kwargs['clean'] 

@@ -8,7 +8,7 @@ import os
 from typing import Optional
 
 from ..core import TorrentCreator
-from ..manifest import ManifestManager, ManifestError
+from ..manifest import ManifestManager, ManifestError, ManifestConfig
 from ..utils.config import TorrentConfig
 from ..utils.file_utils import format_size, get_total_size, list_files
 
@@ -98,7 +98,8 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
         # Always use manifest.csv in the output directory if specified,
         # otherwise use it in the current directory
         manifest_path = os.path.join(output_dir, 'manifest.csv') if output_dir else 'manifest.csv'
-        manifest = ManifestManager(manifest_path)
+        manifest_config = ManifestConfig(manifest_file=manifest_path)
+        manifest = ManifestManager(manifest_config)
         creator = TorrentCreator(tracker_url, config)
         
         # Handle manifest cleaning
