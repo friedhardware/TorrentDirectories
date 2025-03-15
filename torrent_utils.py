@@ -108,7 +108,39 @@ def create_torrent(input_path: str, tracker_url: str, output_path: Optional[str]
     
     return output_path
 
-def validate_manifest_state(output_dir: str, manifest: Dict[str, tuple[str, datetime]]) -> bool:
+def clean_manifest(output_dir: str, manifest: Dict[str, tuple[str, datetime]]) -> Dict[str, tuple[str, datetime]]:
+    """
+    Clean the manifest by removing entries for torrent files that don't exist.
+    Creates a new manifest file with only valid entries.
+    
+    Args:
+        output_dir: Directory containing torrent files and manifest
+        manifest: The current manifest data
+        
+    Returns:
+        Dict[str, tuple[str, datetime]]: Updated manifest with only valid entries
+    """
+    # Get set of existing torrent files
+    existing_torrents = {f for f in os.listdir(output_dir) if f.endswith('.torrent')}
+    
+    # Create new manifest with only valid entries
+    cleaned_manifest = {
+        dir_path: (torrent_file, timestamp)
+        for dir_path, (torrent_file, timestamp) in manifest.items()
+        if torrent_file in existing_torrents
+    }
+    
+    # Write the cleaned manifest
+    manifest_path = os.path.join(output_dir, "manifest.csv")
+    with open(manifest_path, 'w', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+        writer.writerow(["directory_path", "torrent_file", "processed_at"])
+        for dir_path, (torrent_file, timestamp) in cleaned_manifest.items():
+            writer.writerow([dir_path, torrent_file, timestamp.isoformat(timespec='seconds')])
+    
+    return cleaned_manifest
+
+def validate_manifest_state(output_dir: str, manifest: Dict[str, tuple[str, datetime]]) -> tuple[bool, Dict[str, tuple[str, datetime]]]:
     """
     Validate the state between manifest and output directory.
     Returns True if state is valid or user confirms to proceed.
@@ -123,7 +155,9 @@ def validate_manifest_state(output_dir: str, manifest: Dict[str, tuple[str, date
         manifest: The loaded manifest data
         
     Returns:
-        bool: True if processing should continue, False if it should abort
+        tuple[bool, Dict[str, tuple[str, datetime]]]: 
+            - bool: True if processing should continue, False if it should abort
+            - Dict: The manifest (cleaned if user confirmed, original otherwise)
     """
     # Get list of actual torrent files in the directory
     existing_torrents = {f for f in os.listdir(output_dir) if f.endswith('.torrent')}
@@ -133,7 +167,7 @@ def validate_manifest_state(output_dir: str, manifest: Dict[str, tuple[str, date
     
     # Case 1: No manifest and no torrent files - valid first run
     if not manifest and not existing_torrents:
-        return True
+        return True, manifest
     
     # Find discrepancies
     missing_from_disk = manifest_torrents - existing_torrents
@@ -141,7 +175,7 @@ def validate_manifest_state(output_dir: str, manifest: Dict[str, tuple[str, date
     
     # Case 2: Everything matches - valid state
     if not missing_from_disk and not missing_from_manifest:
-        return True
+        return True, manifest
     
     # Case 3: Discrepancies found - warn user and ask for confirmation
     print("\nWARNING: Found discrepancies between manifest and torrent files:")
@@ -164,8 +198,33 @@ def validate_manifest_state(output_dir: str, manifest: Dict[str, tuple[str, date
     print("- The manifest file is out of sync")
     print("- There was an interruption during previous processing")
     
-    response = input("\nDo you want to proceed and rebuild missing torrents/update manifest? (y/N): ").lower()
-    return response == 'y'
+    print("\nThe following actions will be taken:")
+    if missing_from_disk:
+        print(f"- Remove {len(missing_from_disk)} invalid entries from manifest")
+    if missing_from_manifest:
+        print(f"- Remove {len(missing_from_manifest)} untracked torrent files")
+        print("- Add any valid torrent files to manifest (if source directories exist)")
+    
+    response = input("\nDo you want to proceed with cleaning up these discrepancies? (y/N): ").lower()
+    if response == 'y':
+        # First clean the manifest of missing files
+        cleaned_manifest = clean_manifest(output_dir, manifest)
+        print(f"\nRemoved {len(missing_from_disk)} invalid entries from manifest")
+        
+        # Then handle untracked torrent files
+        if missing_from_manifest:
+            # First remove all untracked torrents
+            for torrent in missing_from_manifest:
+                try:
+                    os.remove(os.path.join(output_dir, torrent))
+                    print(f"Removed untracked torrent: {torrent}")
+                except OSError as e:
+                    print(f"Warning: Failed to remove {torrent}: {e}")
+        
+        return True, cleaned_manifest
+    
+    # User cancelled
+    return False, manifest
 
 def load_manifest(output_dir: str) -> Dict[str, tuple[str, datetime]]:
     """
@@ -267,7 +326,8 @@ def create_directory_torrents(parent_dir: str, tracker_url: str, output_dir: Opt
     manifest = load_manifest(output_dir)
     
     # Validate manifest state and get user confirmation if needed
-    if not validate_manifest_state(output_dir, manifest):
+    should_continue, manifest = validate_manifest_state(output_dir, manifest)
+    if not should_continue:
         print("Operation cancelled by user")
         return []
     
