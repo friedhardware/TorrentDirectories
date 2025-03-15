@@ -1,18 +1,32 @@
 """
 Setup configuration for TorrentDirectories package.
 """
-from setuptools import setup, find_packages
-from pathlib import Path
+
+from __future__ import annotations
+
 import re
+from pathlib import Path
+
+from setuptools import find_packages, setup
+
 
 # Read the version from __init__.py
-def get_version():
+def get_version() -> str:
+    """Get the version string from __init__.py.
+
+    Returns:
+        str: The version string from __init__.py.
+
+    Raises:
+        RuntimeError: If version string cannot be found.
+    """
     init_file = Path(__file__).parent / "src" / "torrent" / "__init__.py"
     with open(init_file) as f:
         version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M)
         if version_match:
             return version_match.group(1)
     raise RuntimeError("Unable to find version string.")
+
 
 setup(
     name="torrent-directories",
@@ -48,4 +62,4 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-) 
+)
