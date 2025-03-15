@@ -14,9 +14,9 @@ A Python tool for creating torrent files from directories with optimal settings 
   - [Commands](#commands)
     - [1. File Command](#1-file-command)
     - [2. Batch Command](#2-batch-command)
-  - [Environment Variables](#environment-variables)
 - [Manifest System](#manifest-system)
   - [Safety Features](#safety-features)
+  - [File Format](#file-format)
 - [Project Structure](#project-structure)
 - [API Reference](#api-reference)
   - [TorrentCreator](#torrentcreator)
@@ -25,15 +25,6 @@ A Python tool for creating torrent files from directories with optimal settings 
 - [Release Process](#release-process)
 - [License](#license)
 - [Testing](#testing)
-  - [Setting Up the Test Environment](#setting-up-the-test-environment)
-  - [Running Tests](#running-tests)
-  - [Test Categories](#test-categories)
-  - [Test Structure](#test-structure)
-  - [Fixtures](#fixtures)
-  - [Test Configuration](#test-configuration)
-  - [Writing Tests](#writing-tests)
-  - [Coverage Reports](#coverage-reports)
-  - [Debugging Tests](#debugging-tests)
 
 ## Features
 
@@ -221,23 +212,9 @@ Examples:
 # Basic usage - process all subdirectories (output to 'torrents/' directory)
 torrent-directories batch ./movies http://tracker.example.com/announce
 
-# Use custom output directory for all files
+# Use custom output directory and force rebuild
 torrent-directories batch \
     -o /path/to/output \
-    ./movies \
-    http://tracker.example.com/announce
-
-# Preview changes with custom output directory
-torrent-directories batch \
-    --dry-run \
-    -o /path/to/output \
-    ./movies \
-    http://tracker.example.com/announce
-
-# Clean manifest and force rebuild with custom settings
-torrent-directories batch \
-    -o /path/to/output \
-    --clean \
     --force \
     --min-piece-size 1M \
     --include-hidden \
@@ -253,87 +230,85 @@ torrent-directories batch \
     http://tracker.example.com/announce
 ```
 
-### Environment Variables
-
-The tool also supports configuration through environment variables:
-
-```bash
-# Set default piece sizes (16K minimum, 64M maximum)
-export TORRENT_MIN_PIECE_SIZE=16K
-export TORRENT_MAX_PIECE_SIZE=16M  # Default, can be increased up to 64M
-
-# Configure file handling
-export TORRENT_SKIP_HIDDEN=0     # Include hidden files
-export TORRENT_SKIP_SYSTEM=0     # Include system files
-```
-
 ## Manifest System
 
-The tool maintains a CSV manifest file to track processed directories. The manifest file is named `manifest.csv` and is stored in:
-- The 'torrents/' directory by default
-- The specified output directory when using `-o/--output`
-
-The manifest file format is:
-
-```csv
-directory_path,torrent_file,processed_at
-/path/to/movie1,movie1.torrent,2024-03-15T14:30:00
-/path/to/movie2,movie2.torrent,2024-03-15T14:35:00
-```
-
-When using the batch command:
-1. All torrent files are created in the output directory ('torrents/' by default)
-2. The manifest file is stored in the same directory as the torrent files
+The manifest system tracks processed directories to prevent duplicate processing and enable resume functionality.
 
 ### Safety Features
 
-- Append-only writes for data integrity
-- Immediate entry recording after successful torrent creation
-- Header validation on file load
-- Backup creation before modifications
-- Output directory creation if it doesn't exist
-- Validation states:
-  1. Fresh start (no manifest)
-  2. Perfect match (all torrents exist)
-  3. Discrepancies found (missing torrents)
+- Automatic backup of manifest file before modifications
+- Validation of manifest entries against actual torrent files
+- Configurable validation behavior through environment variables
+- CSV format for easy inspection and manual editing
+- Skip functionality for already processed directories
+
+### File Format
+
+The manifest is a CSV file with three fields:
+```csv
+directory_path,torrent_file,processed_at
+"/path/to/movie1","movie1.torrent","2024-03-15T14:30:00"
+```
+
+- `directory_path`: Absolute path to processed directory
+- `torrent_file`: Name of created torrent file
+- `processed_at`: ISO 8601 timestamp of processing
+
+The file is created in the output directory (`torrents/` by default) and updated after each successful torrent creation.
 
 ## Project Structure
 
 ```
 TorrentDirectories/
 ├── src/
-│   ├── torrent/
-│   │   ├── core.py       # Core torrent creation
-│   │   ├── manifest.py   # Manifest management
-│   │   └── cli.py        # Command-line interface
-│   └── utils/
-│       ├── config.py     # Configuration classes
-│       └── file_utils.py # File system utilities
-├── tests/               # Test modules
-├── setup.py            # Package configuration
-└── README.md          # Documentation
+│   └── torrent/
+│       ├── cli/                    # Command-line interface
+│       │   ├── commands.py         # Command implementations
+│       │   ├── config.py           # Configuration management
+│       │   ├── main.py             # Main entry point
+│       │   └── parser.py           # Argument parsing
+│       ├── utils/                  # Utility functions
+│       │   ├── config.py           # Configuration utilities
+│       │   └── file_utils.py       # File handling utilities
+│       ├── manifest.py             # Manifest system
+│       └── torrent_creator.py      # Core torrent creation
+├── tests/                          # Test suite
+├── scripts/                        # Utility scripts
+├── README.md                       # This file
+├── CHANGELOG.md                    # Version history
+├── LICENSE                         # MIT License
+├── pyproject.toml                  # Project metadata
+└── setup.py                       # Package setup
 ```
 
 ## API Reference
 
 ### TorrentCreator
 
+The main class for creating torrent files.
+
 ```python
 from torrent import TorrentCreator
 
-# Create with custom configuration
-config = TorrentConfig(
-    min_piece_size=1024 * 1024,  # 1 MiB
-    max_piece_size=16 * 1024 * 1024,  # 16 MiB
-    skip_hidden=True,
-    skip_system_files=True
+creator = TorrentCreator(
+    min_piece_size="256K",
+    max_piece_size="16M",
+    target_pieces=(1000, 2000),
+    include_hidden=False,
+    include_system=False
 )
 
-torrent_creator = TorrentCreator(tracker_url, config)
-torrent_path = torrent_creator.create(input_path, output_path=None)
+# Create a torrent from a directory
+creator.create(
+    input_path="/path/to/directory",
+    tracker_url="http://tracker.example.com/announce",
+    output_path="output.torrent"
+)
 ```
 
 ### ManifestManager
+
+Manages the manifest system for tracking processed directories.
 
 ```python
 from torrent import ManifestManager
@@ -344,19 +319,11 @@ config = ManifestConfig(
     encoding="utf-8"
 )
 
-manifest = ManifestManager(config)
-
-# Track new torrent
-manifest.add_entry(directory_path, torrent_file)
-
-# Find missing torrents
-missing = manifest.get_missing_torrents()
-
-# Clean invalid entries
-manifest.clean_manifest(output_dir)
-
-# Check if directory was processed
+# Check if a directory has been processed
 is_processed = manifest.is_directory_processed(directory_path)
+
+# Mark a directory as processed
+manifest.mark_directory_processed(directory_path, torrent_path)
 ```
 
 ## Contributing
@@ -365,80 +332,53 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Release Process
 
-The project uses a single source of truth for version numbers in `src/torrent/__init__.py`. The version is automatically propagated to other files (like `setup.py` and `pyproject.toml`) through dynamic version detection.
+The project uses semantic versioning (MAJOR.MINOR.PATCH) with a single source of truth in `src/torrent/__init__.py`. The release process is automated using `scripts/release.py`.
 
 ### Making a Release
 
-The project includes an automated release script (`scripts/release.py`) that handles the entire release process. The script performs the following actions:
+The project uses semantic versioning (MAJOR.MINOR.PATCH) with a single source of truth in `src/torrent/__init__.py`. The release process is automated using `scripts/release.py`.
 
-1. Pre-release checks:
-   - Verifies git working directory is clean
-   - Runs the test suite (optional)
-   - Validates version format
+To create a new release:
 
-2. Version management:
-   - Updates version in `src/torrent/__init__.py`
-   - Creates/updates `CHANGELOG.md` with git commit history
-   - Handles semantic versioning
+1. Ensure your working directory is clean:
+   ```bash
+   git status  # Should show no uncommitted changes
+   ```
 
-3. Git operations:
-   - Commits version changes
-   - Creates and pushes git tags
-   - Handles all git operations automatically
+2. Choose your release type and run the release script:
+   ```bash
+   # For a new feature release (increments minor version)
+   python scripts/release.py
 
-4. Package publishing:
-   - Builds the package
-   - Publishes to PyPI (optional)
+   # For a breaking change (increments major version)
+   python scripts/release.py --bump major
 
-### Using the Release Script
+   # For a bug fix (increments patch version)
+   python scripts/release.py --bump patch
 
-Basic usage:
+   # For a specific version (e.g., for a hotfix)
+   python scripts/release.py --version 0.4.0
+   ```
+
+The release script will:
+- Run the test suite
+- Update version in all files (setup.py, pyproject.toml)
+- Create a git tag
+- Build and test the package
+- Create a release commit
+- Append new changes to CHANGELOG.md from git commit history since last tag
+- Push changes and tags to the remote repository
+
+Optional flags:
 ```bash
-# Simple minor version bump (recommended for most releases)
-./scripts/release.py
-
-# Major version bump (breaking changes)
-./scripts/release.py --bump major
-
-# Patch version bump (bug fixes)
-./scripts/release.py --bump patch
-
-# Specific version
-./scripts/release.py --version 0.4.0
-
-# Skip tests (not recommended)
-./scripts/release.py --no-tests
-
-# Skip publishing (for testing)
-./scripts/release.py --no-publish
+--no-tests    # Skip running tests
+--no-publish  # Skip publishing to PyPI
 ```
 
-### Version Management
-
-The project uses semantic versioning (MAJOR.MINOR.PATCH):
-- MAJOR: Breaking changes
-- MINOR: New features, no breaking changes
-- PATCH: Bug fixes only
-
-The version is managed in the following files:
-- `src/torrent/__init__.py`: Source of truth
-- `setup.py`: Dynamically reads version from `__init__.py`
-- `pyproject.toml`: Dynamically reads version using `scripts/get_version.py`
-
-### Development Workflow
-
-1. Make changes in feature branches
-2. Run tests: `pytest`
-3. Update version if needed using the release script
-4. Create pull request
-5. After merge, create release using the release script
-
-### Changelog
-
-The release script automatically generates a `CHANGELOG.md` file that includes:
-- Version number and release date
-- List of git commit messages since last tag
-- Organized by version in reverse chronological order
+After the release:
+1. Review the changes in CHANGELOG.md
+2. Create a GitHub release with the new tag
+3. Update any documentation or website content
 
 ## License
 
@@ -446,257 +386,22 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Testing
 
-The project uses pytest for testing and includes a comprehensive test suite with fixtures and configuration for different test scenarios.
+The project uses pytest for testing. To run the tests:
 
-### Setting Up the Test Environment
-
-1. Install test dependencies:
 ```bash
-# Install all development dependencies
+# Install test dependencies
 pip install -e ".[dev]"
 
-# Or install specific test requirements
-pip install pytest pytest-cov pytest-mock
-```
-
-2. Install optional dependencies for specific tests:
-```bash
-# For Windows-specific tests
-pip install pywin32  # Windows only
-
-# For integration tests
-pip install requests  # For tracker communication tests
-```
-
-3. Configure environment variables (optional):
-```bash
-# Set test tracker URL (for integration tests)
-export TEST_TRACKER_URL="http://localhost:6969/announce"
-
-# Set test data directory (for integration tests)
-export TEST_DATA_DIR="/path/to/test/data"
-```
-
-4. Verify the test environment:
-```bash
-# Check pytest installation and plugins
-pytest --version
-
-# List available markers
-pytest --markers
-
-# Show test collection without running
-pytest --collect-only
-```
-
-#### Development Setup
-
-For development, we recommend setting up a virtual environment:
-
-```bash
-# Create virtual environment
-python -m venv venv
-
-# Activate it (Unix/macOS)
-source venv/bin/activate
-
-# Activate it (Windows)
-venv\Scripts\activate
-
-# Install in development mode with test dependencies
-pip install -e ".[dev]"
-```
-
-#### IDE Integration
-
-For VS Code users, add these settings to `.vscode/settings.json`:
-```json
-{
-    "python.testing.pytestEnabled": true,
-    "python.testing.unittestEnabled": false,
-    "python.testing.nosetestsEnabled": false,
-    "python.testing.pytestArgs": [
-        "tests",
-        "-v",
-        "--tb=short"
-    ]
-}
-```
-
-For PyCharm users:
-1. Go to Settings → Tools → Python Integrated Tools
-2. Set Default Test Runner to "pytest"
-3. Configure pytest options in Run/Debug Configurations
-
-#### Pre-commit Hooks
-
-We recommend setting up pre-commit hooks to ensure tests pass before committing:
-
-1. Install pre-commit:
-```bash
-pip install pre-commit
-```
-
-2. Create `.pre-commit-config.yaml`:
-```yaml
-repos:
--   repo: local
-    hooks:
-    -   id: pytest
-        name: pytest
-        entry: pytest
-        language: system
-        types: [python]
-        pass_filenames: false
-```
-
-3. Install the hooks:
-```bash
-pre-commit install
-```
-
-### Running Tests
-
-Basic test execution:
-```bash
-# Run all tests
+# Run tests
 pytest
 
-# Run with detailed output
+# Run tests with coverage report
+pytest --cov=torrent
+
+# Run tests with verbose output
 pytest -v
 
-# Run and show test coverage
-pytest --cov
-
-# Run specific test file
-pytest tests/torrent/cli/test_commands.py
-```
-
-### Test Categories
-
-Tests are automatically categorized using markers:
-
-```bash
-# Run only CLI tests
-pytest -m cli
-
-# Run only integration tests
-pytest -m integration
-
-# Skip slow tests
-pytest -m "not slow"
-```
-
-### Test Structure
-
-The test suite is organized to mirror the source code structure:
-
-```
-tests/
-├── conftest.py           # Shared fixtures and configuration
-├── torrent/
-│   ├── cli/             # CLI-related tests
-│   │   ├── test_parser.py
-│   │   ├── test_config.py
-│   │   ├── test_commands.py
-│   │   └── test_main.py
-│   ├── test_core.py     # Core functionality tests
-│   └── test_manifest.py # Manifest handling tests
-└── utils/               # Utility function tests
-```
-
-### Fixtures
-
-The test suite provides several reusable fixtures:
-
-- `temp_dir`: Creates a temporary directory that's automatically cleaned up
-- `sample_files`: Provides a sample directory structure with various file types
-- `default_config`: Default TorrentConfig instance
-- `manifest_config`: ManifestConfig with temporary file
-- `clean_env`: Cleans environment variables that might affect tests
-- `assert_logs`: Enhanced logging assertions
-
-Example usage:
-```python
-def test_something(sample_files, clean_env, assert_logs):
-    # sample_files is a Path to a directory with test files
-    result = process_single(str(sample_files), "http://tracker.com/announce")
-    assert result == 0
-    assert caplog.has_info("Success message")
-```
-
-### Test Configuration
-
-The project uses `pytest.ini` for test configuration:
-
-- Verbose test output
-- Short traceback format
-- Code coverage reporting (terminal and HTML)
-- Detailed logging during tests
-- Custom test markers
-
-### Writing Tests
-
-When writing new tests:
-
-1. Use appropriate markers:
-   ```python
-   @pytest.mark.slow  # For time-consuming tests
-   @pytest.mark.integration  # For integration tests
-   ```
-
-2. Use fixtures for common setup:
-   ```python
-   def test_file_processing(sample_files, clean_env):
-       # Test implementation
-   ```
-
-3. Use logging assertions:
-   ```python
-   def test_with_logs(assert_logs):
-       # Run code
-       assert caplog.has_error("Expected error")
-       assert "Message" in caplog.messages
-   ```
-
-4. Mock external dependencies:
-   ```python
-   @pytest.fixture
-   def mock_dependency():
-       with patch('module.Dependency') as mock:
-           yield mock
-   ```
-
-### Coverage Reports
-
-Test coverage reports are generated in two formats:
-- Terminal output showing uncovered lines
-- HTML report for detailed coverage analysis
-
-To view the HTML coverage report:
-```bash
-# Run tests with coverage
-pytest
-
-# Open the report
-open htmlcov/index.html
-```
-
-### Debugging Tests
-
-For debugging failing tests:
-
-```bash
-# Show full traceback
-pytest --tb=long
-
-# Show logging output
-pytest --log-cli-level=DEBUG
-
-# Drop into debugger on failure
-pytest --pdb
-
-# Show local variables in traceback
+# Run tests and show local variables on failure
 pytest --showlocals
 ```
 
