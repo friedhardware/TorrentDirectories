@@ -25,6 +25,12 @@ A Python tool for creating torrent files from directories with optimal settings 
 git clone https://github.com/friedhardware/TorrentDirectories.git
 cd TorrentDirectories
 
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Unix/macOS
+# Or on Windows:
+# venv\Scripts\activate
+
 # Install in development mode
 pip install -e .
 ```
