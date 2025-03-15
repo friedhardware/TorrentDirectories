@@ -369,22 +369,49 @@ The project uses a single source of truth for version numbers in `src/torrent/__
 
 ### Making a Release
 
-1. Ensure all changes are committed and tested
-2. Run the release script with the new version number:
-   ```bash
-   ./scripts/release.py 0.4.0
-   ```
-   This will:
-   - Update the version in `src/torrent/__init__.py`
-   - Create a git tag for the release
-   - Print the next steps
+The project includes an automated release script (`scripts/release.py`) that handles the entire release process. The script performs the following actions:
 
-3. Follow the printed instructions to:
-   - Review the changes: `git diff`
-   - Commit the version update: `git commit -am 'Release v0.4.0'`
-   - Push changes: `git push`
-   - Push the tag: `git push --tags`
-   - Build and publish: `python -m build && python -m twine upload dist/*`
+1. Pre-release checks:
+   - Verifies git working directory is clean
+   - Runs the test suite (optional)
+   - Validates version format
+
+2. Version management:
+   - Updates version in `src/torrent/__init__.py`
+   - Creates/updates `CHANGELOG.md` with git commit history
+   - Handles semantic versioning
+
+3. Git operations:
+   - Commits version changes
+   - Creates and pushes git tags
+   - Handles all git operations automatically
+
+4. Package publishing:
+   - Builds the package
+   - Publishes to PyPI (optional)
+
+### Using the Release Script
+
+Basic usage:
+```bash
+# Simple minor version bump (recommended for most releases)
+./scripts/release.py
+
+# Major version bump (breaking changes)
+./scripts/release.py --bump major
+
+# Patch version bump (bug fixes)
+./scripts/release.py --bump patch
+
+# Specific version
+./scripts/release.py --version 0.4.0
+
+# Skip tests (not recommended)
+./scripts/release.py --no-tests
+
+# Skip publishing (for testing)
+./scripts/release.py --no-publish
+```
 
 ### Version Management
 
@@ -405,6 +432,13 @@ The version is managed in the following files:
 3. Update version if needed using the release script
 4. Create pull request
 5. After merge, create release using the release script
+
+### Changelog
+
+The release script automatically generates a `CHANGELOG.md` file that includes:
+- Version number and release date
+- List of git commit messages since last tag
+- Organized by version in reverse chronological order
 
 ## License
 
