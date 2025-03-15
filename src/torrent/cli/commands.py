@@ -98,23 +98,30 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
         # Always use manifest.csv in the output directory if specified,
         # otherwise use it in the current directory
         manifest_path = os.path.join(output_dir, 'manifest.csv') if output_dir else 'manifest.csv'
-        manifest_config = ManifestConfig(manifest_file=manifest_path)
+        manifest_config = ManifestConfig(filename=manifest_path)
         manifest = ManifestManager(manifest_config)
         creator = TorrentCreator(tracker_url, config)
         
-        # Handle manifest cleaning
-        if clean:
-            missing = manifest.get_missing_torrents()
-            if missing:
-                logger.warning("\nFound missing torrent files:")
-                for path in sorted(missing):
-                    logger.warning(f"  {path}")
-                    
-                if not dry_run:
-                    manifest.clean_manifest(directory)
-                    logger.info(f"\nRemoved {len(missing)} invalid entries from manifest")
-                else:
-                    logger.info("\nWould remove invalid entries from manifest")
+        # Check for missing torrent files
+        missing = manifest.get_missing_torrents()
+        if missing and not clean:
+            logger.error("\nFound missing torrent files that are listed in the manifest:")
+            for path in sorted(missing):
+                logger.error(f"  {path}")
+            logger.error("\nRun with --clean to remove invalid entries from manifest")
+            return 1
+        
+        # Handle manifest cleaning if requested
+        if clean and missing:
+            logger.warning("\nFound missing torrent files:")
+            for path in sorted(missing):
+                logger.warning(f"  {path}")
+                
+            if not dry_run:
+                manifest.clean_manifest(directory)
+                logger.info(f"\nRemoved {len(missing)} invalid entries from manifest")
+            else:
+                logger.info("\nWould remove invalid entries from manifest")
         
         # Get subdirectories to process
         subdirs = [d for d in os.listdir(directory) 

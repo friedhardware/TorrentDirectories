@@ -6,6 +6,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from typing import Optional
+import csv
 
 # Constants for piece size limits
 MIN_PIECE_SIZE = 16 * 1024  # 16 KiB
@@ -38,11 +39,14 @@ class TorrentConfig:
 class ManifestConfig:
     """Configuration for manifest management."""
     
-    manifest_file: str = "manifest.json"
+    filename: str = "manifest.csv"
     max_failures: Optional[int] = None
     force: bool = False
     clean: bool = False
+    encoding: str = "utf-8"
+    quoting: int = csv.QUOTE_ALL
+    fieldnames: tuple[str, str, str] = ("directory_path", "torrent_file", "processed_at")
     
     def get_manifest_path(self, parent_dir: str) -> str:
         """Get the full path to the manifest file."""
-        return os.path.join(parent_dir, self.manifest_file) 
+        return os.path.join(parent_dir, self.filename) 
