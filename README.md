@@ -53,106 +53,178 @@ torrent-directories [command] [options]
 python -m torrent.cli [command] [options]
 ```
 
-### Basic Commands
+### Command Structure
 
-1. Create a torrent from a single file or directory:
+The general command structure is:
 ```bash
-torrent-directories file path/to/content http://tracker.example.com:6969/announce
+torrent-directories [global options] <command> [command options] <required arguments>
 ```
 
-2. Process all subdirectories in a parent directory:
-```bash
-torrent-directories batch path/to/parent http://tracker.example.com:6969/announce
-```
+### Global Options
 
-### Common Options
+These options work with all commands and must be specified before the command:
 
-Global options that work with all commands:
 ```bash
-# Show version
+# Show program version
 torrent-directories --version
 
-# Enable verbose output
+# Enable verbose output (detailed logging)
 torrent-directories -v [command] [args]
+# or
+torrent-directories --verbose [command] [args]
 
-# Write logs to file
+# Write logs to a file
 torrent-directories --log-file path/to/log.txt [command] [args]
 
-# Preview changes without making them
+# Preview changes without making them (dry run)
 torrent-directories --dry-run [command] [args]
 ```
 
-### Torrent Creation Options
+### Commands
 
-Configure how torrents are created:
+The tool supports two main commands: `file` and `batch`
+
+#### 1. File Command
+
+The `file` command creates a torrent from a single file or directory.
+
+Syntax:
 ```bash
-# Custom piece sizes
-torrent-directories file --min-piece-size 512K --max-piece-size 32M path/to/content tracker-url
-
-# Custom target piece count
-torrent-directories file --target-pieces 1000-2000 path/to/content tracker-url
-
-# Include hidden/system files
-torrent-directories file --include-hidden --include-system path/to/content tracker-url
+torrent-directories file [options] <input_path> <tracker_url>
 ```
 
-### Single File/Directory Mode
+Required arguments:
+- `input_path`: Path to the file or directory to create a torrent from
+- `tracker_url`: URL of the tracker to include in the torrent
 
-Options specific to the `file` command:
+Options:
 ```bash
-# Custom output path
-torrent-directories file -o output.torrent path/to/content tracker-url
+# Specify custom output path (default: input_name.torrent)
+-o, --output PATH          # Example: -o /torrents/movie.torrent
 
-# Force overwrite existing torrent
-torrent-directories file --force path/to/content tracker-url
+# Force overwrite if output file exists
+--force                    # Example: --force
+
+# Custom piece sizes (accepts K, M, G suffixes)
+--min-piece-size SIZE     # Example: --min-piece-size 512K
+--max-piece-size SIZE     # Example: --max-piece-size 16M
+
+# Custom target piece count range
+--target-pieces RANGE     # Example: --target-pieces 1000-2000
+
+# Include normally skipped files
+--include-hidden          # Include hidden files/directories
+--include-system          # Include system files
 ```
 
-### Batch Processing Mode
-
-Options specific to the `batch` command:
+Examples:
 ```bash
-# Clean manifest of missing entries
-torrent-directories batch --clean path/to/parent tracker-url
+# Basic usage - create torrent in current directory
+torrent-directories file ./my_movie http://tracker.example.com/announce
 
-# Use custom manifest file
-torrent-directories batch --manifest custom_manifest.csv path/to/parent tracker-url
+# Specify custom output location
+torrent-directories file -o /torrents/my_movie.torrent ./my_movie http://tracker.example.com/announce
 
-# Force rebuild of existing torrents
-torrent-directories batch --force path/to/parent tracker-url
+# Force overwrite existing torrent with custom piece size
+torrent-directories file --force --min-piece-size 1M --max-piece-size 32M \
+    -o /torrents/my_movie.torrent ./my_movie http://tracker.example.com/announce
 
-# Stop after 3 failures
-torrent-directories batch --max-failures 3 path/to/parent tracker-url
-```
+# Include hidden files with verbose output
+torrent-directories -v file --include-hidden \
+    ./my_movie http://tracker.example.com/announce
 
-### Example Workflows
-
-1. Create a torrent with detailed logging:
-```bash
-torrent-directories -v --log-file create.log file \
-    --min-piece-size 1M \
+# Preview torrent creation with all options
+torrent-directories --dry-run file \
+    --min-piece-size 512K \
     --max-piece-size 16M \
-    path/to/movie \
-    http://tracker.example.com:6969/announce
-```
-
-2. Preview batch processing with custom settings:
-```bash
-torrent-directories --dry-run batch \
+    --target-pieces 1500-2000 \
     --include-hidden \
-    --target-pieces 1500-3000 \
-    --manifest custom.csv \
-    /path/to/movies \
-    http://tracker.example.com:6969/announce
+    --include-system \
+    -o /torrents/my_movie.torrent \
+    ./my_movie \
+    http://tracker.example.com/announce
 ```
 
-3. Process a directory with error handling:
+#### 2. Batch Command
+
+The `batch` command processes multiple subdirectories in a parent directory.
+
+Syntax:
 ```bash
-torrent-directories -v batch \
+torrent-directories batch [options] <parent_directory> <tracker_url>
+```
+
+Required arguments:
+- `parent_directory`: Directory containing subdirectories to process
+- `tracker_url`: URL of the tracker to include in all torrents
+
+Options:
+```bash
+# Clean manifest of missing entries before processing
+--clean                   # Example: --clean
+
+# Use custom manifest file (default: manifest.csv)
+--manifest PATH          # Example: --manifest /path/to/custom.csv
+
+# Force rebuild existing torrents
+--force                  # Example: --force
+
+# Stop processing after N failures (0 = unlimited)
+--max-failures N         # Example: --max-failures 3
+
+# All torrent creation options from file command also work:
+--min-piece-size SIZE
+--max-piece-size SIZE
+--target-pieces RANGE
+--include-hidden
+--include-system
+```
+
+Examples:
+```bash
+# Basic usage - process all subdirectories
+torrent-directories batch ./movies http://tracker.example.com/announce
+
+# Use custom manifest with failure limit
+torrent-directories batch \
+    --manifest /path/to/manifest.csv \
+    --max-failures 3 \
+    ./movies \
+    http://tracker.example.com/announce
+
+# Clean manifest and force rebuild with custom settings
+torrent-directories batch \
     --clean \
-    --max-failures 5 \
     --force \
-    /path/to/movies \
-    http://tracker.example.com:6969/announce
+    --min-piece-size 1M \
+    --include-hidden \
+    ./movies \
+    http://tracker.example.com/announce
+
+# Preview batch processing with detailed logging
+torrent-directories -v --dry-run batch \
+    --manifest custom.csv \
+    --target-pieces 1000-2000 \
+    --max-failures 5 \
+    ./movies \
+    http://tracker.example.com/announce
+```
+
+### Environment Variables
+
+The tool also supports configuration through environment variables:
+
+```bash
+# Set default piece sizes
+export TORRENT_MIN_PIECE_SIZE=1M
+export TORRENT_MAX_PIECE_SIZE=16M
+
+# Configure file handling
+export TORRENT_SKIP_HIDDEN=0     # Include hidden files
+export TORRENT_SKIP_SYSTEM=0     # Include system files
+
+# Set default manifest file
+export TORRENT_MANIFEST_FILE=/path/to/manifest.csv
 ```
 
 ## Manifest System
