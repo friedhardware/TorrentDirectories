@@ -7,7 +7,7 @@ A Python tool for creating torrent files from directories with optimal settings 
 - Create torrents from single files or directories
 - Batch process multiple directories with resume support
 - Optimal piece size calculation:
-  - Minimum piece size: 256 KiB (hard limit)
+  - Minimum piece size: 16 KiB (hard limit)
   - Maximum piece size: 64 MiB (hard limit)
   - Default: 16 MiB maximum piece size
   - Targets 1000-2000 pieces for optimal client performance
@@ -107,7 +107,7 @@ Options:
 --force                    # Example: --force
 
 # Custom piece sizes (accepts K, M suffixes)
---min-piece-size SIZE     # Example: --min-piece-size 512K (minimum: 256K)
+--min-piece-size SIZE     # Example: --min-piece-size 32K (minimum: 16K)
 --max-piece-size SIZE     # Example: --max-piece-size 32M (maximum: 64M)
 
 # Custom target piece count range
@@ -222,8 +222,8 @@ torrent-directories -v --dry-run batch \
 The tool also supports configuration through environment variables:
 
 ```bash
-# Set default piece sizes (256K minimum, 64M maximum)
-export TORRENT_MIN_PIECE_SIZE=256K
+# Set default piece sizes (16K minimum, 64M maximum)
+export TORRENT_MIN_PIECE_SIZE=16K
 export TORRENT_MAX_PIECE_SIZE=16M  # Default, can be increased up to 64M
 
 # Configure file handling

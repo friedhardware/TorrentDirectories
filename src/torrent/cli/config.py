@@ -13,7 +13,7 @@ def parse_size(size_str: str) -> int:
     Parse a human readable size string into bytes.
     
     Args:
-        size_str: Size string (e.g. '256K', '16M')
+        size_str: Size string (e.g. '16K', '16M')
         
     Returns:
         Size in bytes
@@ -40,8 +40,8 @@ def parse_size(size_str: str) -> int:
     # Enforce piece size limits
     if size > 64 * 1024 * 1024:  # 64 MiB
         raise ValueError(f"Maximum piece size cannot exceed 64 MiB. Requested: {size / 1024 / 1024:.0f} MiB")
-    if size < 256 * 1024:  # 256 KiB
-        raise ValueError(f"Minimum piece size cannot be less than 256 KiB. Requested: {size / 1024:.0f} KiB")
+    if size < 16 * 1024:  # 16 KiB
+        raise ValueError(f"Minimum piece size cannot be less than 16 KiB. Requested: {size / 1024:.0f} KiB")
     
     return size
 
