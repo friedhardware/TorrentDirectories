@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0 (2025-03-15)
+
+
+### Features
+* improve changelog generation with commit grouping and GitHub links ([d734951])(https://github.com/friedhardware/TorrentDirectories/commit/d734951) (friedhardware)
 ## 0.6.0 (2025-03-15)
 
 * Release v0.5.0
