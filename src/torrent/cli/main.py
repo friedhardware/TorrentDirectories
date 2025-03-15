@@ -67,7 +67,7 @@ def main(args: Optional[List[str]] = None) -> int:
         elif args.command == 'batch':
             return process_batch(args.directory, args.tracker,
                                clean=args.clean, config=config,
-                               manifest_path=args.manifest,
+                               output_dir=args.output,
                                dry_run=args.dry_run,
                                force=args.force,
                                max_failures=args.max_failures)

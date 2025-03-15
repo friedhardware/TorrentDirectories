@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import pytest
 from torrent.cli.parser import create_parser
+from torrent.cli.config import create_torrent_config
+import argparse
 
 def test_version_argument():
     """Test that the version argument is properly configured."""
@@ -45,7 +47,6 @@ def test_batch_command_required_args():
     assert args.tracker == 'http://tracker.com/announce'
     assert not args.clean
     assert not args.force
-    assert args.manifest is None
     assert args.max_failures == 0
 
 def test_batch_command_optional_args():
@@ -55,34 +56,56 @@ def test_batch_command_optional_args():
         'batch',
         '--clean',
         '--force',
-        '--manifest', 'custom.csv',
         '--max-failures', '5',
         'path/to/parent',
         'http://tracker.com/announce'
     ])
     assert args.clean
     assert args.force
-    assert args.manifest == 'custom.csv'
     assert args.max_failures == 5
 
 def test_global_torrent_options():
     """Test global torrent creation options."""
     parser = create_parser()
     args = parser.parse_args([
-        '--min-piece-size', '512K',
+        '--min-piece-size', '256K',
         '--max-piece-size', '32M',
-        '--target-pieces', '500-1000',
+        '--target-pieces', '1000-2000',
         '--include-hidden',
         '--include-system',
         'file',
         'path/to/content',
         'http://tracker.com/announce'
     ])
-    assert args.min_piece_size == '512K'
+    assert args.min_piece_size == '256K'
     assert args.max_piece_size == '32M'
-    assert args.target_pieces == '500-1000'
+    assert args.target_pieces == '1000-2000'
     assert args.include_hidden
     assert args.include_system
+
+def test_global_torrent_options_large_piece_size(mocker):
+    """Test parsing of large piece size."""
+    # Mock argparse.ArgumentParser to avoid SystemExit
+    mock_parser = mocker.patch('argparse.ArgumentParser', autospec=True)
+    mock_parser_instance = mock_parser.return_value
+    
+    # Test valid piece size at limit
+    mock_args = mocker.Mock()
+    mock_args.max_piece_size = '64M'
+    mock_args.min_piece_size = None
+    mock_args.target_pieces = None
+    mock_args.include_hidden = False
+    mock_args.include_system = False
+    mock_parser_instance.parse_args.return_value = mock_args
+    
+    # Test that 64M is parsed correctly
+    config = create_torrent_config(mock_args)
+    assert config.max_piece_size == 64 * 1024 * 1024  # 64 MiB
+    
+    # Test that piece size above limit is rejected
+    mock_args.max_piece_size = '128M'
+    with pytest.raises(ValueError, match="Maximum piece size cannot exceed 64 MiB"):
+        create_torrent_config(mock_args)
 
 def test_missing_required_args():
     """Test that missing required arguments raise an error."""

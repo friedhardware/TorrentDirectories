@@ -19,7 +19,7 @@ def parse_size(size_str: str) -> int:
         Size in bytes
         
     Raises:
-        ValueError: If the format is invalid
+        ValueError: If the format is invalid or size exceeds limits
     """
     if not size_str:
         raise ValueError("Size string cannot be empty")
@@ -33,8 +33,17 @@ def parse_size(size_str: str) -> int:
     size_str = size_str.upper()
     if size_str[-1] in units:
         number = float(size_str[:-1])
-        return int(number * units[size_str[-1]])
-    return int(size_str)
+        size = int(number * units[size_str[-1]])
+    else:
+        size = int(size_str)
+    
+    # Enforce piece size limits
+    if size > 64 * 1024 * 1024:  # 64 MiB
+        raise ValueError(f"Maximum piece size cannot exceed 64 MiB. Requested: {size / 1024 / 1024:.0f} MiB")
+    if size < 256 * 1024:  # 256 KiB
+        raise ValueError(f"Minimum piece size cannot be less than 256 KiB. Requested: {size / 1024:.0f} KiB")
+    
+    return size
 
 def create_torrent_config(args: argparse.Namespace) -> TorrentConfig:
     """

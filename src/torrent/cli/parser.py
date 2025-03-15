@@ -25,7 +25,7 @@ Examples:
     %(prog)s -v batch path/to/parent http://tracker.example.com:6969/announce
     
   Use custom piece size bounds:
-    %(prog)s file --min-piece-size 512K --max-piece-size 32M path/to/content tracker-url
+    %(prog)s file --min-piece-size 256K --max-piece-size 32M path/to/content tracker-url
 """)
     
     parser.add_argument('--version', action='version', 
@@ -39,10 +39,18 @@ Examples:
     
     # Global torrent configuration
     torrent_group = parser.add_argument_group('Torrent Creation Options')
-    torrent_group.add_argument('--min-piece-size',
-                              help='Minimum piece size (e.g. 256K, 1M)')
-    torrent_group.add_argument('--max-piece-size',
-                              help='Maximum piece size (e.g. 16M, 32M)')
+    torrent_group.add_argument(
+        '--min-piece-size',
+        type=str,
+        help='Minimum piece size (e.g. 256K, 1M). Default: 256K. Must be at least 256K.',
+        default='256K'
+    )
+    torrent_group.add_argument(
+        '--max-piece-size',
+        type=str,
+        help='Maximum piece size (e.g. 16M, 64M). Default: 16M. Cannot exceed 64M.',
+        default='16M'
+    )
     torrent_group.add_argument('--target-pieces',
                               help='Target piece count range (e.g. 1000-2000)')
     torrent_group.add_argument('--include-hidden', action='store_true',
@@ -68,10 +76,10 @@ Examples:
         help='Process all subdirectories in a parent directory')
     batch_parser.add_argument('directory', help='Parent directory to process')
     batch_parser.add_argument('tracker', help='Tracker URL')
+    batch_parser.add_argument('-o', '--output',
+                            help='Output directory for torrent files and manifest')
     batch_parser.add_argument('--clean', action='store_true',
                             help='Clean the manifest by removing missing entries')
-    batch_parser.add_argument('--manifest',
-                            help='Custom manifest file path')
     batch_parser.add_argument('--force', action='store_true',
                             help='Overwrite existing torrent files')
     batch_parser.add_argument('--max-failures', type=int, default=0,

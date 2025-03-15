@@ -49,17 +49,39 @@ def test_main_file_command(mock_process):
     mock_process.assert_called_once()
 
 @patch('torrent.cli.main.process_batch')
-def test_main_batch_command(mock_process):
+def test_main_batch_command(tmp_path, mocker):
     """Test main function with batch command."""
-    mock_process.return_value = 0
-    args = [
-        'batch',
-        'path/to/parent',
-        'http://tracker.com/announce'
-    ]
+    directory = tmp_path / "parent"
+    directory.mkdir()
+    output_dir = tmp_path / "output"
     
-    assert main(args) == 0
-    mock_process.assert_called_once()
+    # Mock process_batch and create_torrent_config
+    mock_process_batch = mocker.patch('torrent.cli.main.process_batch', return_value=0)
+    mock_config = mocker.patch('torrent.cli.main.create_torrent_config')
+    mock_config.return_value = mocker.Mock(name='config')
+    
+    # Run main with batch command
+    result = main([
+        "batch",
+        str(directory),
+        "http://tracker.example.com",
+        "--output", str(output_dir),
+        "--clean",
+        "--force",
+        "--max-failures", "5"
+    ])
+    
+    assert result == 0
+    mock_process_batch.assert_called_once_with(
+        str(directory),
+        "http://tracker.example.com",
+        clean=True,
+        config=mock_config.return_value,
+        output_dir=str(output_dir),
+        dry_run=False,
+        force=True,
+        max_failures=5
+    )
 
 @patch('torrent.cli.main.create_torrent_config')
 def test_main_config_error(mock_config):

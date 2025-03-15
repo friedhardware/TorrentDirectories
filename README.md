@@ -7,8 +7,9 @@ A Python tool for creating torrent files from directories with optimal settings 
 - Create torrents from single files or directories
 - Batch process multiple directories with resume support
 - Optimal piece size calculation:
-  - Smaller pieces (256 KiB) for better granular downloading
-  - Larger pieces (16 MiB) for reduced overhead
+  - Minimum piece size: 256 KiB (hard limit)
+  - Maximum piece size: 64 MiB (hard limit)
+  - Default: 16 MiB maximum piece size
   - Targets 1000-2000 pieces for optimal client performance
 - Skip hidden and system files (configurable)
 - Progress reporting and detailed logging
@@ -105,9 +106,9 @@ Options:
 # Force overwrite if output file exists
 --force                    # Example: --force
 
-# Custom piece sizes (accepts K, M, G suffixes)
---min-piece-size SIZE     # Example: --min-piece-size 512K
---max-piece-size SIZE     # Example: --max-piece-size 16M
+# Custom piece sizes (accepts K, M suffixes)
+--min-piece-size SIZE     # Example: --min-piece-size 512K (minimum: 256K)
+--max-piece-size SIZE     # Example: --max-piece-size 32M (maximum: 64M)
 
 # Custom target piece count range
 --target-pieces RANGE     # Example: --target-pieces 1000-2000
@@ -135,7 +136,7 @@ torrent-directories -v file --include-hidden \
 
 # Preview torrent creation with all options
 torrent-directories --dry-run file \
-    --min-piece-size 512K \
+    --min-piece-size 256K \
     --max-piece-size 16M \
     --target-pieces 1500-2000 \
     --include-hidden \
@@ -163,8 +164,8 @@ Options:
 # Clean manifest of missing entries before processing
 --clean                   # Example: --clean
 
-# Use custom manifest file (default: manifest.csv)
---manifest PATH          # Example: --manifest /path/to/custom.csv
+# Specify output directory for torrent files and manifest
+-o, --output PATH        # Example: -o /path/to/output
 
 # Force rebuild existing torrents
 --force                  # Example: --force
@@ -173,9 +174,9 @@ Options:
 --max-failures N         # Example: --max-failures 3
 
 # All torrent creation options from file command also work:
---min-piece-size SIZE
---max-piece-size SIZE
---target-pieces RANGE
+--min-piece-size SIZE    # Example: --min-piece-size 256K
+--max-piece-size SIZE    # Example: --max-piece-size 16M
+--target-pieces RANGE    # Example: --target-pieces 1000-2000
 --include-hidden
 --include-system
 ```
@@ -185,9 +186,15 @@ Examples:
 # Basic usage - process all subdirectories
 torrent-directories batch ./movies http://tracker.example.com/announce
 
-# Use custom manifest with failure limit
+# Use custom output directory for all files
 torrent-directories batch \
-    --manifest /path/to/manifest.csv \
+    -o /path/to/output \
+    ./movies \
+    http://tracker.example.com/announce
+
+# Use output directory with failure limit
+torrent-directories batch \
+    -o /path/to/output \
     --max-failures 3 \
     ./movies \
     http://tracker.example.com/announce
@@ -203,7 +210,7 @@ torrent-directories batch \
 
 # Preview batch processing with detailed logging
 torrent-directories -v --dry-run batch \
-    --manifest custom.csv \
+    -o /path/to/output \
     --target-pieces 1000-2000 \
     --max-failures 5 \
     ./movies \
@@ -215,21 +222,22 @@ torrent-directories -v --dry-run batch \
 The tool also supports configuration through environment variables:
 
 ```bash
-# Set default piece sizes
-export TORRENT_MIN_PIECE_SIZE=1M
-export TORRENT_MAX_PIECE_SIZE=16M
+# Set default piece sizes (256K minimum, 64M maximum)
+export TORRENT_MIN_PIECE_SIZE=256K
+export TORRENT_MAX_PIECE_SIZE=16M  # Default, can be increased up to 64M
 
 # Configure file handling
 export TORRENT_SKIP_HIDDEN=0     # Include hidden files
 export TORRENT_SKIP_SYSTEM=0     # Include system files
-
-# Set default manifest file
-export TORRENT_MANIFEST_FILE=/path/to/manifest.csv
 ```
 
 ## Manifest System
 
-The tool maintains a CSV manifest file (`manifest.csv`) to track processed directories:
+The tool maintains a CSV manifest file to track processed directories. The manifest file is named `manifest.csv` and is stored in:
+- The current directory when no output directory is specified
+- The output directory when specified with `-o/--output`
+
+The manifest file format is:
 
 ```csv
 directory_path,torrent_file,processed_at
@@ -237,12 +245,17 @@ directory_path,torrent_file,processed_at
 /path/to/movie2,movie2.torrent,2024-03-15T14:35:00
 ```
 
+When using the batch command with an output directory:
+1. All torrent files are created in the output directory
+2. The manifest file is stored in the output directory by default
+
 ### Safety Features
 
 - Append-only writes for data integrity
 - Immediate entry recording after successful torrent creation
 - Header validation on file load
 - Backup creation before modifications
+- Output directory creation if it doesn't exist
 - Validation states:
   1. Fresh start (no manifest)
   2. Perfect match (all torrents exist)
