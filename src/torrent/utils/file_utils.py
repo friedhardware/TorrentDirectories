@@ -16,22 +16,10 @@ def is_hidden(path: str) -> bool:
         path: Path to check
         
     Returns:
-        True if the path is hidden (starts with . on Unix or has hidden attribute on Windows)
+        True if the path is hidden (starts with .)
     """
     name = os.path.basename(path)
-    if name.startswith('.'):
-        return True
-        
-    # Check for Windows hidden attribute
-    if os.name == 'nt':
-        try:
-            import win32api, win32con
-            attribute = win32api.GetFileAttributes(path)
-            return attribute & win32con.FILE_ATTRIBUTE_HIDDEN
-        except (ImportError, OSError):
-            return False
-            
-    return False
+    return name.startswith('.')
 
 def is_system_file(path: str) -> bool:
     """
