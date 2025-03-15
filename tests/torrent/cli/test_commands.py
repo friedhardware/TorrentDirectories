@@ -304,15 +304,21 @@ def test_process_batch_manifest_config(tmp_path: Path, mocker: MockerFixture) ->
 
     # Create mock objects
     mock_manifest = mocker.patch("torrent.cli.commands.ManifestManager")
+    mock_torrent = mocker.patch("torrent.cli.commands.TorrentCreator")
 
     # Configure mock manifest manager
     mock_instance = mock_manifest.return_value
     mock_instance.get_missing_torrents.return_value = set()
     mock_instance.is_directory_processed.return_value = False
 
-    # Add a test subdirectory
+    # Configure mock torrent creator
+    mock_torrent_instance = mock_torrent.return_value
+    mock_torrent_instance.create.return_value = "test1.torrent"
+
+    # Add a test subdirectory with files
     test_dir = directory / "test1"
     test_dir.mkdir()
+    (test_dir / "file1.txt").write_text("test content")
 
     # Run process_batch
     result = process_batch(

@@ -37,6 +37,23 @@ def update_version(new_version: str) -> None:
         f.write(new_content)
 
 
+def update_pyproject_version(new_version: str) -> None:
+    """Update version in pyproject.toml"""
+    pyproject_file = Path(__file__).parent.parent / "pyproject.toml"
+    with open(pyproject_file) as f:
+        content = f.read()
+
+    new_content = re.sub(
+        r'^version = ["\']([^"\']*)["\']',
+        f'version = "{new_version}"',
+        content,
+        flags=re.M,
+    )
+
+    with open(pyproject_file, "w") as f:
+        f.write(new_content)
+
+
 def run_tests() -> bool:
     """Run the test suite"""
     print("\nRunning tests...")
@@ -233,13 +250,15 @@ def main() -> None:
         print("\nError: Tests failed. Aborting release.")
         sys.exit(1)
 
-    # Update version and create changelog
+    # Update version in all files and create changelog
     update_version(new_version)
+    update_pyproject_version(new_version)
     create_changelog(new_version)
 
     # Commit changes
     subprocess.run(
-        ["git", "add", "src/torrent/__init__.py", "CHANGELOG.md"], check=True
+        ["git", "add", "src/torrent/__init__.py", "pyproject.toml", "CHANGELOG.md"],
+        check=True,
     )
     subprocess.run(["git", "commit", "-m", f"Release v{new_version}"], check=True)
     subprocess.run(["git", "push"], check=True)
@@ -250,12 +269,10 @@ def main() -> None:
     # Build and publish unless skipped
     if not args.no_publish:
         build_and_publish()
+    else:
+        print("\nSkipping PyPI publish.")
 
-    print(f"\nRelease v{new_version} completed successfully!")
-    print("\nNext steps:")
-    print("1. Review the changes in CHANGELOG.md")
-    print("2. Create a GitHub release with the new tag")
-    print("3. Update any documentation or website content")
+    print(f"\nSuccessfully released version {new_version}")
 
 
 if __name__ == "__main__":
