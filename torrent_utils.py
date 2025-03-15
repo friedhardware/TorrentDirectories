@@ -1,7 +1,10 @@
 import math
 import os
+import csv
+import time
+from datetime import datetime
 import libtorrent # type: ignore
-from typing import Optional
+from typing import Optional, Dict
 
 def calculate_optimal_piece_size(total_size):
     """
@@ -105,6 +108,124 @@ def create_torrent(input_path: str, tracker_url: str, output_path: Optional[str]
     
     return output_path
 
+def validate_manifest_state(output_dir: str, manifest: Dict[str, tuple[str, datetime]]) -> bool:
+    """
+    Validate the state between manifest and output directory.
+    Returns True if state is valid or user confirms to proceed.
+    
+    This function performs thorough validation:
+    1. Checks if manifest entries point to existing torrent files
+    2. Checks if all torrent files in output_dir are in the manifest
+    3. Reports any discrepancies and asks for user confirmation
+    
+    Args:
+        output_dir: Directory containing torrent files and manifest
+        manifest: The loaded manifest data
+        
+    Returns:
+        bool: True if processing should continue, False if it should abort
+    """
+    # Get list of actual torrent files in the directory
+    existing_torrents = {f for f in os.listdir(output_dir) if f.endswith('.torrent')}
+    
+    # Get set of torrent files mentioned in manifest
+    manifest_torrents = {torrent_file for _, (torrent_file, _) in manifest.items()}
+    
+    # Case 1: No manifest and no torrent files - valid first run
+    if not manifest and not existing_torrents:
+        return True
+    
+    # Find discrepancies
+    missing_from_disk = manifest_torrents - existing_torrents
+    missing_from_manifest = existing_torrents - manifest_torrents
+    
+    # Case 2: Everything matches - valid state
+    if not missing_from_disk and not missing_from_manifest:
+        return True
+    
+    # Case 3: Discrepancies found - warn user and ask for confirmation
+    print("\nWARNING: Found discrepancies between manifest and torrent files:")
+    
+    if missing_from_disk:
+        print("\nTorrent files listed in manifest but missing from disk:")
+        for torrent in sorted(missing_from_disk):
+            # Find the directory this torrent was for
+            for dir_path, (tf, ts) in manifest.items():
+                if tf == torrent:
+                    print(f"  {torrent} (for directory: {dir_path}, processed at: {ts.isoformat(timespec='seconds')})")
+    
+    if missing_from_manifest:
+        print("\nTorrent files found but not listed in manifest:")
+        for torrent in sorted(missing_from_manifest):
+            print(f"  {torrent}")
+    
+    print("\nThis could mean:")
+    print("- Torrent files were manually moved or deleted")
+    print("- The manifest file is out of sync")
+    print("- There was an interruption during previous processing")
+    
+    response = input("\nDo you want to proceed and rebuild missing torrents/update manifest? (y/N): ").lower()
+    return response == 'y'
+
+def load_manifest(output_dir: str) -> Dict[str, tuple[str, datetime]]:
+    """
+    Load the manifest file from the output directory.
+    
+    Args:
+        output_dir: Directory containing the manifest file
+        
+    Returns:
+        Dict[str, tuple[str, datetime]]: Dictionary mapping absolute directory paths to (torrent_file, timestamp) tuples
+    """
+    manifest_path = os.path.join(output_dir, "manifest.csv")
+    manifest = {}
+    
+    try:
+        if os.path.exists(manifest_path):
+            with open(manifest_path, 'r', newline='', encoding='utf-8') as f:
+                reader = csv.reader(f, quoting=csv.QUOTE_ALL)
+                next(reader, None)  # Skip header row
+                for row in reader:
+                    try:
+                        if len(row) == 3:  # directory_path, torrent_file, timestamp
+                            directory_path, torrent_file, timestamp_str = row
+                            # Parse ISO timestamp directly to datetime
+                            timestamp = datetime.fromisoformat(timestamp_str)
+                            manifest[directory_path] = (torrent_file, timestamp)
+                    except (ValueError, IndexError):
+                        continue  # Skip invalid rows
+    except OSError as e:
+        print(f"Warning: Failed to load manifest file: {e}")
+    
+    return manifest
+
+def append_to_manifest(output_dir: str, directory_path: str, torrent_file: str, timestamp: datetime) -> None:
+    """
+    Append a new entry to the manifest file.
+    
+    Args:
+        output_dir: Directory containing the manifest file
+        directory_path: Absolute path to the processed directory
+        torrent_file: Name of the created torrent file
+        timestamp: Processing timestamp (as datetime object)
+    """
+    manifest_path = os.path.join(output_dir, "manifest.csv")
+    try:
+        # Create file with header if it doesn't exist
+        if not os.path.exists(manifest_path):
+            with open(manifest_path, 'w', newline='', encoding='utf-8') as f:
+                writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+                writer.writerow(["directory_path", "torrent_file", "processed_at"])
+        
+        # Format datetime to ISO format
+        timestamp_str = timestamp.isoformat(timespec='seconds')
+        
+        with open(manifest_path, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f, quoting=csv.QUOTE_ALL)
+            writer.writerow([directory_path, torrent_file, timestamp_str])
+    except OSError as e:
+        print(f"Warning: Failed to update manifest file: {e}")
+
 def create_directory_torrents(parent_dir: str, tracker_url: str, output_dir: Optional[str] = None) -> list[str]:
     """
     Create torrent files for each subdirectory in the specified directory.
@@ -112,6 +233,10 @@ def create_directory_torrents(parent_dir: str, tracker_url: str, output_dir: Opt
     This function walks through a parent directory and creates a separate torrent
     file for each of its subdirectories. It skips hidden directories (those starting
     with a dot) and handles errors for individual subdirectories gracefully.
+    
+    The function maintains a manifest file in the output directory to track which
+    subdirectories have been processed. This allows for resuming interrupted batch
+    operations by skipping already processed directories.
     
     Args:
         parent_dir: Path to the directory containing subdirectories to process
@@ -138,6 +263,14 @@ def create_directory_torrents(parent_dir: str, tracker_url: str, output_dir: Opt
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
+    # Load existing manifest
+    manifest = load_manifest(output_dir)
+    
+    # Validate manifest state and get user confirmation if needed
+    if not validate_manifest_state(output_dir, manifest):
+        print("Operation cancelled by user")
+        return []
+    
     # Get list of subdirectories
     subdirs = [
         d for d in os.scandir(parent_dir)
@@ -147,22 +280,36 @@ def create_directory_torrents(parent_dir: str, tracker_url: str, output_dir: Opt
     if not subdirs:
         raise ValueError(f"No subdirectories found in {parent_dir}")
     
-    print(f"Found {len(subdirs)} directories")
+    total_dirs = len(subdirs)
+    new_dirs = sum(1 for d in subdirs if os.path.abspath(d.path) not in manifest)
+    skipped_dirs = total_dirs - new_dirs
+    
+    print(f"Found {total_dirs} directories ({new_dirs} new, {skipped_dirs} already processed)")
     created_torrents = []
     
     # Process each subdirectory
     for subdir in sorted(subdirs, key=lambda d: d.name):
+        subdir_path = os.path.abspath(subdir.path)
+        # Skip if already processed
+        if subdir_path in manifest:
+            torrent_file, timestamp = manifest[subdir_path]
+            print(f"\nSkipping: {subdir.name} ({torrent_file}, processed at {timestamp.isoformat(timespec='seconds')})")
+            continue
+            
         print(f"\nProcessing: {subdir.name}")
         print("=" * (11 + len(subdir.name)))
         
         output_path = os.path.join(output_dir, f"{subdir.name}.torrent")
         try:
-            torrent_path = create_torrent(subdir.path, tracker_url, output_path)
+            torrent_path = create_torrent(subdir_path, tracker_url, output_path)
             created_torrents.append(torrent_path)
+            # Append new entry to manifest immediately after successful creation
+            append_to_manifest(output_dir, subdir_path, os.path.basename(torrent_path), datetime.now())
             print(f"Created torrent: {output_path}")
         except Exception as e:
             print(f"Error creating torrent for {subdir.name}:")
             print(str(e))
     
-    print(f"\nComplete! Created {len(created_torrents)} torrent files in {output_dir}/")
+    print(f"\nComplete! Created {len(created_torrents)} new torrent files in {output_dir}/")
+    print(f"Total processed: {len(manifest) + len(created_torrents)} directories")
     return created_torrents 
