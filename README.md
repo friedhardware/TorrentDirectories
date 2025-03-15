@@ -404,5 +404,3 @@ pytest -v
 # Run tests and show local variables on failure
 pytest --showlocals
 ```
-
-

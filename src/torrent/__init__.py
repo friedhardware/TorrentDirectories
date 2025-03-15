@@ -32,11 +32,12 @@ The CLI provides additional options for:
 
 For programmatic usage, see the TorrentCreator and ManifestManager classes.
 """
+
 from __future__ import annotations
 
-from torrent.torrent_creator import TorrentCreator
-from torrent.manifest import ManifestManager, ManifestError
 from torrent.cli import main as cli_main
+from torrent.manifest import ManifestError, ManifestManager
+from torrent.torrent_creator import TorrentCreator
 
 # This is the single source of truth for the package version
 __version__ = "0.7.0"

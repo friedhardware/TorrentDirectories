@@ -70,4 +70,4 @@
 ## 0.1.0 (2024-03-12)
 
 ### Features
-* Initial commit: Torrent creation tool with optimal piece size calculation ([q4r5s6t])(https://github.com/friedhardware/TorrentDirectories/commit/q4r5s6t) (friedhardware) 
+* Initial commit: Torrent creation tool with optimal piece size calculation ([q4r5s6t])(https://github.com/friedhardware/TorrentDirectories/commit/q4r5s6t) (friedhardware)
