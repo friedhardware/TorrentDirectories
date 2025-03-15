@@ -14,6 +14,30 @@ from ..utils.file_utils import format_size, get_total_size, list_files
 
 logger = logging.getLogger(__name__)
 
+def handle_dry_run(path: str, output: Optional[str], config: Optional[TorrentConfig], is_batch: bool = False) -> None:
+    """Handle the dry run logic for both single and batch processing."""
+    logger.info("\nDry run mode - no changes will be made")
+    logger.info(f"Would create torrent from: {path}")
+    if output:
+        logger.info(f"Would save to: {output}")
+
+    if is_batch:
+        # Get subdirectories to process
+        subdirs = [d for d in os.listdir(path) 
+                  if os.path.isdir(os.path.join(path, d))]
+        logger.info(f"\nWould process {len(subdirs)} directories:")
+        for d in sorted(subdirs):
+            logger.info(f"  {d}")
+    else:
+        # Handle single file/directory dry run
+        files = list_files(path, 
+                           skip_hidden=config.skip_hidden if config else True,
+                           skip_system=config.skip_system_files if config else True)
+        total_size = get_total_size([os.path.join(path, f) for f in files])
+        logger.info(f"\nWould include {len(files)} files ({format_size(total_size)}):")
+        for f in files:
+            logger.info(f"  {f}")
+
 def process_single(path: str, tracker_url: str, output: Optional[str] = None,
                   config: Optional[TorrentConfig] = None, 
                   dry_run: bool = False,
@@ -38,27 +62,13 @@ def process_single(path: str, tracker_url: str, output: Optional[str] = None,
             logger.error(f"Output file already exists: {output}")
             logger.error("Use --force to overwrite")
             return 1
-            
+        
         creator = TorrentCreator(tracker_url, config)
         
-        # Show what would be done in dry run mode
         if dry_run:
-            logger.info("\nDry run mode - no changes will be made")
-            logger.info(f"Would create torrent from: {path}")
-            if output:
-                logger.info(f"Would save to: {output}")
-            
-            # List files that would be included
-            files = list_files(path, 
-                             skip_hidden=config.skip_hidden if config else True,
-                             skip_system=config.skip_system_files if config else True)
-            total_size = get_total_size([os.path.join(path, f) for f in files])
-            
-            logger.info(f"\nWould include {len(files)} files ({format_size(total_size)}):")
-            for f in files:
-                logger.info(f"  {f}")
+            handle_dry_run(path, output, config)
             return 0
-            
+        
         # Actually create the torrent
         torrent_path = creator.create_torrent(path, output)
         logger.info(f"\nTorrent created successfully: {torrent_path}")
@@ -100,7 +110,7 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
         manifest_path = os.path.join(output_dir, 'manifest.csv') if output_dir else 'manifest.csv'
         manifest_config = ManifestConfig(filename=manifest_path)
         manifest = ManifestManager(manifest_config)
-        creator = TorrentCreator(tracker_url, config)
+        tc = TorrentCreator(tracker_url, config)
         
         # Check for missing torrent files
         missing = manifest.get_missing_torrents()
@@ -131,20 +141,8 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
             logger.error(f"No subdirectories found in {directory}")
             return 1
         
-        # Show summary in dry run mode
         if dry_run:
-            logger.info("\nDry run mode - no changes will be made")
-            logger.info(f"\nWould process {len(subdirs)} directories:")
-            for subdir in sorted(subdirs):
-                full_path = os.path.join(directory, subdir)
-                if manifest.is_directory_processed(full_path):
-                    logger.info(f"  {subdir}: Would skip (already processed)")
-                else:
-                    files = list_files(full_path, 
-                                     skip_hidden=config.skip_hidden if config else True,
-                                     skip_system=config.skip_system_files if config else True)
-                    total_size = get_total_size([os.path.join(full_path, f) for f in files])
-                    logger.info(f"  {subdir}: Would create torrent ({format_size(total_size)})")
+            handle_dry_run(directory, output_dir, config, is_batch=True)
             return 0
         
         # Actually process directories
@@ -166,7 +164,7 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
                 if output_dir:
                     output_path = os.path.join(output_dir, f"{subdir}.torrent")
                 
-                torrent_path = creator.create_torrent(full_path, output_path)
+                torrent_path = tc.create_torrent(full_path, output_path)
                 manifest.add_entry(full_path, torrent_path)
                 logger.info(f"  {subdir}: Created {torrent_path} ✓")
             except Exception as e:

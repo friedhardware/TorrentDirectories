@@ -43,9 +43,6 @@ class ManifestConfig:
     max_failures: Optional[int] = None
     force: bool = False
     clean: bool = False
-    encoding: str = "utf-8"
-    quoting: int = csv.QUOTE_ALL
-    fieldnames: tuple[str, str, str] = ("directory_path", "torrent_file", "processed_at")
     
     def get_manifest_path(self, parent_dir: str) -> str:
         """Get the full path to the manifest file."""

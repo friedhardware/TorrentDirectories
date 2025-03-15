@@ -26,6 +26,7 @@ def mock_manifest_manager(mocker):
     mock = mocker.patch('torrent.cli.commands.ManifestManager')
     mock_instance = mock.return_value
     mock_instance.is_directory_processed.return_value = False
+    mock_instance.get_missing_torrents.return_value = set()
     return mock
 
 def test_process_single_success(mock_torrent_creator, sample_files, clean_env, assert_logs, caplog):
@@ -239,7 +240,10 @@ def test_process_batch_with_output_dir(tmp_path, mock_torrent_creator, mock_mani
     mock_manifest_manager.assert_called_once()
     manifest_config = mock_manifest_manager.call_args[0][0]
     assert isinstance(manifest_config, ManifestConfig)
-    assert manifest_config.manifest_file == str(output_dir / "manifest.csv")
+    assert manifest_config.filename == str(output_dir / "manifest.csv")
+    assert manifest_config.force == False
+    assert manifest_config.clean == False
+    assert manifest_config.max_failures is None
     
     # Verify torrent creation calls
     expected_calls = [
@@ -281,6 +285,11 @@ def test_process_batch_manifest_config(tmp_path, mocker):
     mock_manifest = mocker.patch('torrent.cli.commands.ManifestManager')
     mock_creator = mocker.patch('torrent.cli.commands.TorrentCreator')
     
+    # Configure mock manifest manager
+    mock_instance = mock_manifest.return_value
+    mock_instance.get_missing_torrents.return_value = set()
+    mock_instance.is_directory_processed.return_value = False
+    
     # Add a test subdirectory
     test_dir = directory / "test1"
     test_dir.mkdir()
@@ -296,5 +305,8 @@ def test_process_batch_manifest_config(tmp_path, mocker):
     # Verify manifest was configured correctly
     mock_manifest.assert_called_once()
     manifest_config = mock_manifest.call_args[0][0]
-    assert manifest_config.manifest_file == str(output_dir / "manifest.csv")
+    assert manifest_config.filename == str(output_dir / "manifest.csv")
+    assert manifest_config.force == False
+    assert manifest_config.clean == False
+    assert manifest_config.max_failures is None
     assert result == 0 

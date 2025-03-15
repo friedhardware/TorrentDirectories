@@ -34,6 +34,10 @@ class ManifestManager:
     - Backup creation before modifications
     """
     
+    # Constants for manifest file handling
+    FIELDNAMES = ("directory_path", "torrent_file", "processed_at")
+    ENCODING = "utf-8"
+    
     def __init__(self, config: Optional[ManifestConfig] = None):
         """
         Initialize the manifest manager.
@@ -52,9 +56,9 @@ class ManifestManager:
             return
             
         try:
-            with open(self.config.filename, 'r', encoding=self.config.encoding) as f:
+            with open(self.config.filename, 'r', encoding=self.ENCODING) as f:
                 reader = csv.DictReader(f)
-                if reader.fieldnames != list(self.config.fieldnames):
+                if reader.fieldnames != list(self.FIELDNAMES):
                     raise ManifestError(f"Invalid manifest headers: {reader.fieldnames}")
                     
                 for row in reader:
@@ -77,10 +81,10 @@ class ManifestManager:
         now = datetime.now().isoformat()
         
         # Append the new entry to the manifest file
-        with open(self.config.filename, 'a', encoding=self.config.encoding, newline='') as f:
+        with open(self.config.filename, 'a', encoding=self.ENCODING, newline='') as f:
             writer = csv.DictWriter(f, 
-                                  fieldnames=self.config.fieldnames,
-                                  quoting=self.config.quoting)
+                                  fieldnames=self.FIELDNAMES,
+                                  quoting=csv.QUOTE_ALL)
             
             # Write headers if this is a new file
             if f.tell() == 0:
@@ -122,10 +126,10 @@ class ManifestManager:
             logger.info(f"Created manifest backup at {backup_path}")
         
         # Write new manifest with only valid entries
-        with open(self.config.filename, 'w', encoding=self.config.encoding, newline='') as f:
+        with open(self.config.filename, 'w', encoding=self.ENCODING, newline='') as f:
             writer = csv.DictWriter(f, 
-                                  fieldnames=self.config.fieldnames,
-                                  quoting=self.config.quoting)
+                                  fieldnames=self.FIELDNAMES,
+                                  quoting=csv.QUOTE_ALL)
             writer.writeheader()
             
             for dir_path, (torrent_file, processed_at) in self._entries.items():
