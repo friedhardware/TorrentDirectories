@@ -5,7 +5,6 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 import argparse
-from typing import Optional, Tuple
 
 def get_current_version() -> str:
     """Get the current version from __init__.py"""

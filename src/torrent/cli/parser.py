@@ -4,7 +4,6 @@ Command-line argument parsing for TorrentDirectories.
 from __future__ import annotations
 
 import argparse
-from typing import Optional
 
 def create_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""
