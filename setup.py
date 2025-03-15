@@ -16,6 +16,14 @@ setup(
         "libtorrent>=2.0.0",
         "pywin32>=228; platform_system=='Windows'",
     ],
+    extras_require={
+        "dev": [
+            "setuptools>=76.0.0",
+            "pytest>=8.0.0",
+            "pytest-cov>=6.0.0",
+            "pytest-mock>=3.14.0",
+        ],
+    },
     entry_points={
         "console_scripts": [
             "torrent-directories=torrent.cli:main",
