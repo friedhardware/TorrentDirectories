@@ -330,6 +330,25 @@ manifest.mark_directory_processed(directory_path, torrent_path)
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+### Code Style
+
+The project uses several tools to maintain consistent code quality:
+
+- [Black](https://github.com/psf/black) for code formatting
+- [Ruff](https://github.com/astral-sh/ruff) for linting and formatting
+- [isort](https://github.com/pycqa/isort) for import sorting
+- [mypy](https://github.com/python/mypy) for type checking
+
+These tools are configured in `pyproject.toml` and run automatically via pre-commit hooks. To set up your development environment:
+
+```bash
+# Install pre-commit hooks
+pre-commit install
+
+# Run all checks manually
+pre-commit run --all-files
+```
+
 ## Release Process
 
 The project uses semantic versioning (MAJOR.MINOR.PATCH) with a single source of truth in `src/torrent/__init__.py`. The release process is automated using `scripts/release.py`.
