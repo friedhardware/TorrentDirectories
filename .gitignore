@@ -29,7 +29,7 @@ wheels/
 
 # Project specific
 *.torrent
-examples/TestBatch1/
+examples/
 
 # Coverage
 .coverage
