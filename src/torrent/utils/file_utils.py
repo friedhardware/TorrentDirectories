@@ -38,6 +38,10 @@ def is_system_file(path: str) -> bool:
         '.Spotlight-V100',
         '.Trashes',
         '.fseventsd',
+        '.TemporaryItems',
+        '.apdisk',
+        '.VolumeIcon.icns',
+        '.com.apple.timemachine.donotpresent',
         
         # Network share system files
         '.smb',  # SMB temporary files
@@ -47,6 +51,8 @@ def is_system_file(path: str) -> bool:
         '.AppleDB',  # AFP database
         '.AppleDesktop',  # AFP desktop settings
         '@eaDir',  # Synology NAS extended attributes
+        '.snapshot',  # ZFS snapshots
+        '.zfs',  # ZFS system files
         
         # Unix/Linux system files
         '.directory',  # KDE directory settings
@@ -55,6 +61,11 @@ def is_system_file(path: str) -> bool:
         '.cache',  # Cache directory
         '.config',  # Config directory
         '.local',  # Local data directory
+        '.gvfs',  # GNOME Virtual File System
+        '.dbus',  # D-Bus system files
+        '.pulse',  # PulseAudio files
+        '.Xauthority',  # X11 authority file
+        '.ICEauthority',  # ICE authority file
         
         # Temporary files
         '.tmp',
@@ -63,7 +74,13 @@ def is_system_file(path: str) -> bool:
         '.swo',  # Vim swap files
         '.bak',  # Backup files
         '.old',  # Old files
-        '.orig'  # Original files
+        '.orig',  # Original files
+        '.part',  # Partial downloads
+        '.crdownload',  # Chrome downloads
+        '.download',  # Firefox downloads
+        '.aria2',  # Aria2 downloads
+        '.torrent',  # Torrent files
+        '.magnet'  # Magnet links
     }
     return os.path.basename(path) in system_files
 
