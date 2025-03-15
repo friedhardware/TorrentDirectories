@@ -80,7 +80,7 @@ def process_single(path: str, tracker_url: str, output: Optional[str] = None,
 
 def process_batch(directory: str, tracker_url: str, clean: bool = False,
                  config: Optional[TorrentConfig] = None,
-                 output_dir: Optional[str] = None,
+                 output_dir: str = 'torrents/',
                  dry_run: bool = False,
                  force: bool = False,
                  max_failures: int = 0) -> int:
@@ -92,7 +92,7 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
         tracker_url: Tracker URL to use
         clean: Whether to clean the manifest
         config: Optional torrent configuration
-        output_dir: Directory to store torrent files and manifest
+        output_dir: Directory to store torrent files and manifest (defaults to 'torrents/')
         dry_run: Whether to show what would be done without making changes
         force: Whether to overwrite existing torrent files
         max_failures: Maximum allowed failures before stopping
@@ -101,8 +101,8 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
         Exit code (0 for success, non-zero for failure)
     """
     try:
-        # Create output directory if specified
-        if output_dir and not dry_run:
+        # Create output directory if not dry run
+        if not dry_run:
             os.makedirs(output_dir, exist_ok=True)
         
         manifest = ManifestManager(output_dir)
@@ -155,12 +155,9 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
             
             # Create torrent and add to manifest
             try:
-                # Set output path in the output directory if specified
-                output_path = None
-                if output_dir:
-                    output_path = os.path.join(output_dir, f"{subdir}.torrent")
-                
-                torrent_path = torrent_creator.create(full_path, output_path)
+                # Set output path for the torrent file
+                torrent_file_path = os.path.join(output_dir, f"{subdir}.torrent")
+                torrent_path = torrent_creator.create(full_path, torrent_file_path)
                 manifest.add_entry(full_path, torrent_path)
                 logger.info(f"  {subdir}: Created {torrent_path} ✓")
             except Exception as e:

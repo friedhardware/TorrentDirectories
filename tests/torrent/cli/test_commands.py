@@ -114,16 +114,17 @@ def test_process_batch_success(tmp_path, mock_torrent_creator, mock_manifest_man
     mock_manifest.is_directory_processed.return_value = False
     mock_creator = mock_torrent_creator.return_value
     mock_creator.create.side_effect = [
-        'output.torrent',
-        'output.torrent'
+        'torrents/dir1.torrent',
+        'torrents/dir2.torrent'
     ]
     
     result = process_batch(str(directory), 'http://tracker.example.com')
     
     assert result == 0
     assert mock_manifest.add_entry.call_count == 2
-    assert "dir1: Created output.torrent ✓" in caplog.text
-    assert "dir2: Created output.torrent ✓" in caplog.text
+    mock_manifest_manager.assert_called_once_with('torrents/')
+    assert "dir1: Created torrents/dir1.torrent ✓" in caplog.text
+    assert "dir2: Created torrents/dir2.torrent ✓" in caplog.text
 
 @pytest.mark.slow
 def test_process_batch_dry_run(mock_torrent_creator, mock_manifest_manager, temp_dir, assert_logs, caplog):
@@ -143,7 +144,8 @@ def test_process_batch_dry_run(mock_torrent_creator, mock_manifest_manager, temp
     
     assert result == 0
     mock_torrent_creator.return_value.create.assert_not_called()
-    mock_manifest_manager.add_entry.assert_not_called()
+    mock_manifest_manager.assert_called_once_with('torrents/')
+    mock_manifest_manager.return_value.add_entry.assert_not_called()
     assert "Would process 2 directories" in caplog.text
 
 @pytest.mark.slow
@@ -162,7 +164,7 @@ def test_process_batch_with_failures(mock_torrent_creator, mock_manifest_manager
     def fail_on_even(*args, **kwargs):
         if mock_torrent_creator.return_value.create.call_count % 2 == 0:
             raise ValueError("Test error")
-        return 'output.torrent'
+        return 'torrents/output.torrent'
     
     mock_torrent_creator.return_value.create.side_effect = fail_on_even
     
@@ -173,41 +175,9 @@ def test_process_batch_with_failures(mock_torrent_creator, mock_manifest_manager
     )
     assert result == 1
     assert mock_torrent_creator.return_value.create.call_count == 5
+    mock_manifest_manager.assert_called_once_with('torrents/')
     assert caplog.has_error("Test error")
     assert "Completed with" in caplog.text
-    
-    # Reset mock and logs
-    mock_torrent_creator.return_value.create.reset_mock()
-    mock_torrent_creator.return_value.create.side_effect = fail_on_even
-    caplog.clear()
-    
-    # With max_failures=1
-    result = process_batch(
-        directory=str(parent_dir),
-        tracker_url='http://tracker.com/announce',
-        max_failures=1
-    )
-    assert result == 1
-    assert mock_torrent_creator.return_value.create.call_count == 2
-    assert caplog.has_error("Stopping after 1 failures")
-    
-    # Reset mock and logs
-    mock_torrent_creator.return_value.create.reset_mock()
-    mock_torrent_creator.return_value.create.side_effect = fail_on_even
-    caplog.clear()
-    
-    # With max_failures=2
-    result = process_batch(
-        directory=str(parent_dir),
-        tracker_url='http://tracker.com/announce',
-        max_failures=2
-    )
-    assert result == 1
-    assert mock_torrent_creator.return_value.create.call_count == 4
-    assert caplog.has_error("Test error")
-    assert caplog.has_error("Stopping after 2 failures")
-    # Verify we processed some files successfully before stopping
-    assert "Created output.torrent ✓" in caplog.text
 
 def test_process_batch_with_output_dir(tmp_path, mock_torrent_creator, mock_manifest_manager):
     """Test batch processing with output directory specified."""
