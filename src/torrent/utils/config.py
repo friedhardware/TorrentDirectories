@@ -3,10 +3,7 @@ Configuration classes for torrent creation and manifest management.
 """
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass
-from typing import Optional
-import csv
 
 # Constants for piece size limits
 MIN_PIECE_SIZE = 16 * 1024  # 16 KiB
@@ -32,18 +29,4 @@ class TorrentConfig:
         if self.min_piece_size < MIN_PIECE_SIZE:
             raise ValueError(f"Minimum piece size cannot be less than 16 KiB. Requested: {self.min_piece_size / 1024:.0f} KiB")
         if self.min_piece_size > self.max_piece_size:
-            raise ValueError("Minimum piece size cannot be larger than maximum piece size")
-
-
-@dataclass
-class ManifestConfig:
-    """Configuration for manifest management."""
-    
-    filename: str = "manifest.csv"
-    max_failures: Optional[int] = None
-    force: bool = False
-    clean: bool = False
-    
-    def get_manifest_path(self, parent_dir: str) -> str:
-        """Get the full path to the manifest file."""
-        return os.path.join(parent_dir, self.filename) 
+            raise ValueError("Minimum piece size cannot be larger than maximum piece size") 

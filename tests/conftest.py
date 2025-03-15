@@ -4,16 +4,14 @@ Shared test configuration and fixtures.
 from __future__ import annotations
 
 import os
-import shutil
 import tempfile
 from pathlib import Path
 from typing import Generator, Iterator
 
 import pytest
-from _pytest.fixtures import FixtureRequest
 from _pytest.logging import LogCaptureFixture
 
-from torrent.utils.config import TorrentConfig, ManifestConfig
+from torrent.utils.config import TorrentConfig
 
 @pytest.fixture
 def temp_dir() -> Iterator[Path]:
@@ -65,21 +63,6 @@ def default_config() -> TorrentConfig:
     return TorrentConfig()
 
 @pytest.fixture
-def manifest_config(temp_dir: Path) -> ManifestConfig:
-    """
-    Create a ManifestConfig that uses a temporary manifest file.
-    
-    Args:
-        temp_dir: Temporary directory fixture
-    
-    Returns:
-        ManifestConfig configured to use a temporary file
-    """
-    return ManifestConfig(
-        filename=str(temp_dir / "manifest.csv")
-    )
-
-@pytest.fixture
 def clean_env() -> Generator[None, None, None]:
     """
     Provide a clean environment by temporarily clearing relevant env vars.
@@ -93,8 +76,7 @@ def clean_env() -> Generator[None, None, None]:
         'TORRENT_MIN_PIECE_SIZE',
         'TORRENT_MAX_PIECE_SIZE',
         'TORRENT_SKIP_HIDDEN',
-        'TORRENT_SKIP_SYSTEM',
-        'TORRENT_MANIFEST_FILE'
+        'TORRENT_SKIP_SYSTEM'
     ]
     
     for var in vars_to_clear:

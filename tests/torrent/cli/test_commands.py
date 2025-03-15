@@ -3,14 +3,11 @@ Tests for CLI command handlers.
 """
 from __future__ import annotations
 
-import os
 import pytest
-from unittest.mock import Mock, patch
 from unittest import mock
 
 from torrent.cli.commands import process_single, process_batch
 from torrent.utils.config import TorrentConfig
-from torrent.manifest import ManifestConfig
 
 @pytest.fixture
 def mock_torrent_creator(mocker):
@@ -236,14 +233,8 @@ def test_process_batch_with_output_dir(tmp_path, mock_torrent_creator, mock_mani
     assert result == 0
     assert output_dir.exists()
     
-    # Verify manifest manager was initialized with correct config
-    mock_manifest_manager.assert_called_once()
-    manifest_config = mock_manifest_manager.call_args[0][0]
-    assert isinstance(manifest_config, ManifestConfig)
-    assert manifest_config.filename == str(output_dir / "manifest.csv")
-    assert manifest_config.force == False
-    assert manifest_config.clean == False
-    assert manifest_config.max_failures is None
+    # Verify manifest manager was initialized correctly
+    mock_manifest_manager.assert_called_once_with(str(output_dir))
     
     # Verify torrent creation calls
     expected_calls = [
@@ -275,7 +266,7 @@ def test_process_batch_with_output_dir_dry_run(tmp_path, mock_torrent_creator, m
     assert not mock_creator.create_torrent.called 
 
 def test_process_batch_manifest_config(tmp_path, mocker):
-    """Test process_batch correctly configures manifest."""
+    """Test process_batch correctly initializes manifest manager."""
     directory = tmp_path / "input"
     directory.mkdir()
     output_dir = tmp_path / "output"
@@ -295,18 +286,12 @@ def test_process_batch_manifest_config(tmp_path, mocker):
     test_dir.mkdir()
     
     # Run process_batch
-    from torrent.cli.commands import process_batch
     result = process_batch(
         str(directory),
         "http://tracker.example.com",
         output_dir=str(output_dir)
     )
     
-    # Verify manifest was configured correctly
-    mock_manifest.assert_called_once()
-    manifest_config = mock_manifest.call_args[0][0]
-    assert manifest_config.filename == str(output_dir / "manifest.csv")
-    assert manifest_config.force == False
-    assert manifest_config.clean == False
-    assert manifest_config.max_failures is None
+    # Verify manifest manager was initialized correctly
+    mock_manifest.assert_called_once_with(str(output_dir))
     assert result == 0 

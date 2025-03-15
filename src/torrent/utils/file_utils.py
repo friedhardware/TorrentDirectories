@@ -1,12 +1,14 @@
 """
-Common file system utilities used across the project.
+File system utilities for handling paths, file operations, and size formatting.
 """
 from __future__ import annotations
 
 import os
 import re
+import shutil
 from pathlib import Path
-from typing import List, Set
+from typing import List
+from datetime import datetime
 
 def is_hidden(path: str) -> bool:
     """
@@ -127,3 +129,21 @@ def format_size(size_bytes: int) -> str:
         if size_bytes < 1024 or unit == 'TiB':
             return f"{size_bytes:.2f} {unit}"
         size_bytes /= 1024 
+
+def backup_file(file_path: str) -> str:
+    """
+    Create a backup of a file with timestamp.
+    
+    Args:
+        file_path: Path to the file to backup
+        
+    Returns:
+        Path to the backup file
+    """
+    if not os.path.exists(file_path):
+        return None
+        
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_path = f"{file_path}.bak_{timestamp}"
+    shutil.copy2(file_path, backup_path)
+    return backup_path 

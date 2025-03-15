@@ -1,25 +1,20 @@
 """
-Utility modules for TorrentDirectories.
+Utility functions and classes for torrent operations.
 """
 from __future__ import annotations
 
-from .config import TorrentConfig, ManifestConfig
+from .config import TorrentConfig
 from .file_utils import (
-    is_hidden,
-    is_system_file,
-    get_safe_path,
-    list_files,
-    get_total_size,
+    backup_file,
     format_size,
+    get_total_size,
+    list_files
 )
 
 __all__ = [
     "TorrentConfig",
-    "ManifestConfig",
-    "is_hidden",
-    "is_system_file",
-    "get_safe_path",
-    "list_files",
-    "get_total_size",
+    "backup_file",
     "format_size",
+    "get_total_size",
+    "list_files"
 ] 
