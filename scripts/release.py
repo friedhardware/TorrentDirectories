@@ -40,13 +40,80 @@ def run_tests() -> bool:
     return result.returncode == 0
 
 def get_git_changes() -> str:
-    """Get git changes since last tag"""
+    """Get git changes since last tag, grouped by type and including authors"""
+    # Get the last tag
     result = subprocess.run(
-        ["git", "log", "--pretty=format:* %s", "--no-merges"],
+        ["git", "describe", "--tags", "--abbrev=0"],
         capture_output=True,
         text=True
     )
-    return result.stdout
+    if result.returncode != 0:
+        # No tags found, get all commits
+        last_tag = None
+    else:
+        last_tag = result.stdout.strip()
+
+    # Get commits since last tag with author information and commit hash
+    if last_tag:
+        result = subprocess.run(
+            ["git", "log", f"{last_tag}..HEAD", "--pretty=format:%h|%s|%an", "--no-merges"],
+            capture_output=True,
+            text=True
+        )
+    else:
+        # If no tags exist, get all commits
+        result = subprocess.run(
+            ["git", "log", "--pretty=format:%h|%s|%an", "--no-merges"],
+            capture_output=True,
+            text=True
+        )
+    
+    # Get the remote URL to construct GitHub links
+    remote_result = subprocess.run(
+        ["git", "config", "--get", "remote.origin.url"],
+        capture_output=True,
+        text=True
+    )
+    remote_url = remote_result.stdout.strip()
+    # Convert SSH URL to HTTPS if needed
+    if remote_url.startswith('git@github.com:'):
+        remote_url = remote_url.replace('git@github.com:', 'https://github.com/')
+    # Remove .git suffix if present
+    remote_url = remote_url.rstrip('.git')
+    
+    # Group commits by type
+    commits = result.stdout.strip().split('\n')
+    grouped_commits = {
+        'Features': [],
+        'Bug Fixes': [],
+        'Documentation': [],
+        'Other Changes': []
+    }
+    
+    for commit in commits:
+        if not commit.strip():
+            continue
+        hash_, message, author = commit.split('|', 2)
+        commit_url = f"{remote_url}/commit/{hash_}"
+        
+        # Categorize based on conventional commit prefixes
+        if message.startswith('feat:'):
+            grouped_commits['Features'].append(f"* {message[6:]} ([{hash_[:7]}])({commit_url}) ({author})")
+        elif message.startswith('fix:'):
+            grouped_commits['Bug Fixes'].append(f"* {message[5:]} ([{hash_[:7]}])({commit_url}) ({author})")
+        elif message.startswith('docs:'):
+            grouped_commits['Documentation'].append(f"* {message[6:]} ([{hash_[:7]}])({commit_url}) ({author})")
+        else:
+            grouped_commits['Other Changes'].append(f"* {message} ([{hash_[:7]}])({commit_url}) ({author})")
+    
+    # Build the changelog text
+    changelog = []
+    for category, commits in grouped_commits.items():
+        if commits:
+            changelog.append(f"\n### {category}")
+            changelog.extend(commits)
+    
+    return '\n'.join(changelog)
 
 def create_changelog(version: str) -> None:
     """Create or update CHANGELOG.md"""
