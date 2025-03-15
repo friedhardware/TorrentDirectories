@@ -293,8 +293,8 @@ config = TorrentConfig(
     skip_system_files=True
 )
 
-creator = TorrentCreator(tracker_url, config)
-torrent_path = creator.create_torrent(input_path, output_path=None)
+torrent_creator = TorrentCreator(tracker_url, config)
+torrent_path = torrent_creator.create(input_path, output_path=None)
 ```
 
 ### ManifestManager

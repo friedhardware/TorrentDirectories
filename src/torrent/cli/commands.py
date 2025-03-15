@@ -63,14 +63,14 @@ def process_single(path: str, tracker_url: str, output: Optional[str] = None,
             logger.error("Use --force to overwrite")
             return 1
         
-        creator = TorrentCreator(tracker_url, config)
+        torrent_creator = TorrentCreator(tracker_url, config)
         
         if dry_run:
             handle_dry_run(path, output, config)
             return 0
         
         # Actually create the torrent
-        torrent_path = creator.create_torrent(path, output)
+        torrent_path = torrent_creator.create(path, output)
         logger.info(f"\nTorrent created successfully: {torrent_path}")
         return 0
         
@@ -106,7 +106,7 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
             os.makedirs(output_dir, exist_ok=True)
         
         manifest = ManifestManager(output_dir)
-        tc = TorrentCreator(tracker_url, config)
+        torrent_creator = TorrentCreator(tracker_url, config)
         
         # Check for missing torrent files
         missing = manifest.get_missing_torrents()
@@ -160,7 +160,7 @@ def process_batch(directory: str, tracker_url: str, clean: bool = False,
                 if output_dir:
                     output_path = os.path.join(output_dir, f"{subdir}.torrent")
                 
-                torrent_path = tc.create_torrent(full_path, output_path)
+                torrent_path = torrent_creator.create(full_path, output_path)
                 manifest.add_entry(full_path, torrent_path)
                 logger.info(f"  {subdir}: Created {torrent_path} ✓")
             except Exception as e:

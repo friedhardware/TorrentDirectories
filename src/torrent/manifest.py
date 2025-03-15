@@ -7,7 +7,7 @@ import csv
 import logging
 import os
 from datetime import datetime
-from typing import Optional, Set
+from typing import Optional, Set, List
 
 from .utils.file_utils import backup_file
 

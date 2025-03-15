@@ -39,7 +39,7 @@ class TorrentCreator:
         if not self.tracker_url.startswith(('http://', 'https://', 'udp://')):
             raise ValueError(f"Invalid tracker URL format: {self.tracker_url}")
     
-    def create_torrent(self, input_path: str, output_path: Optional[str] = None) -> str:
+    def create(self, input_path: str, output_path: Optional[str] = None) -> str:
         """
         Create a torrent file from a file or directory.
         
