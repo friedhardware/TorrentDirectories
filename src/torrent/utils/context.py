@@ -13,10 +13,10 @@ from .file_utils import FileSystem
 @contextmanager
 def secure_temp_file(prefix: str = "torrent_") -> Generator[Path, None, None]:
     """Create a secure temporary file that is automatically cleaned up.
-    
+
     Args:
         prefix: Prefix for the temporary file name
-        
+
     Yields:
         Path: Path to the secure temporary file
     """
@@ -33,7 +33,7 @@ def secure_temp_file(prefix: str = "torrent_") -> Generator[Path, None, None]:
 @contextmanager
 def secure_temp_environment() -> Generator[Tuple[Path, Path], None, None]:
     """Creates both a temporary directory and file with proper cleanup.
-    
+
     Yields:
         Tuple[Path, Path]: Paths to the temporary file and directory
     """
@@ -47,4 +47,4 @@ def secure_temp_environment() -> Generator[Tuple[Path, Path], None, None]:
             try:
                 Path(temp_output).unlink()
             except OSError:
-                pass 
+                pass

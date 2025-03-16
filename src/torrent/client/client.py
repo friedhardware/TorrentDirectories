@@ -4,13 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Set
 
 import libtorrent as lt
 
-from ..utils import DEFAULT_MAX_PIECE_SIZE, DEFAULT_MIN_PIECE_SIZE
 from ..web.server import WebInterface
 from .config import ClientConfig
 

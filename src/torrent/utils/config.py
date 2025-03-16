@@ -5,7 +5,6 @@ Configuration classes for torrent creation and manifest management.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Tuple
 
 # Constants for piece size limits
 MIN_PIECE_SIZE = 16 * 1024  # 16 KiB
@@ -17,22 +16,22 @@ DEFAULT_MIN_PIECE_SIZE = 256 * 1024  # 256 KiB (default)
 @dataclass
 class TorrentConfig:
     """Configuration options for torrent creation."""
-    
+
     # Piece size options
     min_piece_size: int = 16 * 1024  # 16 KiB
     max_piece_size: int = 16 * 1024 * 1024  # 16 MiB
     target_pieces_min: int = 1000
     target_pieces_max: int = 2000
-    
+
     # File options
     skip_system_files: bool = True
     preserve_file_order: bool = False
-    
+
     # Metadata options
     private: bool = False
     source: str | None = None
     comment: str | None = None
-    
+
     def __post_init__(self) -> None:
         """Validate configuration values."""
         if self.min_piece_size <= 0:
@@ -46,8 +45,10 @@ class TorrentConfig:
         if self.target_pieces_max <= 0:
             raise ValueError("target_pieces_max must be positive")
         if self.target_pieces_min > self.target_pieces_max:
-            raise ValueError("target_pieces_min cannot be greater than target_pieces_max")
-    
+            raise ValueError(
+                "target_pieces_min cannot be greater than target_pieces_max"
+            )
+
     @property
     def target_pieces(self) -> tuple[int, int]:
         """Get the target number of pieces range."""

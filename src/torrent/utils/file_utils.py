@@ -6,64 +6,58 @@ from __future__ import annotations
 
 import os
 import re
-import stat
 import shutil
+import stat
 import tempfile
-import unicodedata
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator, List, Optional
-import logging
+from typing import Iterator
 
 
 class PathSecurity:
     """Security-related path operations."""
-    
+
     @staticmethod
     def has_control_characters(path: Path) -> bool:
         """Check if a path contains control characters."""
         return any(ord(c) < 32 for c in str(path))
-    
+
     @staticmethod
     def contains_special_entries(path: Path) -> bool:
         """
         Check if a path contains special directory entries that could lead to path traversal.
         Allows hidden files (starting with single '.') but blocks path traversal attempts.
-        
+
         This method checks for:
         1. Path components that are exactly '.' or '..'
         2. Normalized path components that would traverse up directories
         3. Any sneaky attempts at path traversal using combinations of slashes and dots
-        
+
         Args:
             path: The path to check.
-            
+
         Returns:
             True if the path contains special entries that could lead to traversal, False otherwise.
         """
         # Convert to string for normalization
         path_str = str(path)
-        
+
         # Check each path component for exactly '.' or '..'
         for part in path.parts:
             if part in {".", ".."}:
                 return True
-                
+
         # Normalize the path to catch sneaky traversal attempts
         # This handles cases like 'a/../../b', '/./a', 'a/../b', etc.
         normalized = os.path.normpath(path_str)
         normalized_parts = normalized.split(os.sep)
-        
+
         # After normalization, check if:
         # 1. Any component is exactly '..'
         # 2. Contains /../ sequences (path traversal)
         # 3. Contains /./ sequences (current directory reference)
-        return (
-            ".." in normalized_parts or
-            "/../" in normalized or
-            "/./" in normalized
-        )
-    
+        return ".." in normalized_parts or "/../" in normalized or "/./" in normalized
+
     @staticmethod
     def is_within_directory(path: Path, base_dir: Path) -> bool:
         """Check if a path is within a base directory."""
@@ -72,7 +66,7 @@ class PathSecurity:
             return True
         except ValueError:
             return False
-    
+
     @staticmethod
     def is_special_file(path: Path) -> bool:
         """Check if a path points to a special file."""
@@ -86,7 +80,7 @@ class PathSecurity:
             )
         except (OSError, AttributeError):
             return False
-    
+
     @staticmethod
     def has_symlinks_in_chain(path: Path) -> bool:
         """Check if a path has symlinks in its resolution chain."""
@@ -102,7 +96,7 @@ class PathSecurity:
             return False
         except OSError:
             return True
-    
+
     @staticmethod
     def is_safe_path(path: Path, base_dir: Path) -> bool:
         """Check if a path is safe to use."""
@@ -114,9 +108,10 @@ class PathSecurity:
             and not PathSecurity.has_symlinks_in_chain(path)
         )
 
+
 class FileSystem:
     """File system operations."""
-    
+
     @staticmethod
     def list_files(
         directory: Path,
@@ -124,31 +119,31 @@ class FileSystem:
     ) -> Iterator[Path]:
         """
         List all files in a directory recursively, excluding hidden files and directories.
-        
+
         Args:
             directory: The directory to list files from
             include_system: Whether to include system files (e.g. device files)
-            
+
         Returns:
             Iterator of Path objects for each file
         """
         for root, dirs, files in os.walk(directory):
             # Always exclude hidden directories
             dirs[:] = [d for d in dirs if not d.startswith(".")]
-            
+
             for file in files:
                 # Skip hidden files
                 if file.startswith("."):
                     continue
-                    
+
                 file_path = Path(root) / file
-                
+
                 # Skip system files if requested
                 if not include_system and FileSystem.is_special_file(file_path):
                     continue
-                    
+
                 yield file_path
-    
+
     @staticmethod
     def is_system_file(path: Path) -> bool:
         """Check if a file is a system file."""
@@ -160,12 +155,12 @@ class FileSystem:
             except (AttributeError, OSError):
                 return False
         return False
-    
+
     @staticmethod
     def get_total_size(paths: Iterator[Path]) -> int:
         """Calculate total size of files."""
         return sum(path.stat().st_size for path in paths if path.is_file())
-    
+
     @staticmethod
     def create_secure_temp_file(prefix: str) -> Path:
         """Create a secure temporary file."""
@@ -175,9 +170,10 @@ class FileSystem:
         temp_path.chmod(0o600)  # Read/write for owner only
         return temp_path
 
+
 class FileNaming:
     """File name operations."""
-    
+
     @staticmethod
     def sanitize_filename(
         filename: str,
@@ -186,24 +182,26 @@ class FileNaming:
     ) -> str:
         """Sanitize a filename for safe usage."""
         # Remove or replace invalid characters
-        valid_chars = "-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        valid_chars = (
+            "-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        )
         sanitized = "".join(c for c in filename if c in valid_chars)
-        
+
         # Handle case preservation
         if not preserve_case:
             sanitized = sanitized.lower()
-        
+
         # Handle dots
         if preserve_dots and filename.startswith("."):
             sanitized = "." + sanitized.lstrip(".")
-        
+
         # Ensure we have a valid filename
         sanitized = sanitized.strip()
         if not sanitized:
             sanitized = "unnamed"
-            
+
         return sanitized
-    
+
     @staticmethod
     def format_size(size: int) -> str:
         """Format a size in bytes to human readable string."""
@@ -213,26 +211,32 @@ class FileNaming:
             size /= 1024
         return f"{size:.1f} EiB"
 
+
 # For backward compatibility
 def sanitize_filename(*args, **kwargs) -> str:
     """Backward compatible wrapper for FileNaming.sanitize_filename."""
     return FileNaming.sanitize_filename(*args, **kwargs)
 
+
 def is_safe_path(*args, **kwargs) -> bool:
     """Backward compatible wrapper for PathSecurity.is_safe_path."""
     return PathSecurity.is_safe_path(*args, **kwargs)
+
 
 def create_secure_temp_file(*args, **kwargs) -> Path:
     """Backward compatible wrapper for FileSystem.create_secure_temp_file."""
     return FileSystem.create_secure_temp_file(*args, **kwargs)
 
+
 def format_size(*args, **kwargs) -> str:
     """Backward compatible wrapper for FileNaming.format_size."""
     return FileNaming.format_size(*args, **kwargs)
 
+
 def get_total_size(*args, **kwargs) -> int:
     """Backward compatible wrapper for FileSystem.get_total_size."""
     return FileSystem.get_total_size(*args, **kwargs)
+
 
 def list_files(*args, **kwargs) -> Iterator[Path]:
     """Backward compatible wrapper for FileSystem.list_files."""

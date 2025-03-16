@@ -115,7 +115,9 @@ def test_global_torrent_options() -> None:
             "http://tracker.com/announce",
         ]
     )
-    assert not args.skip_system_files  # Should be False when --include-system-files is used
+    assert (
+        not args.skip_system_files
+    )  # Should be False when --include-system-files is used
 
 
 def test_global_torrent_options_large_piece_size(mocker: MockerFixture) -> None:
