@@ -1,15 +1,17 @@
 """Torrent client implementation using libtorrent."""
 
+from __future__ import annotations
+
 import asyncio
 import logging
-import threading
-import time
+import os
 from pathlib import Path
 from typing import Any, Dict, Optional, Set
 
 import libtorrent as lt
 
-from ..web import WebInterface
+from ..utils import DEFAULT_MAX_PIECE_SIZE, DEFAULT_MIN_PIECE_SIZE
+from ..web.server import WebInterface
 from .config import ClientConfig
 
 logger = logging.getLogger(__name__)
@@ -63,30 +65,30 @@ class TorrentClient:
         self.session.apply_settings(settings)
 
     async def start(self) -> None:
-        """Start the torrent client."""
-        logger.info(f"Starting torrent client on port {self.config.port}")
-
-        # Load existing torrents
-        await self._load_torrents()
-
+        """Start the client."""
         # Start web interface if enabled
         if self.web_interface:
-            logger.info(f"Starting web interface on port {self.config.web_port}")
-            self.web_interface.update_torrents(self.torrents)
-            web_thread = threading.Thread(target=self.web_interface.run)
-            web_thread.daemon = True
-            web_thread.start()
+            self.web_interface.start()
 
         # Start monitoring for new torrents
-        if self.config.check_interval > 0:
-            asyncio.create_task(self._monitor_torrents())
+        try:
+            while True:
+                await self._check_torrents()
+                await asyncio.sleep(self.config.check_interval)
+        except asyncio.CancelledError:
+            logger.info("Client stopping...")
+            await self.stop()
 
     async def stop(self) -> None:
-        """Stop the torrent client."""
-        logger.info("Stopping torrent client")
-        for torrent in self.torrents.values():
-            torrent.pause()
-        self.session.pause()
+        """Stop the client."""
+        # Stop web interface if enabled
+        if self.web_interface:
+            self.web_interface.stop()
+
+        # Remove all torrents
+        for handle in self.torrents.values():
+            self.session.remove_torrent(handle)
+        self.torrents.clear()
 
     async def _load_torrents(self) -> None:
         """Load all torrents from the torrent directory."""
@@ -137,6 +139,21 @@ class TorrentClient:
                     f"Failed to add torrent {torrent_path.name}: {e}"
                 )
             raise
+
+    async def _check_torrents(self) -> None:
+        """Check for new torrents and update status."""
+        # Update web interface if enabled
+        if self.web_interface:
+            self.web_interface.update_torrents(self.torrents)
+
+        # Check for new torrents
+        if self.config.watch_dir:
+            await self._scan_watch_dir()
+
+        # Update status for all torrents
+        for handle in self.torrents.values():
+            status = handle.status()
+            logger.debug(f"Torrent {handle.name()} status: {status.state_str}")
 
     async def _monitor_torrents(self) -> None:
         """Monitor the torrent directory for new torrents."""

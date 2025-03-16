@@ -40,8 +40,7 @@ def create_torrent_config(args: argparse.Namespace) -> Optional[TorrentConfig]:
         max_piece_size=max_piece_size,
         target_pieces_min=target_pieces[0] if target_pieces else 1000,
         target_pieces_max=target_pieces[1] if target_pieces else 2000,
-        skip_hidden=not args.include_hidden,
-        skip_system_files=not args.include_system,
+        skip_system_files=args.skip_system_files,
     )
 
 
@@ -102,12 +101,11 @@ Examples:
         "--target-pieces", help="Target piece count range (e.g. 1000-2000)"
     )
     torrent_group.add_argument(
-        "--include-hidden",
-        action="store_true",
-        help="Include hidden files and directories",
-    )
-    torrent_group.add_argument(
-        "--include-system", action="store_true", help="Include system files"
+        "--include-system-files",
+        action="store_false",
+        dest="skip_system_files",
+        default=True,
+        help="Include system files (e.g. .DS_Store, .nfs) when creating torrents (default: skip)",
     )
 
     subparsers = parser.add_subparsers(

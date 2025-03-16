@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
+import threading
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from flask import Flask, Response, jsonify, render_template
+from flask import Flask, Response, jsonify, render_template, request
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 class WebInterface:
     """Web interface for monitoring and controlling the torrent client."""
 
-    def __init__(self, host: str = "localhost", port: int = 5000) -> None:
+    def __init__(self, host: str = "localhost", port: int = 8080) -> None:
         """Initialize the web interface.
 
         Args:
@@ -42,6 +43,7 @@ class WebInterface:
         }
         self._on_start: Optional[Callable] = None
         self._on_stop: Optional[Callable] = None
+        self.thread: Optional[threading.Thread] = None
 
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
@@ -83,6 +85,15 @@ class WebInterface:
                 self._on_stop()
                 return jsonify({"success": True})
             return jsonify({"success": False, "error": "No batch handler configured"})
+
+        @self.app.route("/shutdown", methods=["POST"])
+        def shutdown() -> Response:
+            """Handle shutdown route."""
+            func = request.environ.get("werkzeug.server.shutdown")
+            if func is None:
+                raise RuntimeError("Not running with Werkzeug server")
+            func()
+            return "Server shutting down..."
 
     def set_batch_handlers(self, on_start: Callable, on_stop: Callable) -> None:
         """Set handlers for batch operations.
@@ -129,29 +140,7 @@ class WebInterface:
         Args:
             torrents: Dictionary of torrent handles
         """
-        for name, handle in torrents.items():
-            status = handle.status()
-
-            # Convert progress from decimal to percentage if needed
-            progress = status.progress
-            if isinstance(progress, float) and progress <= 1.0:
-                progress = progress * 100
-
-            # Map status from handle to string
-            if status.is_seeding:
-                status_str = "seeding"
-            elif status.is_downloading:
-                status_str = "downloading"
-            else:
-                status_str = "error"
-
-            self.torrents[name] = {
-                "name": name,
-                "progress": progress,
-                "status": status_str,
-                "download_rate": self._format_rate(status.download_rate),
-                "upload_rate": self._format_rate(status.upload_rate),
-            }
+        self.torrents = torrents
 
     def update_batch_status(
         self,
@@ -210,6 +199,24 @@ class WebInterface:
 
         return stats
 
-    def run(self) -> None:
-        """Run the web interface."""
-        self.app.run(host=self.host, port=self.port)
+    def start(self) -> None:
+        """Start the web interface in a background thread."""
+        logger.info(f"Starting web interface on port {self.port}")
+        self.thread = threading.Thread(target=self._run)
+        self.thread.daemon = True
+        self.thread.start()
+
+    def stop(self) -> None:
+        """Stop the web interface."""
+        logger.info("Stopping web interface")
+        if self.thread and self.thread.is_alive():
+            # Send shutdown request
+            try:
+                request.environ.get("werkzeug.server.shutdown")()
+            except Exception as e:
+                logger.error(f"Error shutting down web interface: {e}")
+            self.thread.join(timeout=5)
+
+    def _run(self) -> None:
+        """Run the Flask application."""
+        self.app.run(host="0.0.0.0", port=self.port)

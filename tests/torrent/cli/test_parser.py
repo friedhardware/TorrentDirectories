@@ -81,6 +81,7 @@ def test_batch_command_optional_args() -> None:
 def test_global_torrent_options() -> None:
     """Test global torrent creation options."""
     parser = create_parser()
+    # Test default behavior - should skip system files by default
     args = parser.parse_args(
         [
             "--min-piece-size",
@@ -89,8 +90,6 @@ def test_global_torrent_options() -> None:
             "32M",
             "--target-pieces",
             "1000-2000",
-            "--include-hidden",
-            "--include-system",
             "file",
             "path/to/content",
             "http://tracker.com/announce",
@@ -99,8 +98,24 @@ def test_global_torrent_options() -> None:
     assert args.min_piece_size == "256K"
     assert args.max_piece_size == "32M"
     assert args.target_pieces == "1000-2000"
-    assert args.include_hidden
-    assert args.include_system
+    assert args.skip_system_files  # Should be True by default
+
+    # Test with include-system-files flag
+    args = parser.parse_args(
+        [
+            "--min-piece-size",
+            "256K",
+            "--max-piece-size",
+            "32M",
+            "--target-pieces",
+            "1000-2000",
+            "--include-system-files",
+            "file",
+            "path/to/content",
+            "http://tracker.com/announce",
+        ]
+    )
+    assert not args.skip_system_files  # Should be False when --include-system-files is used
 
 
 def test_global_torrent_options_large_piece_size(mocker: MockerFixture) -> None:
@@ -114,8 +129,7 @@ def test_global_torrent_options_large_piece_size(mocker: MockerFixture) -> None:
     mock_args.max_piece_size = "64M"
     mock_args.min_piece_size = None
     mock_args.target_pieces = None
-    mock_args.include_hidden = False
-    mock_args.include_system = False
+    mock_args.skip_system_files = True  # Default is True
     mock_parser_instance.parse_args.return_value = mock_args
 
     # Test that 64M is parsed correctly

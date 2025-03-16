@@ -9,8 +9,8 @@ import logging
 import sys
 from typing import Optional, Sequence
 
-from .. import __version__
 from ..client.client import run_client
+from ..version import __version__
 from .commands import process_batch, process_single
 from .parser import create_parser, create_torrent_config
 

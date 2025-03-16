@@ -1,15 +1,14 @@
-"""
-Utility functions and classes for torrent operations.
-"""
+"""Utility functions and configuration."""
 
 from __future__ import annotations
 
-from .config import TorrentConfig
-from .file_utils import backup_file, format_size, get_total_size, list_files
+from .config import DEFAULT_MAX_PIECE_SIZE, DEFAULT_MIN_PIECE_SIZE, TorrentConfig
+from .file_utils import format_size, get_total_size, list_files
 
 __all__ = [
     "TorrentConfig",
-    "backup_file",
+    "DEFAULT_MAX_PIECE_SIZE",
+    "DEFAULT_MIN_PIECE_SIZE",
     "format_size",
     "get_total_size",
     "list_files",

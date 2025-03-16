@@ -1,6 +1,77 @@
 # TorrentDirectories
 
-A Python tool for creating torrent files from directories with optimal settings and batch processing capabilities.
+A secure and efficient tool for creating torrents from directories.
+
+## Security Features
+
+- Hidden files and directories (starting with '.') are always excluded for security
+- Path traversal protection
+- Symlink protection
+- Special file handling
+- Secure temporary file creation
+- POSIX permission handling
+
+## Configuration Options
+
+### Piece Size Options
+- `min_piece_size`: Minimum piece size (e.g. 16K, 1M). Default: 256K
+- `max_piece_size`: Maximum piece size (e.g. 16M, 64M). Default: 16M
+- `target_pieces`: Target number of pieces (e.g. 1000-2000)
+- System files are skipped by default, use `--include-system-files` to include them
+
+### File Options
+- `include_system_files`: Whether to include system files like devices (default: false)
+- `preserve_file_order`: Whether to preserve the order of files (default: false)
+
+### Metadata Options
+- `private`: Whether the torrent is private (default: false)
+- `source`: Source tag for the torrent
+- `comment`: Comment for the torrent
+
+## Usage
+
+```python
+from torrent.torrent_creator import TorrentCreator
+from torrent.utils.config import TorrentConfig
+
+# Create with default config
+creator = TorrentCreator("http://tracker.example.com/announce")
+
+# Or customize the config
+config = TorrentConfig(
+    min_piece_size=32 * 1024,  # 32 KiB
+    max_piece_size=8 * 1024 * 1024,  # 8 MiB
+    private=True
+)
+creator = TorrentCreator("http://tracker.example.com/announce", config)
+
+# Create the torrent
+result = creator.create("input_directory", "output.torrent")
+```
+
+## Security Notes
+
+1. Hidden files and directories (those starting with '.') are always excluded to prevent accidental sharing of:
+   - Version control data (e.g. `.git`, `.svn`)
+   - Configuration files (e.g. `.config`, `.env`)
+   - System files (e.g. `.DS_Store`, `.nfs`) are skipped by default
+   - Other sensitive data that might be in hidden files
+
+2. The tool also protects against:
+   - Path traversal attacks
+   - Symlink attacks
+   - Special file inclusion
+   - Insecure permissions
+
+## Installation
+
+```bash
+pip install torrent-directories
+```
+
+## License
+
+MIT License
 
 ## Table of Contents
 
@@ -23,7 +94,6 @@ A Python tool for creating torrent files from directories with optimal settings 
   - [ManifestManager](#manifestmanager)
 - [Contributing](#contributing)
 - [Release Process](#release-process)
-- [License](#license)
 - [Testing](#testing)
 
 ## Features

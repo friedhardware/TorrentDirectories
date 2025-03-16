@@ -40,8 +40,8 @@ def handle_dry_run(
         # Handle single file/directory dry run
         files = list_files(
             path,
-            skip_hidden=config.skip_hidden if config else True,
-            skip_system=config.skip_system_files if config else True,
+            # System files are skipped by default unless --include-system-files is used
+            include_system=not config.skip_system_files if config else False,
         )
         total_size = get_total_size([os.path.join(path, f) for f in files])
         logger.info(f"\nWould include {len(files)} files ({format_size(total_size)}):")
