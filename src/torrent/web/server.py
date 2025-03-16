@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Response
+from typing import Any, Callable, Dict, List, Optional, Union
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, Response, jsonify, render_template
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +32,7 @@ class WebInterface:
         self.torrents: Dict[str, Dict[str, Any]] = {}
         self.batch_running = False
         self.errors: List[str] = []
-        self.batch_status = {
+        self.batch_status: Dict[str, Union[bool, int, Optional[str]]] = {
             "is_running": False,
             "last_run": 0,
             "next_check": 0,
@@ -50,6 +50,7 @@ class WebInterface:
 
     def _setup_routes(self) -> None:
         """Set up the Flask routes."""
+
         @self.app.route("/")
         def index() -> Response:
             """Render the index page."""
@@ -58,12 +59,14 @@ class WebInterface:
         @self.app.route("/status")
         def status() -> Response:
             """Get the current status."""
-            return jsonify({
-                "torrents": self.torrents,
-                "errors": self.errors,
-                "batch_status": self.batch_status,
-                "stats": self._get_stats()
-            })
+            return jsonify(
+                {
+                    "torrents": self.torrents,
+                    "errors": self.errors,
+                    "batch_status": self.batch_status,
+                    "stats": self._get_stats(),
+                }
+            )
 
         @self.app.route("/batch/start", methods=["POST"])
         def start_batch() -> Response:
@@ -153,8 +156,8 @@ class WebInterface:
     def update_batch_status(
         self,
         is_running: bool,
-        last_run: float,
-        next_check: float,
+        last_run: int,
+        next_check: int,
         message: Optional[str] = None,
         success: bool = False,
         failure: bool = False,
@@ -169,16 +172,14 @@ class WebInterface:
             success: Whether the last run was successful
             failure: Whether the last run failed
         """
-        self.batch_status.update(
-            {
-                "is_running": is_running,
-                "last_run": last_run,
-                "next_check": next_check,
-                "message": message,
-                "success": success,
-                "failure": failure,
-            }
-        )
+        self.batch_status = {
+            "is_running": is_running,
+            "last_run": last_run,
+            "next_check": next_check,
+            "message": message,
+            "success": success,
+            "failure": failure,
+        }
 
     def add_error(self, error: str) -> None:
         """Add an error message.
@@ -196,9 +197,9 @@ class WebInterface:
             "total": len(self.torrents),
             "seeding": 0,
             "downloading": 0,
-            "errors": 0
+            "errors": 0,
         }
-        
+
         for torrent in self.torrents.values():
             if torrent["status"] == "seeding":
                 stats["seeding"] += 1
@@ -206,7 +207,7 @@ class WebInterface:
                 stats["downloading"] += 1
             elif torrent["status"] == "error":
                 stats["errors"] += 1
-        
+
         return stats
 
     def run(self) -> None:

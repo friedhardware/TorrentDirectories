@@ -5,11 +5,10 @@ import logging
 import threading
 import time
 from pathlib import Path
-from typing import Dict, Optional, Set, Any
+from typing import Any, Dict, Optional, Set
 
 import libtorrent as lt
 
-from ..cli.commands import process_batch
 from ..web import WebInterface
 from .config import ClientConfig
 
@@ -217,101 +216,92 @@ class TorrentClient:
         if self.batch_running:
             return
 
-        logger.info("Starting batch process...")
+        current_time = int(time.time())
         self.batch_running = True
-
-        try:
-            # Update web interface
-            if self.web_interface:
-                self.web_interface.update_batch_status(
-                    is_running=True,
-                    last_run=self.last_batch_run,
-                    next_check=time.time() + self.config.batch_check_interval,
-                    message="Running batch process...",
-                )
-
-            # Run the batch process
-            result = process_batch(
-                directory=self.config.batch_config["directory"],
-                tracker_url=self.config.batch_config["tracker"],
-                config=self.config.batch_config["config"],
-                output_dir=self.config.batch_config["output_dir"],
-                clean=self.config.batch_clean,
-                force=self.config.batch_force,
-                dry_run=self.config.batch_dry_run,
-                max_failures=self.config.batch_max_failures,
-            )
-
-            if result == 0:
-                logger.info("Batch process completed successfully")
-                # Reload torrents to pick up any new ones
-                await self._load_torrents()
-                if self.web_interface:
-                    self.web_interface.update_batch_status(
-                        is_running=False,
-                        last_run=time.time(),
-                        next_check=time.time() + self.config.batch_check_interval,
-                        message="Batch process completed successfully",
-                        success=True,
-                    )
-            else:
-                logger.error("Batch process failed")
-                if self.web_interface:
-                    self.web_interface.update_batch_status(
-                        is_running=False,
-                        last_run=time.time(),
-                        next_check=time.time() + self.config.batch_check_interval,
-                        message="Batch process failed",
-                        failure=True,
-                    )
-                    self.web_interface.add_error(
-                        "Batch process failed with non-zero exit code"
-                    )
-
-        except Exception as e:
-            logger.error(f"Error in batch process: {e}")
-            if self.web_interface:
-                self.web_interface.update_batch_status(
-                    is_running=False,
-                    last_run=time.time(),
-                    next_check=time.time() + self.config.batch_check_interval,
-                    message=f"Error: {str(e)}",
-                    failure=True,
-                )
-                self.web_interface.add_error(f"Error in batch process: {e}")
-
-        finally:
-            self.batch_running = False
-            self.last_batch_run = time.time()
-            self.next_batch_check = time.time() + self.config.batch_check_interval
+        self.batch_config = {
+            "is_running": True,
+            "last_run": current_time,
+            "next_check": current_time + int(self.config.check_interval),
+            "message": "Starting batch process",
+            "success": False,
+            "failure": False,
+        }
+        self._update_batch_status(self.batch_config)
 
     async def _stop_batch_process(self) -> None:
         """Stop the batch process."""
         if not self.batch_running:
             return
 
-        logger.info("Stopping batch process...")
-        self.auto_restart_enabled = False  # Disable auto-restart when manually stopped
-
-        if self.web_interface:
-            self.web_interface.update_batch_status(
-                is_running=False,
-                last_run=self.last_batch_run,
-                next_check=time.time() + self.config.batch_check_interval,
-                message="Batch process stopped by user",
-            )
+        current_time = int(time.time())
+        self.batch_running = False
+        self.batch_config = {
+            "is_running": False,
+            "last_run": current_time,
+            "next_check": current_time + int(self.config.check_interval),
+            "message": "Batch process stopped",
+            "success": False,
+            "failure": False,
+        }
+        self._update_batch_status(self.batch_config)
 
     def _update_batch_status(self, status: Optional[Dict[str, Any]]) -> None:
         """Update batch status in web interface."""
-        if self.web_interface and status:
+        if self.web_interface and status is not None:
+            last_run = status.get("last_run", 0)
+            next_check = status.get("next_check", 0)
             self.web_interface.update_batch_status(
                 is_running=status.get("is_running", False),
-                last_run=status.get("last_run", 0),
-                next_check=status.get("next_check", 0),
+                last_run=int(last_run) if isinstance(last_run, (int, float)) else 0,
+                next_check=(
+                    int(next_check) if isinstance(next_check, (int, float)) else 0
+                ),
                 message=status.get("message"),
                 success=status.get("success", False),
-                failure=status.get("failure", False)
+                failure=status.get("failure", False),
             )
+
+    def _update_batch_process(self) -> None:
+        """Update batch process status."""
+        if not self.batch_running:
+            return
+
+        current_time = int(time.time())
+        self.batch_config = {
+            "is_running": True,
+            "last_run": current_time,
+            "next_check": current_time + int(self.config.check_interval),
+            "message": "Batch process running",
+            "success": False,
+            "failure": False,
+        }
+        self._update_batch_status(self.batch_config)
+
+    def _batch_process_success(self) -> None:
+        """Handle batch process success."""
+        current_time = int(time.time())
+        self.batch_config = {
+            "is_running": False,
+            "last_run": current_time,
+            "next_check": current_time + int(self.config.check_interval),
+            "message": "Batch process completed successfully",
+            "success": True,
+            "failure": False,
+        }
+        self._update_batch_status(self.batch_config)
+
+    def _batch_process_failure(self, error: str) -> None:
+        """Handle batch process failure."""
+        current_time = int(time.time())
+        self.batch_config = {
+            "is_running": False,
+            "last_run": current_time,
+            "next_check": current_time + int(self.config.check_interval),
+            "message": f"Batch process failed: {error}",
+            "success": False,
+            "failure": True,
+        }
+        self._update_batch_status(self.batch_config)
 
 
 async def run_client(

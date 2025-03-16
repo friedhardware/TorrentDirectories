@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 TorrentDirectories - A tool for creating torrent files from directories.
 
@@ -33,12 +35,11 @@ The CLI provides additional options for:
 For programmatic usage, see the TorrentCreator and ManifestManager classes.
 """
 
-from __future__ import annotations
+# This is the single source of truth for the package version
+__version__ = "1.0.0"
 
 from torrent.cli import main as cli_main
 from torrent.manifest import ManifestError, ManifestManager
 from torrent.torrent_creator import TorrentCreator
 
-# This is the single source of truth for the package version
-__version__ = "1.0.0"
 __all__ = ["TorrentCreator", "ManifestManager", "ManifestError", "cli_main"]
