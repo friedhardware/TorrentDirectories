@@ -4,7 +4,6 @@ Main entry point for the command-line interface.
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import logging
 import sys

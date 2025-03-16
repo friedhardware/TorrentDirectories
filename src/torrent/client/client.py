@@ -164,8 +164,8 @@ class TorrentClient:
                     self.web_interface.update_torrents(self.torrents)
                     self.web_interface.update_batch_status(
                         is_running=self.batch_running,
-                        last_run=self.last_batch_run,
-                        next_check=self.next_batch_check,
+                        last_run=int(self.last_batch_run),
+                        next_check=int(self.next_batch_check),
                         message=(
                             "Monitoring for new torrents"
                             if not self.batch_running

@@ -5,9 +5,9 @@ Command-line argument parsing for TorrentDirectories.
 from __future__ import annotations
 
 import argparse
-from typing import Dict, Any, Optional
+from typing import Optional
 
-from ..utils.config import TorrentConfig
+from ..utils.config import DEFAULT_MAX_PIECE_SIZE, DEFAULT_MIN_PIECE_SIZE, TorrentConfig
 from .config import parse_size
 
 
@@ -19,16 +19,31 @@ def create_torrent_config(args: argparse.Namespace) -> Optional[TorrentConfig]:
             min_pieces, max_pieces = map(int, args.target_pieces.split("-"))
             target_pieces = (min_pieces, max_pieces)
         except ValueError:
-            raise ValueError("Target pieces must be in format 'min-max' (e.g. 1000-2000)")
+            raise ValueError(
+                "Target pieces must be in format 'min-max' (e.g. 1000-2000)"
+            )
+
+    # Parse piece sizes with defaults
+    min_piece_size = (
+        parse_size(args.min_piece_size)
+        if args.min_piece_size
+        else DEFAULT_MIN_PIECE_SIZE
+    )
+    max_piece_size = (
+        parse_size(args.max_piece_size)
+        if args.max_piece_size
+        else DEFAULT_MAX_PIECE_SIZE
+    )
 
     return TorrentConfig(
-        min_piece_size=parse_size(args.min_piece_size) if args.min_piece_size else None,
-        max_piece_size=parse_size(args.max_piece_size) if args.max_piece_size else None,
+        min_piece_size=min_piece_size,
+        max_piece_size=max_piece_size,
         target_pieces_min=target_pieces[0] if target_pieces else 1000,
         target_pieces_max=target_pieces[1] if target_pieces else 2000,
         skip_hidden=not args.include_hidden,
         skip_system_files=not args.include_system,
     )
+
 
 def create_parser() -> argparse.ArgumentParser:
     """Create and configure the argument parser."""

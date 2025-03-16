@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from torrent.cli import main as cli_main
+from torrent.manifest import ManifestError, ManifestManager
+from torrent.torrent_creator import TorrentCreator
+
 """
 TorrentDirectories - A tool for creating torrent files from directories.
 
@@ -37,9 +41,5 @@ For programmatic usage, see the TorrentCreator and ManifestManager classes.
 
 # This is the single source of truth for the package version
 __version__ = "1.0.0"
-
-from torrent.cli import main as cli_main
-from torrent.manifest import ManifestError, ManifestManager
-from torrent.torrent_creator import TorrentCreator
 
 __all__ = ["TorrentCreator", "ManifestManager", "ManifestError", "cli_main"]
