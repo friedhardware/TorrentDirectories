@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Torrent Client</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Torrent Client</h1>
+            <button class="button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-label">Total Torrents</div>
+                <div class="stat-value" id="total-torrents">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Seeding</div>
+                <div class="stat-value" id="seeding-torrents">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Downloading</div>
+                <div class="stat-value" id="downloading-torrents">0</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Errors</div>
+                <div class="stat-value" id="error-torrents">0</div>
+            </div>
+        </div>
+
+        <div class="batch-controls">
+            <button id="start-batch" class="button button-primary">Start Batch</button>
+            <button id="stop-batch" class="button button-danger" disabled>Stop Batch</button>
+        </div>
+
+        <div id="batch-status"></div>
+
+        <div class="torrent-list" id="torrent-list">
+            <!-- Torrents will be dynamically inserted here -->
+        </div>
+
+        <div class="error-list" id="errorList">
+            <h2>Recent Errors</h2>
+            <div id="error-message"></div>
+            <div id="errorItems"></div>
+        </div>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>

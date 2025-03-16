@@ -4,8 +4,10 @@ Command handlers for CLI operations.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
+from pathlib import Path
 from typing import Optional
 
 from ..manifest import ManifestError, ManifestManager
@@ -201,4 +203,71 @@ def process_batch(
 
     except (ManifestError, ValueError, OSError) as e:
         logger.error(f"Error during batch processing: {e}")
+        return 1
+
+
+async def run_client(
+    torrent_dir: str,
+    data_dir: Optional[str] = None,
+    port: int = 6881,
+    max_upload_rate: int = 0,
+    max_download_rate: int = 0,
+    max_connections: int = 200,
+    check_interval: int = 60,
+    auto_restart: bool = False,
+    batch_config: Optional[dict] = None,
+    web: bool = False,
+    web_port: int = 5000,
+) -> int:
+    """Run the torrent client.
+
+    Args:
+        torrent_dir: Directory containing torrent files
+        data_dir: Directory containing data files (defaults to torrent_dir)
+        port: Port to listen on
+        max_upload_rate: Maximum upload rate in bytes/s (0 for unlimited)
+        max_download_rate: Maximum download rate in bytes/s (0 for unlimited)
+        max_connections: Maximum number of peer connections
+        check_interval: Interval in seconds to check for new torrents
+        auto_restart: Whether to automatically restart the batch process
+        batch_config: Configuration for the batch process if auto_restart is enabled
+        web: Whether to enable the web interface
+        web_port: Port to listen on for the web interface
+
+    Returns:
+        0 on success, 1 on error
+    """
+    try:
+        from ..client import ClientConfig, TorrentClient
+
+        # Create client config
+        config = ClientConfig(
+            torrent_dir=Path(torrent_dir),
+            data_dir=Path(data_dir) if data_dir else None,
+            port=port,
+            max_upload_rate=max_upload_rate,
+            max_download_rate=max_download_rate,
+            max_connections=max_connections,
+            check_interval=check_interval,
+            auto_restart=auto_restart,
+            batch_config=batch_config,
+            web_enabled=web,
+            web_port=web_port,
+        )
+
+        # Create and start client
+        client = TorrentClient(config)
+        await client.start()
+
+        # Keep the client running
+        try:
+            while True:
+                await asyncio.sleep(1)
+        except KeyboardInterrupt:
+            logger.info("Stopping client...")
+            await client.stop()
+            return 0
+
+    except Exception as e:
+        logger.error(f"Error running client: {e}")
         return 1

@@ -40,6 +40,10 @@ A Python tool for creating torrent files from directories with optimal settings 
 - Manifest system for tracking processed directories
 - Torrent verification after creation
 - Cross-platform support (Windows, macOS, Linux)
+- Monitor directories for changes and update torrents
+- Web interface for monitoring torrent status and controlling batch processes
+- Dark mode UI for better visibility
+- Real-time status updates and error reporting
 
 ## Installation
 
@@ -422,4 +426,110 @@ pytest -v
 
 # Run tests and show local variables on failure
 pytest --showlocals
+```
+
+## Basic Commands
+
+```bash
+# Create a torrent from a directory
+torrent create /path/to/directory
+
+# Process multiple directories in batch mode
+torrent batch /path/to/directories/*
+
+# Run the torrent client with web interface
+torrent client --web
+```
+
+## Web Interface
+
+The web interface provides a modern, dark-mode UI for monitoring and controlling the torrent client. To enable it, use the `--web` flag when starting the client:
+
+```bash
+torrent client --web --web-port 5000
+```
+
+The web interface includes:
+
+- Real-time torrent status monitoring
+- Batch process controls (start/stop)
+- Statistics dashboard
+- Error reporting
+- Dark mode UI for better visibility
+
+#### Web Interface Features
+
+1. **Torrent Status**
+   - List of active torrents
+   - Seeding/downloading status
+   - Progress indicators
+   - Upload/download rates
+
+2. **Batch Process Controls**
+   - Start/stop batch processing
+   - Status monitoring
+   - Last run time
+   - Next scheduled check
+
+3. **Statistics Dashboard**
+   - Total torrents
+   - Seeding count
+   - Downloading count
+   - Error count
+
+4. **Error Reporting**
+   - Recent error messages
+   - Status indicators
+   - Error history
+
+### Configuration
+
+The client can be configured using command-line arguments:
+
+```bash
+torrent client \
+    --torrent-dir /path/to/torrents \
+    --data-dir /path/to/data \
+    --port 6881 \
+    --max-upload-rate 1000 \
+    --max-download-rate 1000 \
+    --max-connections 200 \
+    --check-interval 60 \
+    --auto-restart \
+    --web \
+    --web-port 5000
+```
+
+#### Batch Process Options
+
+When using the client with batch processing, you can configure:
+
+```bash
+torrent client \
+    --batch-check-interval 300 \
+    --batch-max-failures 3 \
+    --batch-clean \
+    --batch-force \
+    --batch-dry-run
+```
+
+## Development
+
+### Running Tests
+
+```bash
+pytest
+```
+
+### Code Style
+
+```bash
+# Format code
+black .
+
+# Sort imports
+isort .
+
+# Run linter
+flake8
 ```

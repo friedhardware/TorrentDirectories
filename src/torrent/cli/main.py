@@ -4,14 +4,16 @@ Main entry point for the command-line interface.
 
 from __future__ import annotations
 
+import argparse
+import asyncio
 import logging
 import sys
-from argparse import Namespace
-from typing import List, Optional
+from typing import Optional, Sequence
 
+from .. import __version__
+from ..client.client import run_client
 from .commands import process_batch, process_single
-from .config import create_torrent_config
-from .parser import create_parser
+from .parser import create_parser, create_torrent_config
 
 logger = logging.getLogger(__name__)
 
@@ -48,54 +50,78 @@ def setup_logging(verbose: bool = False, log_file: Optional[str] = None) -> None
         root_logger.addHandler(file_handler)
 
 
-def main(args: Optional[List[str]] = None) -> int:
-    """
-    Main entry point for the command-line interface.
-
-    Args:
-        args: Command line arguments (uses sys.argv if None)
-
-    Returns:
-        Exit code (0 for success, non-zero for failure)
-    """
-    parser = create_parser()
-    parsed_args: Namespace = parser.parse_args(args)
-
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """Main entry point."""
     try:
-        # Setup logging first
-        setup_logging(parsed_args.verbose, parsed_args.log_file)
+        parser = create_parser()
+        args = parser.parse_args(argv)
+        setup_logging(args.verbose, args.log_file)
 
-        # Create torrent configuration from arguments
-        config = create_torrent_config(parsed_args)
+        if hasattr(args, "version") and args.version:
+            print(f"torrent-directories {__version__}")
+            return 0
 
-        if parsed_args.command == "file":
+        if args.command == "file":
             return process_single(
-                parsed_args.path,
-                parsed_args.tracker,
-                parsed_args.output,
-                config=config,
-                dry_run=parsed_args.dry_run,
-                force=parsed_args.force,
+                args.path,
+                args.tracker,
+                args.output,
+                config=create_torrent_config(args),
+                dry_run=args.dry_run,
+                force=args.force,
             )
-        elif parsed_args.command == "batch":
+        elif args.command == "batch":
             return process_batch(
-                parsed_args.directory,
-                parsed_args.tracker,
-                clean=parsed_args.clean,
-                config=config,
-                output_dir=parsed_args.output,
-                dry_run=parsed_args.dry_run,
-                force=parsed_args.force,
-                max_failures=parsed_args.max_failures,
+                args.directory,
+                args.tracker,
+                clean=args.clean,
+                config=create_torrent_config(args),
+                output_dir=args.output,
+                dry_run=args.dry_run,
+                force=args.force,
+                max_failures=args.max_failures,
+            )
+        elif args.command == "client":
+            # Create batch config if auto-restart is enabled
+            batch_config = None
+            if args.auto_restart:
+                batch_config = {
+                    "directory": args.torrent_dir,
+                    "tracker": args.tracker,
+                    "config": create_torrent_config(args),
+                    "output_dir": args.torrent_dir,
+                    "clean": True,  # Clean manifest on restart
+                    "force": True,  # Force recreation of torrents
+                }
+
+            return int(
+                asyncio.run(
+                    run_client(
+                        torrent_dir=args.torrent_dir,
+                        data_dir=args.data_dir,
+                        port=args.port,
+                        max_upload_rate=args.max_upload_rate,
+                        max_download_rate=args.max_download_rate,
+                        max_connections=args.max_connections,
+                        check_interval=args.check_interval,
+                        auto_restart=args.auto_restart,
+                        batch_config=batch_config,
+                        web=args.web,
+                        web_port=args.web_port,
+                    )
+                )
             )
         else:
-            parser.print_help()
+            logger.error(f"Unknown command: {args.command}")
             return 1
 
+        return 0
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        if parsed_args.verbose:
-            logger.exception("Detailed error information:")
+        if args.verbose:
+            logger.error(f"Unexpected error: {str(e)}")
+            logger.debug("", exc_info=True)
+        else:
+            logger.error(str(e))
         return 1
 
 
