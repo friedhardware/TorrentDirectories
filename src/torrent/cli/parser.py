@@ -77,11 +77,6 @@ Examples:
         help="Show detailed progress information",
     )
     parser.add_argument("--log-file", help="Write logs to specified file")
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what would be done without making changes",
-    )
 
     # Global torrent configuration
     torrent_group = parser.add_argument_group("Torrent Creation Options")
@@ -213,11 +208,6 @@ Examples:
         action="store_true",
         default=True,
         help="Force recreation of torrents on each batch run",
-    )
-    batch_group.add_argument(
-        "--batch-dry-run",
-        action="store_true",
-        help="Show what would be done without making changes",
     )
 
     # Web interface options

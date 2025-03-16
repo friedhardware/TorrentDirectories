@@ -50,10 +50,6 @@ def sample_files(temp_dir: Path) -> Path:
     subdir.mkdir()
     (subdir / "file3.txt").write_text("content3")
 
-    # Create some hidden files
-    (root / ".hidden").write_text("hidden")
-    (subdir / ".hidden_sub").write_text("hidden")
-
     # Create some system files
     (root / "Thumbs.db").write_text("system")
     (root / ".DS_Store").write_text("system")
@@ -80,7 +76,6 @@ def clean_env() -> Generator[None, None, None]:
     vars_to_clear = [
         "TORRENT_MIN_PIECE_SIZE",
         "TORRENT_MAX_PIECE_SIZE",
-        "TORRENT_SKIP_HIDDEN",
         "TORRENT_SKIP_SYSTEM",
     ]
 

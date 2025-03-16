@@ -15,7 +15,7 @@ import libtorrent  # type: ignore
 from .exceptions import CreationError, SecurityError, TorrentError, ValidationError
 from .utils.config import TorrentConfig
 from .utils.context import secure_temp_environment
-from .utils.file_utils import FileNaming, PathSecurity
+from .utils.file_utils import PathSecurity
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,8 @@ class TorrentCreator:
         relative_to: Optional[Path] = None,
         preserve_case: bool = True,
     ) -> Path:
-        """Copy a file with a sanitized name to the destination directory.
+        """
+        Copy a file to a destination directory, preserving relative paths.
 
         Args:
             source: Source file path
@@ -109,16 +110,9 @@ class TorrentCreator:
         """
         if relative_to:
             rel_path = source.relative_to(relative_to)
-            sanitized_parts = [
-                FileNaming.sanitize_filename(p, preserve_case=preserve_case)
-                for p in rel_path.parts
-            ]
-            dest_path = dest_dir.joinpath(*sanitized_parts)
+            dest_path = dest_dir.joinpath(*rel_path.parts)
         else:
-            sanitized_name = FileNaming.sanitize_filename(
-                source.name, preserve_case=preserve_case
-            )
-            dest_path = dest_dir / sanitized_name
+            dest_path = dest_dir / source.name
 
         dest_path.parent.mkdir(parents=True, exist_ok=True)
         with open(source, "rb") as src, open(dest_path, "wb") as dst:
@@ -324,34 +318,26 @@ class TorrentCreator:
     def _add_files(
         self, fs: libtorrent.file_storage, input_path: Path, base_dir: Path
     ) -> tuple[int, int]:
-        """Add files to the torrent.
+        """
+        Add files to the torrent file storage.
 
         Args:
             fs: libtorrent file storage object
-            input_path: Path to the input file or directory
+            input_path: Path to add files from
             base_dir: Base directory for relative path calculation
 
         Returns:
-            tuple[int, int]: Number of files added and total size
-
-        Raises:
-            ValidationError: If no valid files are found
+            Tuple of (total_size, files_added)
         """
         files_added = 0
         total_size = 0
-        logger = logging.getLogger(__name__)
-
-        logger.debug(f"Adding files from {input_path} with base_dir {base_dir}")
 
         # Handle single file case
         if input_path.is_file():
             if PathSecurity.is_safe_path(input_path, base_dir):
                 # Get relative path components
                 rel_path = input_path.relative_to(base_dir)
-                sanitized_name = FileNaming.sanitize_filename(
-                    str(rel_path), preserve_dots=True, preserve_case=True
-                )
-                fs.add_file(sanitized_name, input_path.stat().st_size)
+                fs.add_file(str(rel_path), input_path.stat().st_size)
                 files_added += 1
                 total_size = input_path.stat().st_size
         else:
@@ -381,22 +367,9 @@ class TorrentCreator:
                             # Get relative path components
                             rel_path = file_path.relative_to(base_dir)
                             logger.debug(f"Relative path: {rel_path}")
-
-                            # Sanitize path
-                            sanitized_parts = [
-                                FileNaming.sanitize_filename(
-                                    p, preserve_dots=True, preserve_case=True
-                                )
-                                for p in rel_path.parts
-                            ]
-                            sanitized_path = "/".join(sanitized_parts)
-                            logger.debug(f"Sanitized path: {sanitized_path}")
-                            valid_files.append((sanitized_path, file_path))
+                            valid_files.append((str(rel_path), file_path))
                         except ValueError:
                             # Skip files that can't be made relative to base_dir
-                            logger.warning(
-                                f"Skipping path {file_path} - cannot make relative to base directory"
-                            )
                             continue
 
             # Sort files by path for consistent ordering

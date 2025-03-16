@@ -77,8 +77,6 @@ def create_torrent_config(args: argparse.Namespace) -> TorrentConfig:
                 "Invalid target pieces format. Use MIN-MAX (e.g. 1000-2000)"
             )
 
-    if args.include_hidden:
-        config.skip_hidden = False
     if args.include_system:
         config.skip_system_files = False
 

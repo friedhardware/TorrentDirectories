@@ -37,3 +37,9 @@ class CreationError(TorrentError):
     """Torrent creation errors."""
 
     pass
+
+
+class ClientError(TorrentError):
+    """BitTorrent client errors."""
+
+    pass

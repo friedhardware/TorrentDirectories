@@ -66,7 +66,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 args.tracker,
                 args.output,
                 config=create_torrent_config(args),
-                dry_run=args.dry_run,
                 force=args.force,
             )
         elif args.command == "batch":
@@ -76,7 +75,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 clean=args.clean,
                 config=create_torrent_config(args),
                 output_dir=args.output,
-                dry_run=args.dry_run,
                 force=args.force,
                 max_failures=args.max_failures,
             )

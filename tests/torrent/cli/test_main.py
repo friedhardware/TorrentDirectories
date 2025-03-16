@@ -94,7 +94,6 @@ def test_main_batch_command(tmp_path: Path, mocker: MockerFixture) -> None:
         clean=True,
         config=mock_config.return_value,
         output_dir=str(output_dir),
-        dry_run=False,
         force=True,
         max_failures=5,
     )
@@ -153,7 +152,6 @@ def test_main_batch_command_with_output_dir(mock_process: Mock, tmp_path: Path) 
     result = main(
         ["batch", str(directory), "http://tracker.example.com", "-o", str(output_dir)]
     )
-
     assert result == 0
     mock_process.assert_called_once()
 
@@ -163,3 +161,4 @@ def test_main_batch_command_with_output_dir(mock_process: Mock, tmp_path: Path) 
     assert kwargs["output_dir"] == str(output_dir)
     assert not kwargs["force"]
     assert not kwargs["clean"]
+

@@ -1,4 +1,5 @@
-"""Integration tests for the CLI commands."""
+"""Integration tests for CLI functionality."""
+
 
 import re
 import subprocess
@@ -6,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from torrent.cli.main import main
 
 def run_command(cmd: list[str]) -> tuple[str, str, int]:
     """Run a command and return stdout, stderr, and return code.
@@ -94,29 +96,6 @@ def test_file_command(sample_dir: Path, tmp_path: Path) -> None:
     assert "torrent created successfully" in message.lower()
 
 
-def test_dry_run_command(sample_dir: Path, tmp_path: Path) -> None:
-    """Test dry-run mode doesn't create files."""
-    output = tmp_path / "output.torrent"
-    cmd = [
-        "torrent-directories",
-        "--dry-run",  # Global dry-run flag
-        "-v",  # Global verbose flag
-        "file",
-        str(sample_dir),
-        "http://tracker.example.com:6969/announce",
-        "-o",
-        str(output),
-    ]
-    stdout, stderr, code = run_command(cmd)
-    print(
-        f"\nCommand output:\nstdout: {stdout}\nstderr: {stderr}\ncode: {code}"
-    )  # Debug info
-    assert code == 0
-    assert not output.exists()
-    message = stdout or stderr  # Check both stdout and stderr
-    assert "dry run mode" in message.lower()
-
-
 def test_batch_command(batch_dir: Path, tmp_path: Path) -> None:
     """Test batch processing of multiple directories."""
     output_dir = tmp_path / "torrents"
@@ -140,27 +119,6 @@ def test_batch_command(batch_dir: Path, tmp_path: Path) -> None:
 
     # Check manifest was created
     assert (output_dir / "manifest.csv").exists()
-
-
-def test_batch_dry_run(batch_dir: Path, tmp_path: Path) -> None:
-    """Test batch processing in dry-run mode."""
-    output_dir = tmp_path / "torrents"
-    cmd = [
-        "torrent-directories",
-        "--dry-run",
-        "-v",
-        "batch",
-        str(batch_dir),
-        "http://tracker.example.com:6969/announce",
-        "-o",
-        str(output_dir),
-    ]
-    stdout, stderr, code = run_command(cmd)
-    print(f"\nCommand output:\nstdout: {stdout}\nstderr: {stderr}\ncode: {code}")
-    assert code == 0
-    message = stdout or stderr
-    assert "dry run mode" in message.lower()
-    assert "would process" in message.lower()
 
 
 def test_force_overwrite(sample_dir: Path, tmp_path: Path) -> None:

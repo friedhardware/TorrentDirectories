@@ -11,8 +11,6 @@ from pathlib import Path
 
 import pytest
 
-from torrent.utils.file_utils import sanitize_filename
-
 
 def generate_random_string(length: int) -> str:
     """Generate a random string of given length."""
@@ -168,9 +166,8 @@ def multilingual_media_dir(tmp_path: Path) -> Path:
         category_dir.mkdir()
 
         for item in items:
-            # Sanitize the item name for filesystem safety
-            safe_item_name = sanitize_filename(item)
-            item_dir = category_dir / safe_item_name
+            # Create directory with original name
+            item_dir = category_dir / item
             item_dir.mkdir()
             # Create sample content file
             sample_file = item_dir / f"sample.{category_name.lower()}"

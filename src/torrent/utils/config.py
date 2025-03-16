@@ -49,17 +49,7 @@ class TorrentConfig:
                 "target_pieces_min cannot be greater than target_pieces_max"
             )
 
-    @property
-    def target_pieces(self) -> tuple[int, int]:
-        """Get the target number of pieces range."""
-        return (self.target_pieces_min, self.target_pieces_max)
-
-    def _is_power_of_2(self, n: int) -> bool:
-        """Check if a number is a power of 2."""
-        return n > 0 and (n & (n - 1)) == 0
-
-    def __post_init__(self) -> None:
-        """Validate configuration after initialization."""
+        # Validate piece sizes against limits
         if self.max_piece_size > MAX_PIECE_SIZE:
             raise ValueError(
                 f"Maximum piece size cannot exceed 64 MiB. Requested: {self.max_piece_size / 1024 / 1024:.0f} MiB"
@@ -76,3 +66,12 @@ class TorrentConfig:
             raise ValueError(
                 f"Maximum piece size must be a power of 2. Requested: {self.max_piece_size / 1024 / 1024:.0f} MiB"
             )
+
+    @property
+    def target_pieces(self) -> tuple[int, int]:
+        """Get the target number of pieces range."""
+        return (self.target_pieces_min, self.target_pieces_max)
+
+    def _is_power_of_2(self, n: int) -> bool:
+        """Check if a number is a power of 2."""
+        return n > 0 and (n & (n - 1)) == 0

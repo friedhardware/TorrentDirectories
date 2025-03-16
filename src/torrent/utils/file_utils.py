@@ -11,7 +11,7 @@ import stat
 import tempfile
 from datetime import datetime
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Optional, Union
 
 
 class PathSecurity:
@@ -113,6 +113,20 @@ class FileSystem:
     """File system operations."""
 
     @staticmethod
+    def is_special_file(path: Path) -> bool:
+        """Check if a file is a special file (device, socket, etc.)."""
+        try:
+            mode = path.stat().st_mode
+            return (
+                stat.S_ISCHR(mode)  # Character device
+                or stat.S_ISBLK(mode)  # Block device
+                or stat.S_ISFIFO(mode)  # FIFO (named pipe)
+                or stat.S_ISSOCK(mode)  # Socket
+            )
+        except (OSError, AttributeError):
+            return False
+
+    @staticmethod
     def list_files(
         directory: Path,
         include_system: bool = False,
@@ -150,16 +164,24 @@ class FileSystem:
         # Implementation depends on OS
         if os.name == "nt":
             try:
-                attrs = path.stat().st_file_attributes
-                return bool(attrs & stat.FILE_ATTRIBUTE_SYSTEM)
+                # Use GetFileAttributes on Windows
+                import ctypes
+
+                FILE_ATTRIBUTE_SYSTEM = 0x4  # Windows system file attribute
+                attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))  # type: ignore[attr-defined]
+                return bool(attrs != -1 and attrs & FILE_ATTRIBUTE_SYSTEM)
             except (AttributeError, OSError):
                 return False
         return False
 
     @staticmethod
-    def get_total_size(paths: Iterator[Path]) -> int:
+    def get_total_size(paths: Union[Iterator[str], Iterator[Path]]) -> int:
         """Calculate total size of files."""
-        return sum(path.stat().st_size for path in paths if path.is_file())
+        total: int = 0
+        for path in paths:
+            if Path(path).is_file():
+                total += Path(path).stat().st_size
+        return total
 
     @staticmethod
     def create_secure_temp_file(prefix: str) -> Path:
@@ -170,80 +192,45 @@ class FileSystem:
         temp_path.chmod(0o600)  # Read/write for owner only
         return temp_path
 
-
-class FileNaming:
-    """File name operations."""
-
-    @staticmethod
-    def sanitize_filename(
-        filename: str,
-        preserve_dots: bool = False,
-        preserve_case: bool = False,
-    ) -> str:
-        """Sanitize a filename for safe usage."""
-        # Remove or replace invalid characters
-        valid_chars = (
-            "-_.() abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        )
-        sanitized = "".join(c for c in filename if c in valid_chars)
-
-        # Handle case preservation
-        if not preserve_case:
-            sanitized = sanitized.lower()
-
-        # Handle dots
-        if preserve_dots and filename.startswith("."):
-            sanitized = "." + sanitized.lstrip(".")
-
-        # Ensure we have a valid filename
-        sanitized = sanitized.strip()
-        if not sanitized:
-            sanitized = "unnamed"
-
-        return sanitized
-
     @staticmethod
     def format_size(size: int) -> str:
         """Format a size in bytes to human readable string."""
-        for unit in ["B", "KiB", "MiB", "GiB", "TiB", "PiB"]:
-            if size < 1024:
-                return f"{size:.1f} {unit}"
-            size /= 1024
-        return f"{size:.1f} EiB"
+        units = ["B", "KiB", "MiB", "GiB", "TiB", "PiB", "EiB"]
+        size_f: float = float(size)
+        for unit in units:
+            if size_f < 1024:
+                return f"{size_f:.1f} {unit}"
+            size_f /= 1024
+        return f"{size_f:.1f} {units[-1]}"
 
 
 # For backward compatibility
-def sanitize_filename(*args, **kwargs) -> str:
-    """Backward compatible wrapper for FileNaming.sanitize_filename."""
-    return FileNaming.sanitize_filename(*args, **kwargs)
-
-
-def is_safe_path(*args, **kwargs) -> bool:
+def is_safe_path(path: Path, base_dir: Path) -> bool:
     """Backward compatible wrapper for PathSecurity.is_safe_path."""
-    return PathSecurity.is_safe_path(*args, **kwargs)
+    return PathSecurity.is_safe_path(path, base_dir)
 
 
-def create_secure_temp_file(*args, **kwargs) -> Path:
+def create_secure_temp_file(prefix: str) -> Path:
     """Backward compatible wrapper for FileSystem.create_secure_temp_file."""
-    return FileSystem.create_secure_temp_file(*args, **kwargs)
+    return FileSystem.create_secure_temp_file(prefix)
 
 
-def format_size(*args, **kwargs) -> str:
-    """Backward compatible wrapper for FileNaming.format_size."""
-    return FileNaming.format_size(*args, **kwargs)
+def format_size(size: int) -> str:
+    """Backward compatible wrapper for FileSystem.format_size."""
+    return FileSystem.format_size(size)
 
 
-def get_total_size(*args, **kwargs) -> int:
+def get_total_size(paths: Union[Iterator[str], Iterator[Path]]) -> int:
     """Backward compatible wrapper for FileSystem.get_total_size."""
-    return FileSystem.get_total_size(*args, **kwargs)
+    return FileSystem.get_total_size(paths)
 
 
-def list_files(*args, **kwargs) -> Iterator[Path]:
+def list_files(directory: Path, include_system: bool = False) -> Iterator[Path]:
     """Backward compatible wrapper for FileSystem.list_files."""
-    return FileSystem.list_files(*args, **kwargs)
+    return FileSystem.list_files(directory, include_system)
 
 
-def is_hidden(path: str) -> bool:
+def is_hidden(path: Union[str, Path]) -> bool:
     """
     Check if a file or directory is hidden.
 
@@ -253,11 +240,11 @@ def is_hidden(path: str) -> bool:
     Returns:
         True if the path is hidden (starts with .)
     """
-    name = os.path.basename(path)
+    name = os.path.basename(str(path))
     return name.startswith(".")
 
 
-def is_system_file(path: str) -> bool:
+def is_system_file(path: Union[str, Path]) -> bool:
     """
     Check if a file is a system file that should be skipped.
 
@@ -315,7 +302,7 @@ def is_system_file(path: str) -> bool:
         ".torrent",  # Torrent files
         ".magnet",  # Magnet links
     }
-    return os.path.basename(path) in system_files
+    return os.path.basename(str(path)) in system_files
 
 
 def get_safe_path(path: str) -> str:
@@ -333,7 +320,7 @@ def get_safe_path(path: str) -> str:
     return safe
 
 
-def backup_file(file_path: str) -> str | None:
+def backup_file(file_path: str) -> Optional[str]:
     """
     Create a backup of a file with timestamp.
 
