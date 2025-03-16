@@ -8,6 +8,7 @@ import argparse
 from typing import Dict, Any, Optional
 
 from ..utils.config import TorrentConfig
+from .config import parse_size
 
 
 def create_torrent_config(args: argparse.Namespace) -> Optional[TorrentConfig]:
@@ -21,8 +22,8 @@ def create_torrent_config(args: argparse.Namespace) -> Optional[TorrentConfig]:
             raise ValueError("Target pieces must be in format 'min-max' (e.g. 1000-2000)")
 
     return TorrentConfig(
-        min_piece_size=args.min_piece_size,
-        max_piece_size=args.max_piece_size,
+        min_piece_size=parse_size(args.min_piece_size) if args.min_piece_size else None,
+        max_piece_size=parse_size(args.max_piece_size) if args.max_piece_size else None,
         target_pieces_min=target_pieces[0] if target_pieces else 1000,
         target_pieces_max=target_pieces[1] if target_pieces else 2000,
         skip_hidden=not args.include_hidden,
