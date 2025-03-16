@@ -161,4 +161,3 @@ def test_main_batch_command_with_output_dir(mock_process: Mock, tmp_path: Path) 
     assert kwargs["output_dir"] == str(output_dir)
     assert not kwargs["force"]
     assert not kwargs["clean"]
-

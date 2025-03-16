@@ -1,15 +1,14 @@
 """Integration tests for CLI functionality."""
 
-
 import re
 import subprocess
 from pathlib import Path
+from typing import List, Tuple
 
 import pytest
 
-from torrent.cli.main import main
 
-def run_command(cmd: list[str]) -> tuple[str, str, int]:
+def run_command(cmd: List[str]) -> Tuple[str, str, int]:
     """Run a command and return stdout, stderr, and return code.
 
     Args:

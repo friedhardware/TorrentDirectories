@@ -79,18 +79,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 max_failures=args.max_failures,
             )
         elif args.command == "client":
-            # Create batch config if auto-restart is enabled
-            batch_config = None
-            if args.auto_restart:
-                batch_config = {
-                    "directory": args.torrent_dir,
-                    "tracker": args.tracker,
-                    "config": create_torrent_config(args),
-                    "output_dir": args.torrent_dir,
-                    "clean": True,  # Clean manifest on restart
-                    "force": True,  # Force recreation of torrents
-                }
-
             return int(
                 asyncio.run(
                     run_client(
@@ -101,10 +89,6 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                         max_download_rate=args.max_download_rate,
                         max_connections=args.max_connections,
                         check_interval=args.check_interval,
-                        auto_restart=args.auto_restart,
-                        batch_config=batch_config,
-                        web=args.web,
-                        web_port=args.web_port,
                     )
                 )
             )

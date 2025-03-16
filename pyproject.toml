@@ -15,6 +15,7 @@ authors = [
 dependencies = [
     "libtorrent>=2.0.0",
     "flask>=3.0.0",
+    "pathvalidate>=3.2.0",
 ]
 
 [project.optional-dependencies]

@@ -4,12 +4,11 @@ Tests for CLI command handlers.
 
 from __future__ import annotations
 
-import libtorrent
 from pathlib import Path
 from typing import Any
 from unittest import mock
-from unittest.mock import Mock, patch
 
+import libtorrent
 import pytest
 from _pytest.logging import LogCaptureFixture
 from pytest_mock import MockerFixture
@@ -212,8 +211,7 @@ def test_process_batch_with_output_dir(
 
 
 def test_process_batch_manifest_config(
-    mock_torrent_creator: mock.MagicMock,
-    tmp_path: Path
+    mock_torrent_creator: mock.MagicMock, tmp_path: Path
 ) -> None:
     """Test batch processing with manifest configuration."""
     # Create test directory structure

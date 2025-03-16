@@ -5,10 +5,23 @@ Command-line argument parsing for TorrentDirectories.
 from __future__ import annotations
 
 import argparse
+import os
 from typing import Optional
+
+from pathvalidate.argparse import sanitize_filepath_arg, validate_filepath_arg
 
 from ..utils.config import DEFAULT_MAX_PIECE_SIZE, DEFAULT_MIN_PIECE_SIZE, TorrentConfig
 from .config import parse_size
+
+
+def validate_directory(path: str) -> str:
+    """Validate that a path exists and is a directory."""
+    path = validate_filepath_arg(path)
+    if not os.path.exists(path):
+        raise argparse.ArgumentTypeError(f"Path '{path}' does not exist")
+    if not os.path.isdir(path):
+        raise argparse.ArgumentTypeError(f"Path '{path}' is not a directory")
+    return path
 
 
 def create_torrent_config(args: argparse.Namespace) -> Optional[TorrentConfig]:
@@ -68,17 +81,15 @@ Examples:
     )
 
     parser.add_argument(
-        "--version", action="version", version=f"%(prog)s {__version__}"
+        "--version", "-v", action="version", version=f"%(prog)s {__version__}"
     )
     parser.add_argument(
-        "-v",
         "--verbose",
         action="store_true",
         help="Show detailed progress information",
     )
     parser.add_argument("--log-file", help="Write logs to specified file")
 
-    # Global torrent configuration
     torrent_group = parser.add_argument_group("Torrent Creation Options")
     torrent_group.add_argument(
         "--min-piece-size",
@@ -111,10 +122,19 @@ Examples:
     file_parser = subparsers.add_parser(
         "file", help="Create a torrent from a single file or directory"
     )
-    file_parser.add_argument("path", help="Path to the file or directory")
-    file_parser.add_argument("tracker", help="Tracker URL")
     file_parser.add_argument(
-        "-o", "--output", help="Custom output path for the torrent file"
+        "input_path",
+        type=validate_directory,
+        help="Path to the file or directory to create a torrent from",
+    )
+    file_parser.add_argument(
+        "-o",
+        "--output",
+        type=sanitize_filepath_arg,
+        help="Output path for the torrent file",
+    )
+    file_parser.add_argument(
+        "tracker", help="URL of the tracker to include in the torrent"
     )
     file_parser.add_argument(
         "--force", action="store_true", help="Overwrite existing torrent file"
@@ -124,10 +144,19 @@ Examples:
     batch_parser = subparsers.add_parser(
         "batch", help="Process all subdirectories in a parent directory"
     )
-    batch_parser.add_argument("directory", help="Parent directory to process")
-    batch_parser.add_argument("tracker", help="Tracker URL")
     batch_parser.add_argument(
-        "-o", "--output", help="Output directory for torrent files and manifest"
+        "directory",
+        type=validate_directory,
+        help="Directory containing subdirectories to process",
+    )
+    batch_parser.add_argument(
+        "-o",
+        "--output",
+        type=sanitize_filepath_arg,
+        help="Output directory for torrent files and manifest",
+    )
+    batch_parser.add_argument(
+        "tracker", help="URL of the tracker to include in all torrents"
     )
     batch_parser.add_argument(
         "--clean",
@@ -146,9 +175,15 @@ Examples:
 
     # Client command
     client_parser = subparsers.add_parser("client", help="Run the torrent client")
-    client_parser.add_argument("torrent_dir", help="Directory containing torrent files")
     client_parser.add_argument(
-        "--data-dir", help="Directory containing data files (defaults to torrent_dir)"
+        "torrent_dir",
+        type=validate_directory,
+        help="Directory containing torrent files",
+    )
+    client_parser.add_argument(
+        "--data-dir",
+        type=validate_directory,
+        help="Directory containing data files (defaults to torrent_dir)",
     )
     client_parser.add_argument(
         "--port", type=int, default=6881, help="Port to listen on"

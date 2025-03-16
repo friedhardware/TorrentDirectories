@@ -8,11 +8,10 @@ import asyncio
 import logging
 import os
 from pathlib import Path
-from typing import Iterator, List, Optional, cast
+from typing import Optional
 
 from ..manifest import ManifestError, ManifestManager
 from ..torrent_creator import TorrentCreator
-from ..utils.file_utils import format_size, get_total_size, list_files
 from .config import TorrentConfig
 
 logger = logging.getLogger(__name__)
@@ -38,8 +37,8 @@ def process_single(
         0 on success, 1 on error
     """
     try:
-        # Check if output exists
-        if output and os.path.exists(output) and not force:
+        # Remove the os.path.exists check since pathvalidate will handle invalid paths
+        if output and Path(output).exists() and not force:
             logger.error("Output file already exists. Use --force to overwrite.")
             return 1
 
@@ -83,7 +82,11 @@ def process_batch(
         os.makedirs(output_dir, exist_ok=True)
 
         # Get list of subdirectories
-        subdirs = [d for d in os.listdir(directory) if os.path.isdir(os.path.join(directory, d))]
+        subdirs = [
+            d
+            for d in os.listdir(directory)
+            if os.path.isdir(os.path.join(directory, d))
+        ]
         if not subdirs:
             logger.error("No subdirectories found to process")
             return 1

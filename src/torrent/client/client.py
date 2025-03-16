@@ -7,14 +7,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import time
 from pathlib import Path
 from typing import Optional
 
 import libtorrent
 
-from ..exceptions import ClientError
-from ..utils.context import secure_temp_environment
 from .config import ClientConfig
 
 logger = logging.getLogger(__name__)
@@ -124,11 +121,12 @@ class TorrentClient:
 
 def format_size(size: int) -> str:
     """Format size in bytes to human readable string."""
+    size_float = float(size)  # Convert to float for division
     for unit in ["B", "KiB", "MiB", "GiB", "TiB"]:
-        if size < 1024:
-            return f"{size:.1f} {unit}"
-        size /= 1024
-    return f"{size:.1f} PiB"
+        if size_float < 1024:
+            return f"{size_float:.1f} {unit}"
+        size_float /= 1024
+    return f"{size_float:.1f} PiB"
 
 
 async def run_client(
