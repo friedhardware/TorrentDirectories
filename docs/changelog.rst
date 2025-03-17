@@ -1,7 +1,3 @@
-.. toctree::
-   :hidden:
-   :toclevels: 2
-
 Changelog
 =========
 
@@ -14,27 +10,27 @@ Changelog
 --------------------
 
 Fixed
------
+~~~~~
 * update release script to push commits before tags and update Python version requirement ([71f2dcd])(https://github.com/friedhardware/TorrentDirectories/commit/71f2dcd) (friedhardware)
 
 [1.1.1] - 2025-03-17
 --------------------
 
 Changed
--------
+~~~~~~~
 * Update documentation to match implementation and add missing options ([b29a287])(https://github.com/friedhardware/TorrentDirectories/commit/b29a287) (friedhardware)
 
 [1.1.0] - 2025-03-17
 --------------------
 
 Changed
--------
+~~~~~~~
 * Add Markdown version of changelog ([fff30f4])(https://github.com/friedhardware/TorrentDirectories/commit/fff30f4) (friedhardware)
 * Improve code organization and test coverage - Move logging setup to dedicated module, fix empty file handling, update manifest handling, add type hints, update docs ([870b411])(https://github.com/friedhardware/TorrentDirectories/commit/870b411) (friedhardware)
 * update documentation to match actual implementation ([4e3dcca])(https://github.com/friedhardware/TorrentDirectories/commit/4e3dcca) (friedhardware)
 
 Other
------
+~~~~~
 * chore: Release version 1.1.0 ([08caf59])(https://github.com/friedhardware/TorrentDirectories/commit/08caf59) (friedhardware)
 * test: Update release script tests to use version.py ([7e16b9a])(https://github.com/friedhardware/TorrentDirectories/commit/7e16b9a) (friedhardware)
 * chore: Update release script for version.py and improved changelog handling ([127f120])(https://github.com/friedhardware/TorrentDirectories/commit/127f120) (friedhardware)
@@ -57,7 +53,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 --------------------
 
 Added
------
+~~~~~
 - Dedicated logging utilities module
 - Improved empty file handling in batch processing
 - Enhanced manifest management with force option
@@ -65,14 +61,14 @@ Added
 - Additional test coverage
 
 Changed
--------
+~~~~~~~
 - Refactored logging setup into dedicated module
 - Updated manifest handling to replace entries instead of appending when using --force
 - Improved code organization and modularity
 - Enhanced documentation
 
 Fixed
------
+~~~~~
 - Empty file handling in batch processing
 - Manifest entry replacement behavior
 - Type hint issues across the codebase
@@ -83,7 +79,7 @@ Fixed
 Initial release.
 
 Added
------
+~~~~~
 - Basic torrent creation functionality
 - Support for single files and directories
 - Automatic piece size calculation
