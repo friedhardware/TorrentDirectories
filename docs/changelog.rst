@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.1.1] - 2025-03-17
+====================
+
+
+
+Changed
+* Update documentation to match implementation and add missing options ([b29a287])(https://github.com/friedhardware/TorrentDirectories/commit/b29a287) (friedhardware)
 [1.1.0] - 2025-03-17
 ====================
 
