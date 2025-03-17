@@ -20,18 +20,17 @@ def mock_repo_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     src_dir = tmp_path / "src" / "torrent"
     src_dir.mkdir(parents=True)
 
-    # Create __init__.py
-    init_content = dedent(
+    # Create version.py
+    version_content = dedent(
         '''
-        """Package initialization."""
+        """Version information for the torrent package."""
         from __future__ import annotations
 
         __version__ = "0.7.0"
-        __all__ = ["TorrentCreator"]
     '''
     ).lstrip()
-    init_file = src_dir / "__init__.py"
-    init_file.write_text(init_content)
+    version_file = src_dir / "version.py"
+    version_file.write_text(version_content)
 
     # Create pyproject.toml
     pyproject_content = dedent(
@@ -81,14 +80,14 @@ def test_bump_version_invalid(mock_repo_root: Path) -> None:
         bump_version("0.7.0", "invalid")
 
 
-def test_update_version_in_init(mock_repo_root: Path) -> None:
-    """Test updating version in __init__.py."""
+def test_update_version_in_version_file(mock_repo_root: Path) -> None:
+    """Test updating version in version.py."""
     # Update version
     update_version("0.8.0")
 
     # Check content
-    init_file = mock_repo_root / "src" / "torrent" / "__init__.py"
-    content = init_file.read_text()
+    version_file = mock_repo_root / "src" / "torrent" / "version.py"
+    content = version_file.read_text()
     assert '__version__ = "0.8.0"' in content
     assert content.count("__version__") == 1
 
@@ -106,16 +105,16 @@ def test_update_version_in_pyproject(mock_repo_root: Path) -> None:
 
 
 def test_get_current_version(mock_repo_root: Path) -> None:
-    """Test getting current version from __init__.py."""
+    """Test getting current version from version.py."""
     version = get_current_version()
     assert version == "0.7.0"
 
 
 def test_get_current_version_missing_file(mock_repo_root: Path) -> None:
     """Test getting version from non-existent file."""
-    # Remove the __init__.py file
-    init_file = mock_repo_root / "src" / "torrent" / "__init__.py"
-    init_file.unlink()
+    # Remove the version.py file
+    version_file = mock_repo_root / "src" / "torrent" / "version.py"
+    version_file.unlink()
 
     with pytest.raises(FileNotFoundError):
         get_current_version()
@@ -123,9 +122,9 @@ def test_get_current_version_missing_file(mock_repo_root: Path) -> None:
 
 def test_get_current_version_invalid_content(mock_repo_root: Path) -> None:
     """Test getting version from file with invalid content."""
-    # Replace __init__.py with invalid content
-    init_file = mock_repo_root / "src" / "torrent" / "__init__.py"
-    init_file.write_text('"""Invalid content."""')
+    # Replace version.py with invalid content
+    version_file = mock_repo_root / "src" / "torrent" / "version.py"
+    version_file.write_text('"""Invalid content."""')
 
     with pytest.raises(RuntimeError, match="Unable to find version string"):
         get_current_version()
