@@ -1,0 +1,292 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>torrent.torrent_creator &mdash; TorrentDirectories 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=f2a433a1"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            TorrentDirectories
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../usage.html">Usage Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../changelog.html">Changelog</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">TorrentDirectories</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">torrent.torrent_creator</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for torrent.torrent_creator</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Core functionality for creating torrent files with optimal settings.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">libtorrent</span>  <span class="c1"># type: ignore</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">torrent.utils.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorrentConfig</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">torrent.utils.file_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">sync_to_disk</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="TorrentCreator">
+<a class="viewcode-back" href="../../api/index.html#torrent.torrent_creator.TorrentCreator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TorrentCreator</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates torrent files with optimal settings for both single files and directories.</span>
+
+<span class="sd">    This class handles the core torrent creation functionality, including:</span>
+<span class="sd">    - Optimal piece size calculation</span>
+<span class="sd">    - File filtering (hidden files, system files)</span>
+<span class="sd">    - Progress reporting</span>
+<span class="sd">    - Torrent verification</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config: Configuration for torrent creation</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TorrentCreator.__init__">
+<a class="viewcode-back" href="../../api/index.html#torrent.torrent_creator.TorrentCreator.__init__">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">TorrentConfig</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize the torrent creator.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            config: Configuration for torrent creation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">config</span> <span class="o">=</span> <span class="n">config</span></div>
+
+
+<div class="viewcode-block" id="TorrentCreator.create">
+<a class="viewcode-back" href="../../api/index.html#torrent.torrent_creator.TorrentCreator.create">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span> <span class="n">output_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a torrent file from a file or directory.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_path: Path to the file or directory to create a torrent from</span>
+<span class="sd">            output_path: Path where to save the torrent file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: Path to the created torrent file</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If input path does not exist</span>
+<span class="sd">            OSError: If there are issues reading files or writing the torrent</span>
+<span class="sd">            RuntimeError: If torrent creation fails</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Convert string path to Path object</span>
+        <span class="n">input_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">input_path</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">input_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input path does not exist: </span><span class="si">{</span><span class="n">input_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create file storage</span>
+        <span class="n">fs</span> <span class="o">=</span> <span class="n">libtorrent</span><span class="o">.</span><span class="n">file_storage</span><span class="p">()</span>
+        
+        <span class="c1"># Add files to storage</span>
+        <span class="k">if</span> <span class="n">input_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
+            <span class="n">fs</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">input_path</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">input_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="p">)</span>
+            <span class="n">parent_path</span> <span class="o">=</span> <span class="n">input_path</span><span class="o">.</span><span class="n">parent</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">parent_path</span> <span class="o">=</span> <span class="n">input_path</span><span class="o">.</span><span class="n">parent</span>
+            <span class="n">libtorrent</span><span class="o">.</span><span class="n">add_files</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">input_path</span><span class="p">))</span>
+
+        <span class="c1"># Calculate optimal piece size based on total size</span>
+        <span class="n">total_size</span> <span class="o">=</span> <span class="n">fs</span><span class="o">.</span><span class="n">total_size</span><span class="p">()</span>
+        <span class="n">piece_size</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">calculate_optimal_piece_size</span><span class="p">(</span><span class="n">total_size</span><span class="p">)</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Using piece size: </span><span class="si">{</span><span class="n">piece_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.0f</span><span class="si">}</span><span class="s2"> KiB for </span><span class="si">{</span><span class="n">total_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> MiB content&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Create create_torrent object with calculated piece size</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">libtorrent</span><span class="o">.</span><span class="n">create_torrent</span><span class="p">(</span><span class="n">fs</span><span class="p">,</span> <span class="n">piece_size</span><span class="p">)</span>
+
+        <span class="c1"># Add tracker</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">add_tracker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tracker_url</span><span class="p">)</span>
+        
+        <span class="c1"># Set the name in the torrent parameters</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">set_comment</span><span class="p">(</span><span class="n">input_path</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+        
+        <span class="c1"># Generate the torrent</span>
+        <span class="n">libtorrent</span><span class="o">.</span><span class="n">set_piece_hashes</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">parent_path</span><span class="p">))</span>
+        
+        <span class="c1"># Set private flag if configured</span>
+        <span class="n">t</span><span class="o">.</span><span class="n">set_priv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">private</span><span class="p">)</span>
+        
+        <span class="c1"># Create the torrent</span>
+        <span class="n">torrent</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
+        
+        <span class="c1"># Ensure the name is set in the info dictionary</span>
+        <span class="n">torrent</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;info&quot;</span><span class="p">][</span><span class="sa">b</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_path</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
+        
+        <span class="c1"># Write the torrent file</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">libtorrent</span><span class="o">.</span><span class="n">bencode</span><span class="p">(</span><span class="n">torrent</span><span class="p">))</span>
+            <span class="c1"># Sync the torrent file to disk</span>
+            <span class="n">sync_to_disk</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+        <span class="c1"># Verify the created torrent file</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">verify_torrent_file</span><span class="p">(</span><span class="n">output_path</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to verify created torrent file: </span><span class="si">{</span><span class="n">output_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">output_path</span></div>
+
+
+<div class="viewcode-block" id="TorrentCreator.calculate_optimal_piece_size">
+<a class="viewcode-back" href="../../api/index.html#torrent.torrent_creator.TorrentCreator.calculate_optimal_piece_size">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calculate_optimal_piece_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">total_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Calculate the optimal piece size for a torrent based on its total size.</span>
+
+<span class="sd">        The piece size affects both the torrent file size and client memory usage:</span>
+<span class="sd">        - Smaller pieces allow more granular downloading but increase torrent file size</span>
+<span class="sd">        - Larger pieces reduce overhead but require more sequential downloading</span>
+<span class="sd">        - Aim for 1000-2000 pieces total as a balance for most clients</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            total_size: Total size of the content in bytes</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            int: Optimal piece size in bytes (power of 2 between min and max bounds)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Start with minimum piece size that would result in &lt;= max pieces</span>
+        <span class="n">min_viable_piece_size</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">total_size</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">target_pieces_max</span><span class="p">)</span>
+
+        <span class="c1"># Round up to nearest power of 2</span>
+        <span class="n">min_viable_power</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">min_viable_piece_size</span><span class="p">))</span>
+        <span class="n">piece_size</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">min_viable_power</span><span class="p">)</span>  <span class="c1"># Ensure integer result</span>
+
+        <span class="c1"># Ensure piece size is within bounds</span>
+        <span class="n">piece_size</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">min_piece_size</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">piece_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">max_piece_size</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">piece_size</span></div>
+
+
+<div class="viewcode-block" id="TorrentCreator.verify_torrent_file">
+<a class="viewcode-back" href="../../api/index.html#torrent.torrent_creator.TorrentCreator.verify_torrent_file">[docs]</a>
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">verify_torrent_file</span><span class="p">(</span><span class="n">torrent_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Verify that a torrent file is valid and can be loaded.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            torrent_path: Path to the torrent file</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if the torrent file is valid</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">            This method attempts to decode the torrent file to ensure it&#39;s valid.</span>
+<span class="sd">            It does not verify the actual content or piece hashes.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">torrent_path</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                <span class="n">data</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="c1"># Try to decode the torrent file</span>
+            <span class="n">torrent</span> <span class="o">=</span> <span class="n">libtorrent</span><span class="o">.</span><span class="n">bdecode</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="c1"># Basic validation of required fields</span>
+            <span class="n">info</span> <span class="o">=</span> <span class="n">torrent</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;info&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;name&quot;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;piece length&quot;</span><span class="p">):</span>
+                <span class="k">return</span> <span class="kc">False</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">except</span> <span class="p">(</span><span class="ne">OSError</span><span class="p">,</span> <span class="ne">RuntimeError</span><span class="p">):</span>
+            <span class="k">return</span> <span class="kc">False</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, friedhardware.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
