@@ -3,21 +3,27 @@ Changelog
 
 .. _changelog:
 
-.. rubric:: [1.3.0] - 2025-03-17
+:tocdepth: 2
 
-.. rubric:: [1.2.0] - 2025-03-17
+[1.3.0] - 2025-03-17
+--------------------
+
+[1.2.0] - 2025-03-17
+--------------------
 
 Fixed
 -----
 * update release script to push commits before tags and update Python version requirement ([71f2dcd])(https://github.com/friedhardware/TorrentDirectories/commit/71f2dcd) (friedhardware)
 
-.. rubric:: [1.1.1] - 2025-03-17
+[1.1.1] - 2025-03-17
+--------------------
 
 Changed
 -------
 * Update documentation to match implementation and add missing options ([b29a287])(https://github.com/friedhardware/TorrentDirectories/commit/b29a287) (friedhardware)
 
-.. rubric:: [1.1.0] - 2025-03-17
+[1.1.0] - 2025-03-17
+--------------------
 
 Changed
 -------
@@ -45,7 +51,8 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
-.. rubric:: [1.1.0] - 2024-03-17
+[1.1.0] - 2024-03-17
+--------------------
 
 Added
 -----
@@ -68,7 +75,8 @@ Fixed
 - Manifest entry replacement behavior
 - Type hint issues across the codebase
 
-.. rubric:: [1.0.0] - 2024-03-XX
+[1.0.0] - 2024-03-XX
+--------------------
 
 Initial release.
 
