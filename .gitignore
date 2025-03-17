@@ -39,4 +39,30 @@ htmlcov/
 
 .DS_Store
 
-.cursor/
+# Python additional
+.pytest_cache/
+.python-version
+.env
+.venv
+*.pyc
+__pycache__/
+.mypy_cache/
+.ruff_cache/
+
+# Documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+.doctrees/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Local development
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Logs
+*.log
+logs/
