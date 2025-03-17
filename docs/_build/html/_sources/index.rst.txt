@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to TorrentDirectories's documentation!
-============================================
+==============================================
 
 TorrentDirectories is a Python library for creating and managing torrent files with optimal settings. It provides a simple interface for creating torrent files from both single files and directories, with features like automatic piece size calculation and torrent verification.
 
@@ -38,7 +38,7 @@ You can install TorrentDirectories using pip:
    pip install torrentdirectories
 
 Quick Start
-----------
+==========
 
 Here's a simple example of creating a torrent file:
 

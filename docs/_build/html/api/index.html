@@ -9,7 +9,6 @@
   <title>API Reference &mdash; TorrentDirectories 1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css?v=32098709" />
 
   
     <link rel="shortcut icon" href="../_static/favicon.ico"/>
@@ -21,8 +20,8 @@
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Contributing" href="../contributing.html" />
-    <link rel="prev" title="Usage Guide" href="../usage.html" /> 
+    <link rel="next" title="TorrentCreator" href="torrent.torrent_creator.html" />
+    <link rel="prev" title="Usage" href="../usage.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -46,33 +45,26 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../installation.html#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation.html#installing-from-pypi">Installing from PyPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation.html#installing-from-source">Installing from Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../installation.html#development-installation">Development Installation</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../usage.html#basic-usage">Basic Usage</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../usage.html#creating-a-simple-torrent">Creating a Simple Torrent</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../usage.html#command-line-interface">Command Line Interface</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../usage.html#creating-a-torrent">Creating a Torrent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../usage.html#batch-processing">Batch Processing</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../usage.html#advanced-features">Advanced Features</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../usage.html#manifest-management">Manifest Management</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../usage.html#configuration-options">Configuration Options</a></li>
-<li class="toctree-l3"><a class="reference internal" href="../usage.html#piece-size-calculation">Piece Size Calculation</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="../usage.html#error-handling">Error Handling</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#requirements">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#installing-from-pypi">Installing from PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#installing-from-source">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation.html#development-installation">Development Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#basic-usage">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#creating-a-simple-torrent">Creating a Simple Torrent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#command-line-interface">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#creating-a-torrent">Creating a Torrent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#batch-processing">Batch Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#advanced-features">Advanced Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#manifest-management">Manifest Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#configuration-options">Configuration Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#piece-size-calculation">Piece Size Calculation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../usage.html#error-handling">Error Handling</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="torrent.torrent_creator.html">TorrentCreator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="torrent.utils.config.html">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="torrent.manifest.html">Manifest</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-torrent.torrent_creator">TorrentCreator</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#torrent.torrent_creator.TorrentCreator"><code class="docutils literal notranslate"><span class="pre">TorrentCreator</span></code></a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#torrent.torrent_creator.TorrentCreator.__init__"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.__init__()</span></code></a></li>
@@ -116,21 +108,9 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../contributing.html#development-process">Development Process</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../contributing.html#code-style">Code Style</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../contributing.html#pull-request-process">Pull Request Process</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../contributing.html#testing">Testing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="../contributing.html#documentation">Documentation</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="../changelog.html#xx">[1.0.0] - 2024-03-XX</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="../changelog.html#added">Added</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../changelog.html#xx">[1.0.0] - 2024-03-XX</a></li>
 </ul>
 
         </div>
@@ -159,8 +139,13 @@
              
   <section id="api-reference">
 <h1>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h1>
-<p>This section provides detailed API documentation for all public modules and classes in TorrentDirectories.</p>
 <div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="torrent.torrent_creator.html">TorrentCreator</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torrent.utils.config.html">Configuration</a></li>
+<li class="toctree-l1"><a class="reference internal" href="torrent.manifest.html">Manifest</a></li>
+</ul>
 </div>
 <section id="module-torrent.torrent_creator">
 <span id="torrentcreator"></span><h2>TorrentCreator<a class="headerlink" href="#module-torrent.torrent_creator" title="Link to this heading"></a></h2>
@@ -492,8 +477,8 @@ Note: With append-only operation, force=True will add duplicate entries</p></li>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="../usage.html" class="btn btn-neutral float-left" title="Usage Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="../contributing.html" class="btn btn-neutral float-right" title="Contributing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="../usage.html" class="btn btn-neutral float-left" title="Usage" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="torrent.torrent_creator.html" class="btn btn-neutral float-right" title="TorrentCreator" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

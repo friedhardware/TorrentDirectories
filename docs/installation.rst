@@ -2,7 +2,7 @@ Installation
 ============
 
 Requirements
------------
+===========
 
 TorrentDirectories requires Python 3.8 or later. The following dependencies will be automatically installed:
 
@@ -11,7 +11,7 @@ TorrentDirectories requires Python 3.8 or later. The following dependencies will
 * typing-extensions
 
 Installing from PyPI
-------------------
+==================
 
 The recommended way to install TorrentDirectories is via pip:
 
@@ -20,7 +20,7 @@ The recommended way to install TorrentDirectories is via pip:
    pip install torrentdirectories
 
 Installing from Source
---------------------
+====================
 
 To install TorrentDirectories from source:
 
@@ -45,7 +45,7 @@ To install TorrentDirectories from source:
       pip install -e .
 
 Development Installation
-----------------------
+======================
 
 For development, you'll want to install additional dependencies:
 

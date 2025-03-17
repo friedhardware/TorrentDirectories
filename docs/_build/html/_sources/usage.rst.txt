@@ -1,13 +1,11 @@
-Usage Guide
-===========
-
-This guide will walk you through the main features of TorrentDirectories.
+Usage
+=====
 
 Basic Usage
-----------
+==========
 
 Creating a Simple Torrent
-~~~~~~~~~~~~~~~~~~~~~~~~
+=======================
 
 To create a torrent file from a single file or directory:
 
@@ -32,12 +30,15 @@ To create a torrent file from a single file or directory:
     )
 
 Command Line Interface
---------------------
+====================
+
+Creating a Torrent
+================
 
 TorrentDirectories provides a command-line interface for common operations.
 
 Creating a Torrent
-~~~~~~~~~~~~~~~~~
+================~
 
 .. code-block:: bash
 
@@ -51,7 +52,7 @@ Creating a Torrent
     torrentdirectories create --input path/to/content --output content.torrent --tracker http://example.com/announce --private
 
 Batch Processing
-~~~~~~~~~~~~~~~
+==============
 
 You can process multiple files or directories at once:
 
@@ -60,10 +61,10 @@ You can process multiple files or directories at once:
     torrentdirectories batch --input path/to/content_dir --output path/to/output_dir --tracker http://example.com/announce
 
 Advanced Features
-----------------
+===============
 
 Manifest Management
-~~~~~~~~~~~~~~~~~
+=================
 
 TorrentDirectories maintains a manifest of created torrents. You can clean the manifest to remove invalid entries:
 
@@ -78,7 +79,7 @@ TorrentDirectories maintains a manifest of created torrents. You can clean the m
     manager.clean_manifest()
 
 Configuration Options
-~~~~~~~~~~~~~~~~~~~
+===================
 
 The `TorrentConfig` class provides several options for customizing torrent creation:
 
@@ -92,7 +93,7 @@ The `TorrentConfig` class provides several options for customizing torrent creat
     )
 
 Piece Size Calculation
-~~~~~~~~~~~~~~~~~~~~
+====================
 
 TorrentDirectories automatically calculates the optimal piece size based on the content size:
 
@@ -113,7 +114,7 @@ You can see the calculated piece size in the debug logs:
     creator.create("path/to/content", "output.torrent")
 
 Error Handling
--------------
+============
 
 TorrentDirectories provides clear error messages for common issues:
 

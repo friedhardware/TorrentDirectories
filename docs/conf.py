@@ -40,22 +40,22 @@ html_static_path = ['_static']
 html_favicon = '_static/images/favicon.ico'
 
 # These paths are either relative to html_static_path or fully qualified paths (eg. https://...)
-html_css_files = [
-    'css/custom.css',
-]
+html_css_files = []
 
 html_theme_options = {
+    # Display
+    'style_nav_header_background': '#2980B9',  # Classic Read the Docs blue
     'logo_only': False,
-    'display_version': True,
-    'prev_next_buttons_location': 'bottom',
-    'style_external_links': True,
-    'style_nav_header_background': '#2980B9',
-    # Toc options
-    'collapse_navigation': False,
-    'sticky_navigation': True,
+    
+    # Navigation
     'navigation_depth': 4,
-    'includehidden': True,
-    'titles_only': False
+    'collapse_navigation': True,  # Collapse navigation by default
+    'sticky_navigation': True,    # Fixed sidebar
+    'titles_only': False,
+    'prev_next_buttons_location': 'bottom',
+    
+    # External Links
+    'style_external_links': True, # Add external link icon
 }
 
 # Napoleon settings

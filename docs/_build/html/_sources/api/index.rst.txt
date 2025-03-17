@@ -1,14 +1,22 @@
 API Reference
-=============
-
-This section provides detailed API documentation for all public modules and classes in TorrentDirectories.
+============
 
 .. toctree::
    :maxdepth: 2
+   :caption: Contents:
 
-   torrent_creator
-   config
-   manifest
+   torrent.torrent_creator
+   torrent.utils.config
+   torrent.manifest
+
+.. module:: torrent.torrent_creator
+   :no-index:
+
+.. module:: torrent.utils.config
+   :no-index:
+
+.. module:: torrent.manifest
+   :no-index:
 
 TorrentCreator
 --------------

@@ -6,10 +6,9 @@
   <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Usage Guide &mdash; TorrentDirectories 1.0 documentation</title>
+  <title>Usage &mdash; TorrentDirectories 1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
-      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=32098709" />
 
   
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -46,91 +45,26 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-from-pypi">Installing from PyPI</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-from-source">Installing from Source</a></li>
-<li class="toctree-l2"><a class="reference internal" href="installation.html#development-installation">Development Installation</a></li>
-</ul>
-</li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage Guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#creating-a-simple-torrent">Creating a Simple Torrent</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#command-line-interface">Command Line Interface</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#creating-a-torrent">Creating a Torrent</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#batch-processing">Batch Processing</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#advanced-features">Advanced Features</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#manifest-management">Manifest Management</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#configuration-options">Configuration Options</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#piece-size-calculation">Piece Size Calculation</a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="api/index.html#module-torrent.torrent_creator">TorrentCreator</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator"><code class="docutils literal notranslate"><span class="pre">TorrentCreator</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator.__init__"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.__init__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator.create"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.create()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator.calculate_optimal_piece_size"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.calculate_optimal_piece_size()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator.verify_torrent_file"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.verify_torrent_file()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="api/index.html#module-torrent.utils.config">Configuration</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig"><code class="docutils literal notranslate"><span class="pre">TorrentConfig</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.tracker_url"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.tracker_url</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.min_piece_size"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.min_piece_size</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.max_piece_size"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.max_piece_size</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.target_pieces_min"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.target_pieces_min</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.target_pieces_max"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.target_pieces_max</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.skip_hidden"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.skip_hidden</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.skip_system_files"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.skip_system_files</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.private"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.private</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.source"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.source</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.comment"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.comment</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="api/index.html#module-torrent.manifest">Manifest Management</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestError"><code class="docutils literal notranslate"><span class="pre">ManifestError</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager"><code class="docutils literal notranslate"><span class="pre">ManifestManager</span></code></a><ul>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.__init__"><code class="docutils literal notranslate"><span class="pre">ManifestManager.__init__()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager._create_manifest"><code class="docutils literal notranslate"><span class="pre">ManifestManager._create_manifest()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.is_directory_processed"><code class="docutils literal notranslate"><span class="pre">ManifestManager.is_directory_processed()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.add_entry"><code class="docutils literal notranslate"><span class="pre">ManifestManager.add_entry()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.get_missing_torrents"><code class="docutils literal notranslate"><span class="pre">ManifestManager.get_missing_torrents()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.clean_manifest"><code class="docutils literal notranslate"><span class="pre">ManifestManager.clean_manifest()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.get_processed_directories"><code class="docutils literal notranslate"><span class="pre">ManifestManager.get_processed_directories()</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.get_torrent_path"><code class="docutils literal notranslate"><span class="pre">ManifestManager.get_torrent_path()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#development-process">Development Process</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#code-style">Code Style</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#pull-request-process">Pull Request Process</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#testing">Testing</a></li>
-<li class="toctree-l2"><a class="reference internal" href="contributing.html#documentation">Documentation</a></li>
-</ul>
-</li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="changelog.html#xx">[1.0.0] - 2024-03-XX</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="changelog.html#added">Added</a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#installing-from-pypi">Installing from PyPI</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#installing-from-source">Installing from Source</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html#development-installation">Development Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#basic-usage">Basic Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#creating-a-simple-torrent">Creating a Simple Torrent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#command-line-interface">Command Line Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#creating-a-torrent">Creating a Torrent</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#batch-processing">Batch Processing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#advanced-features">Advanced Features</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#manifest-management">Manifest Management</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#configuration-options">Configuration Options</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#piece-size-calculation">Piece Size Calculation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="#error-handling">Error Handling</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html#xx">[1.0.0] - 2024-03-XX</a></li>
 </ul>
 
         </div>
@@ -147,7 +81,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active">Usage Guide</li>
+      <li class="breadcrumb-item active">Usage</li>
       <li class="wy-breadcrumbs-aside">
             <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
       </li>
@@ -157,13 +91,14 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="usage-guide">
-<h1>Usage Guide<a class="headerlink" href="#usage-guide" title="Link to this heading"></a></h1>
-<p>This guide will walk you through the main features of TorrentDirectories.</p>
+  <section id="usage">
+<h1>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h1>
+</section>
 <section id="basic-usage">
-<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h2>
+<h1>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h1>
+</section>
 <section id="creating-a-simple-torrent">
-<h3>Creating a Simple Torrent<a class="headerlink" href="#creating-a-simple-torrent" title="Link to this heading"></a></h3>
+<h1>Creating a Simple Torrent<a class="headerlink" href="#creating-a-simple-torrent" title="Link to this heading"></a></h1>
 <p>To create a torrent file from a single file or directory:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torrent.torrent_creator</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorrentCreator</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">torrent.utils.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">TorrentConfig</span>
@@ -185,12 +120,14 @@
 </pre></div>
 </div>
 </section>
-</section>
 <section id="command-line-interface">
-<h2>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Link to this heading"></a></h2>
-<p>TorrentDirectories provides a command-line interface for common operations.</p>
+<h1>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Link to this heading"></a></h1>
+</section>
 <section id="creating-a-torrent">
-<h3>Creating a Torrent<a class="headerlink" href="#creating-a-torrent" title="Link to this heading"></a></h3>
+<h1>Creating a Torrent<a class="headerlink" href="#creating-a-torrent" title="Link to this heading"></a></h1>
+<p>TorrentDirectories provides a command-line interface for common operations.</p>
+<p>Creating a Torrent
+================~</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a torrent from a single file</span>
 torrentdirectories<span class="w"> </span>create<span class="w"> </span>--input<span class="w"> </span>path/to/file<span class="w"> </span>--output<span class="w"> </span>file.torrent<span class="w"> </span>--tracker<span class="w"> </span>http://example.com/announce
 
@@ -203,17 +140,17 @@ torrentdirectories<span class="w"> </span>create<span class="w"> </span>--input<
 </div>
 </section>
 <section id="batch-processing">
-<h3>Batch Processing<a class="headerlink" href="#batch-processing" title="Link to this heading"></a></h3>
+<h1>Batch Processing<a class="headerlink" href="#batch-processing" title="Link to this heading"></a></h1>
 <p>You can process multiple files or directories at once:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>torrentdirectories<span class="w"> </span>batch<span class="w"> </span>--input<span class="w"> </span>path/to/content_dir<span class="w"> </span>--output<span class="w"> </span>path/to/output_dir<span class="w"> </span>--tracker<span class="w"> </span>http://example.com/announce
 </pre></div>
 </div>
 </section>
-</section>
 <section id="advanced-features">
-<h2>Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h2>
+<h1>Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h1>
+</section>
 <section id="manifest-management">
-<h3>Manifest Management<a class="headerlink" href="#manifest-management" title="Link to this heading"></a></h3>
+<h1>Manifest Management<a class="headerlink" href="#manifest-management" title="Link to this heading"></a></h1>
 <p>TorrentDirectories maintains a manifest of created torrents. You can clean the manifest to remove invalid entries:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">torrent.manifest</span><span class="w"> </span><span class="kn">import</span> <span class="n">ManifestManager</span>
 
@@ -226,7 +163,7 @@ torrentdirectories<span class="w"> </span>create<span class="w"> </span>--input<
 </div>
 </section>
 <section id="configuration-options">
-<h3>Configuration Options<a class="headerlink" href="#configuration-options" title="Link to this heading"></a></h3>
+<h1>Configuration Options<a class="headerlink" href="#configuration-options" title="Link to this heading"></a></h1>
 <p>The <cite>TorrentConfig</cite> class provides several options for customizing torrent creation:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">config</span> <span class="o">=</span> <span class="n">TorrentConfig</span><span class="p">(</span>
     <span class="n">tracker_url</span><span class="o">=</span><span class="s2">&quot;http://example.com/announce&quot;</span><span class="p">,</span>
@@ -238,7 +175,7 @@ torrentdirectories<span class="w"> </span>create<span class="w"> </span>--input<
 </div>
 </section>
 <section id="piece-size-calculation">
-<h3>Piece Size Calculation<a class="headerlink" href="#piece-size-calculation" title="Link to this heading"></a></h3>
+<h1>Piece Size Calculation<a class="headerlink" href="#piece-size-calculation" title="Link to this heading"></a></h1>
 <p>TorrentDirectories automatically calculates the optimal piece size based on the content size:</p>
 <ul class="simple">
 <li><p>Small files (&lt; 50MB): 16KB pieces</p></li>
@@ -256,9 +193,8 @@ torrentdirectories<span class="w"> </span>create<span class="w"> </span>--input<
 </pre></div>
 </div>
 </section>
-</section>
 <section id="error-handling">
-<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<h1>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h1>
 <p>TorrentDirectories provides clear error messages for common issues:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
     <span class="n">creator</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="s2">&quot;nonexistent/path&quot;</span><span class="p">,</span> <span class="s2">&quot;output.torrent&quot;</span><span class="p">)</span>
@@ -271,7 +207,6 @@ torrentdirectories<span class="w"> </span>create<span class="w"> </span>--input<
     <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Error writing torrent file: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </pre></div>
 </div>
-</section>
 </section>
 
 
