@@ -1,11 +1,15 @@
 Changelog
 =========
 
+.. _changelog:
+
 [1.3.0] - 2025-03-17
 ===================
+:noindex:
 
 [1.2.0] - 2025-03-17
 ===================
+:noindex:
 
 Fixed
 -----
@@ -13,6 +17,7 @@ Fixed
 
 [1.1.1] - 2025-03-17
 ===================
+:noindex:
 
 Changed
 -------
@@ -20,6 +25,7 @@ Changed
 
 [1.1.0] - 2025-03-17
 ===================
+:noindex:
 
 Changed
 -------
@@ -49,6 +55,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 
 [1.1.0] - 2024-03-17
 ===================
+:noindex:
 
 Added
 -----
@@ -73,6 +80,7 @@ Fixed
 
 [1.0.0] - 2024-03-XX
 ===================
+:noindex:
 
 Initial release.
 
