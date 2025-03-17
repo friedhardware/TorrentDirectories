@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.2.0] - 2025-03-17
+====================
+
+
+
+Fixed
+* update release script to push commits before tags and update Python version requirement ([71f2dcd])(https://github.com/friedhardware/TorrentDirectories/commit/71f2dcd) (friedhardware)
 [1.1.1] - 2025-03-17
 ====================
 
