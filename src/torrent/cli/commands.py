@@ -14,7 +14,7 @@ from ..manifest import ManifestManager
 from ..torrent_creator import TorrentCreator
 from ..utils.config import TorrentConfig
 from ..utils.file_utils import format_size, get_total_size, list_files
-from ..utils.logging_utils import log_and_echo, log_batch_progress
+from ..utils.logging_utils import log_batch_progress
 from .exceptions import (
     BatchProcessingError,
     FileIsEmptyError,
@@ -35,31 +35,31 @@ def handle_dry_run(
     is_batch: bool = False,
 ) -> None:
     """Handle the dry run logic for both single and batch processing."""
-    log_and_echo("\nDry run mode - no changes will be made")
-    log_and_echo(f"Would create torrent from: {path}")
+    click.echo("\nDry run mode - no changes will be made")
+    click.echo(f"Would create torrent from: {path}")
 
     if output:
-        log_and_echo(f"Would save to: {output}")
+        click.echo(f"Would save to: {output}")
 
     if is_batch:
         # Get subdirectories to process
         subdirs = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
         if not subdirs:
             raise NoSubdirectoriesError(path)
-        log_and_echo(f"\nWould process {len(subdirs)} directories:")
+        click.echo(f"\nWould process {len(subdirs)} directories:")
         for d in sorted(subdirs):
-            log_and_echo(f"  {d}")
+            click.echo(f"  {d}")
     else:
         # Handle single file/directory dry run
         if os.path.isfile(path):
             size = os.path.getsize(path)
-            log_and_echo(f"File size: {format_size(size)}")
+            click.echo(f"File size: {format_size(size)}")
         else:
             total_size = get_total_size([path])
-            log_and_echo(f"Directory size: {format_size(total_size)}")
-            log_and_echo("\nFiles that would be included:")
+            click.echo(f"Directory size: {format_size(total_size)}")
+            click.echo("\nFiles that would be included:")
             for f in sorted(list_files(path)):
-                log_and_echo(f"  {f}")
+                click.echo(f"  {f}")
 
 
 def process_single(
@@ -112,7 +112,7 @@ def process_single(
             output if output is not None else f"{os.path.basename(path)}.torrent"
         )
         torrent_path = torrent_creator.create(path, output_path)
-        log_and_echo(f"\nTorrent created successfully: {torrent_path}")
+        click.echo(f"\nTorrent created successfully: {torrent_path}")
         return 0
 
     except Exception as e:
@@ -191,12 +191,12 @@ def process_batch(
 
         # Handle manifest cleaning
         if clean and missing:
-            log_and_echo("\nFound missing torrent files:", level="warning")
+            click.echo("\nFound missing torrent files:", err=True)
             for path in sorted(missing):
-                log_and_echo(f"  {path}", level="warning")
+                click.echo(f"  {path}", err=True)
 
             manifest.clean_manifest()
-            log_and_echo(f"\nRemoved {len(missing)} invalid entries from manifest")
+            click.echo(f"\nRemoved {len(missing)} invalid entries from manifest")
 
         # Process each subdirectory
         failures = (
@@ -225,39 +225,35 @@ def process_batch(
                         log_batch_progress(subdir, torrent_path)
                     except FileIsEmptyError as e:
                         if config.skip_empty_files:
-                            log_and_echo(
-                                f"  {subdir}: Skipping empty file", level="warning"
-                            )
+                            click.echo(f"  {subdir}: Skipping empty file", err=True)
                             skipped += 1
                         else:
-                            log_and_echo(f"  {subdir}: Failed - {e}", level="error")
+                            click.echo(f"  {subdir}: Failed - {e}", err=True)
                             failures += 1
                             if failures >= max_failures:
                                 raise MaxFailuresExceededError(failures)
                 except FileIsEmptyError as e:
                     # Handle empty file error in outer block too
                     if config.skip_empty_files:
-                        log_and_echo(
-                            f"  {subdir}: Skipping empty file", level="warning"
-                        )
+                        click.echo(f"  {subdir}: Skipping empty file", err=True)
                         skipped += 1
                     else:
-                        log_and_echo(f"  {subdir}: Failed - {e}", level="error")
+                        click.echo(f"  {subdir}: Failed - {e}", err=True)
                         failures += 1
                         if failures >= max_failures:
                             raise MaxFailuresExceededError(failures)
                 except Exception as e:
-                    log_and_echo(f"  {subdir}: Failed - {e}", level="error")
+                    click.echo(f"  {subdir}: Failed - {e}", err=True)
                     failures += 1
                     if failures >= max_failures:
                         raise MaxFailuresExceededError(failures)
 
         if failures > 0:
-            log_and_echo(f"\nCompleted with {failures} failures", level="warning")
+            click.echo(f"\nCompleted with {failures} failures", err=True)
             return 1
 
         if skipped > 0:
-            log_and_echo(f"\nSkipped {skipped} empty files", level="warning")
+            click.echo(f"\nSkipped {skipped} empty files", err=True)
 
         return 0
 

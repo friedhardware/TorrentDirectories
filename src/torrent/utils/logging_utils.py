@@ -19,14 +19,6 @@ def setup_logging(verbose: bool = False, log_file: Optional[str] = None) -> None
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    # Console handler
-    format_str = (
-        "%(asctime)s - %(levelname)s - %(message)s" if verbose else "%(message)s"
-    )
-    console = logging.StreamHandler()
-    console.setFormatter(logging.Formatter(format_str))
-    root_logger.addHandler(console)
-
     # File handler if specified
     if log_file:
         file_handler = logging.FileHandler(log_file)
@@ -36,46 +28,27 @@ def setup_logging(verbose: bool = False, log_file: Optional[str] = None) -> None
         root_logger.addHandler(file_handler)
 
 
-def log_and_echo(message: str, level: str = "info", echo: bool = True) -> None:
-    """
-    Log a message and optionally echo it to the console.
-
-    Args:
-        message: Message to log and echo
-        level: Logging level (debug, info, warning, error)
-        echo: Whether to echo the message to console
-    """
-    log_func = getattr(logger, level.lower())
-    log_func(message)
-
-    if echo:
-        if level.lower() == "error":
-            click.echo(message, err=True)
-        else:
-            click.echo(message)
-
-
 def log_progress(message: str, success: bool = True) -> None:
     """
-    Log a progress message with a checkmark or cross.
+    Display a progress message with a checkmark or cross.
 
     Args:
-        message: Message to log
+        message: Message to display
         success: Whether the operation was successful
     """
     status = "✓" if success else "✗"
-    log_and_echo(f"  {message}: {status}")
+    click.echo(f"  {message}: {status}")
 
 
 def log_batch_progress(subdir: str, torrent_path: Optional[str] = None) -> None:
     """
-    Log a batch processing progress message.
+    Display a batch processing progress message.
 
     Args:
         subdir: Name of the subdirectory being processed
         torrent_path: Optional path to the created torrent file
     """
     if torrent_path:
-        log_and_echo(f"  {subdir}: Created {torrent_path}")
+        click.echo(f"  {subdir}: Created {torrent_path}")
     else:
-        log_and_echo(f"  {subdir}: Already processed")
+        click.echo(f"  {subdir}: Already processed")
