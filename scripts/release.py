@@ -254,9 +254,7 @@ def main() -> None:
     )
     parser.add_argument("--version", help="Specific version to release")
     parser.add_argument("--no-tests", action="store_true", help="Skip running tests")
-    parser.add_argument(
-        "--no-publish", action="store_true", help="Skip publishing to PyPI"
-    )
+    parser.add_argument("--publish", action="store_true", help="Publish to PyPI")
     args = parser.parse_args()
 
     # Check git status
@@ -304,8 +302,8 @@ def main() -> None:
     print("\nCreating and pushing tag...")
     create_git_tag(new_version)
 
-    # Build and publish unless skipped
-    if not args.no_publish:
+    # Build and publish only if explicitly requested
+    if args.publish:
         build_and_publish()
 
     print(f"\nSuccessfully released version {new_version}!")
