@@ -44,11 +44,17 @@ TorrentDirectories provides a command-line interface for common operations.
     # Create a public torrent with custom output location
     torrent-directories file path/to/content http://tracker.example.com/announce --public -o output.torrent
 
-    # Create a torrent with custom piece size settings
+    # Create a torrent with custom piece size settings and metadata
     torrent-directories file path/to/content http://tracker.example.com/announce \
         --min-piece-size 1M \
         --max-piece-size 32M \
-        --target-pieces 1000-2000
+        --source "My Release Group" \
+        --comment "Great content!"
+
+    # Skip empty files and include system files
+    torrent-directories file path/to/content http://tracker.example.com/announce \
+        --skip-empty \
+        --include-system
 
     # Preview changes without creating files (dry run)
     torrent-directories --dry-run file path/to/content http://tracker.example.com/announce
@@ -70,10 +76,14 @@ You can process multiple directories at once:
     torrent-directories batch path/to/parent http://tracker.example.com/announce \
         --min-piece-size 1M \
         --force \
-        --include-system
+        --include-system \
+        --skip-empty
 
-    # Clean manifest and process directories
-    torrent-directories batch path/to/parent http://tracker.example.com/announce --clean
+    # Clean manifest and process directories with metadata
+    torrent-directories batch path/to/parent http://tracker.example.com/announce \
+        --clean \
+        --source "My Release Group" \
+        --comment "Batch release"
 
 Common Options
 ~~~~~~~~~~~~~
@@ -86,11 +96,13 @@ Global Options (before command):
 
 Torrent Options:
     * ``--private | --public``: Set torrent privacy (mutually exclusive, private by default)
-    * ``--min-piece-size SIZE``: Minimum piece size (e.g., 16K, 1M)
-    * ``--max-piece-size SIZE``: Maximum piece size (e.g., 16M, 64M)
-    * ``--target-pieces MIN-MAX``: Target piece count range (e.g., 1000-2000)
-    * ``--include-system``: Include system files
+    * ``--min-piece-size SIZE``: Minimum piece size (e.g., 16K, 1M, default: 256K)
+    * ``--max-piece-size SIZE``: Maximum piece size (e.g., 16M, 64M, default: 16M)
+    * ``--include-system``: Include system files (default: False)
+    * ``--skip-empty``: Skip empty files instead of failing (default: False)
     * ``--force``: Overwrite existing torrents
+    * ``--source TEXT``: Add a source string to the torrent metadata
+    * ``--comment TEXT``: Add a comment to the torrent metadata
     * ``-o/--output OUTPUT``: Output path for the torrent(s):
         * Single mode: Output file path (default: input name + .torrent)
         * Batch mode: Output directory (default: torrents/)
@@ -98,6 +110,26 @@ Torrent Options:
 Batch-specific Options:
     * ``--clean``: Clean the manifest by removing missing entries
     * ``--max-failures N``: Maximum failures before stopping (0 for unlimited)
+
+Error Handling
+~~~~~~~~~~~~~
+
+The tool handles various error conditions:
+
+* Empty Files:
+    * By default, attempting to create a torrent from an empty file will fail
+    * Use ``--skip-empty`` to skip empty files instead of failing
+    * In batch mode with ``--skip-empty``, empty files are counted separately from other failures
+
+* Existing Files:
+    * By default, the tool won't overwrite existing torrent files
+    * Use ``--force`` to overwrite existing files
+    * In batch mode, ``--force`` also updates the manifest entries
+
+* Maximum Failures:
+    * In batch mode, use ``--max-failures N`` to stop after N failures
+    * Empty files are only counted as failures if ``--skip-empty`` is not used
+    * A value of 0 (default) means no limit
 
 Manifest System
 ~~~~~~~~~~~~~
@@ -107,6 +139,7 @@ The tool maintains a manifest file to track processed directories in batch mode.
 * Skipping already processed directories
 * Resuming interrupted batch operations
 * Tracking which directories have been processed
+* Automatic backup of the manifest before cleaning
 
 The manifest is stored as a CSV file in the output directory with the following format:
 
@@ -114,6 +147,13 @@ The manifest is stored as a CSV file in the output directory with the following 
 
     directory_path,torrent_file,processed_at
     "/path/to/movie1","movie1.torrent","2024-03-15T14:30:00"
+
+The manifest system provides:
+
+* Automatic skipping of already processed directories (unless ``--force`` is used)
+* Cleaning of invalid entries with ``--clean``
+* Backup of the manifest before cleaning (saved as manifest.csv.bak)
+* Thread-safe operations for concurrent access
 
 ## Piece Size Selection
 
@@ -126,11 +166,10 @@ The default configuration uses:
 - Minimum piece size: 256 KiB
 - Maximum piece size: 16 MiB
 
-You can customize these values when creating the config:
+You can customize these values using the command-line options:
 
-.. code-block:: python
+.. code-block:: bash
 
-    config = TorrentConfig(
-        min_piece_size=16 * 1024,  # 16 KiB minimum
-        max_piece_size=64 * 1024 * 1024,  # 64 MiB maximum
-    )
+    torrent-directories file path/to/content http://tracker.example.com/announce \
+        --min-piece-size 1M \
+        --max-piece-size 32M

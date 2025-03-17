@@ -21,6 +21,7 @@ A Python tool for creating torrent files from directories with optimal settings 
   - [Single File/Directory Mode](#single-filedirectory-mode)
   - [Batch Mode](#batch-mode)
   - [Common Options](#common-options)
+  - [Error Handling](#error-handling)
 - [Manifest System](#manifest-system)
 - [Development](#development)
   - [Setting Up](#setting-up-development-environment)
@@ -54,8 +55,11 @@ torrent-directories file path/to/content http://tracker.example.com/announce
 # Specify output location
 torrent-directories file path/to/content http://tracker.example.com/announce -o output.torrent
 
-# Create a public torrent
-torrent-directories file path/to/content http://tracker.example.com/announce --public
+# Create a public torrent with metadata
+torrent-directories file path/to/content http://tracker.example.com/announce \
+    --public \
+    --source "My Release Group" \
+    --comment "Great content!"
 ```
 
 3. Process multiple directories in batch mode:
@@ -65,6 +69,13 @@ torrent-directories batch path/to/parent http://tracker.example.com/announce
 
 # Specify output directory for torrent files
 torrent-directories batch path/to/parent http://tracker.example.com/announce -o path/to/torrents
+
+# Process with custom settings
+torrent-directories batch path/to/parent http://tracker.example.com/announce \
+    --min-piece-size 1M \
+    --max-piece-size 32M \
+    --skip-empty \
+    --force
 ```
 
 ## Requirements
@@ -90,11 +101,18 @@ torrent-directories file ./my_movie http://tracker.example.com/announce
 # Specify output location
 torrent-directories file ./my_movie http://tracker.example.com/announce -o my_movie.torrent
 
-# Create public torrent with custom piece size
+# Create public torrent with custom piece size and metadata
 torrent-directories file ./my_movie http://tracker.example.com/announce \
     --public \
     --min-piece-size 1M \
-    --max-piece-size 32M
+    --max-piece-size 32M \
+    --source "My Release Group" \
+    --comment "Great content!"
+
+# Skip empty files and include system files
+torrent-directories file ./my_movie http://tracker.example.com/announce \
+    --skip-empty \
+    --include-system
 
 # Preview changes without creating files (dry run)
 torrent-directories --dry-run file ./my_movie http://tracker.example.com/announce
@@ -121,10 +139,14 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
 torrent-directories batch ./movies http://tracker.example.com/announce \
     --min-piece-size 1M \
     --force \
-    --include-system
+    --include-system \
+    --skip-empty
 
-# Clean manifest and process directories
-torrent-directories batch ./movies http://tracker.example.com/announce --clean
+# Clean manifest and process directories with metadata
+torrent-directories batch ./movies http://tracker.example.com/announce \
+    --clean \
+    --source "My Release Group" \
+    --comment "Batch release"
 ```
 
 ### Common Options
@@ -137,11 +159,13 @@ torrent-directories batch ./movies http://tracker.example.com/announce --clean
 
 - Torrent Options:
   - `--private | --public`: Set torrent privacy (mutually exclusive, private by default)
-  - `--min-piece-size SIZE`: Minimum piece size (e.g., 16K, 1M)
-  - `--max-piece-size SIZE`: Maximum piece size (e.g., 16M, 64M)
-  - `--target-pieces MIN-MAX`: Target piece count range (e.g., 1000-2000)
-  - `--include-system`: Include system files
+  - `--min-piece-size SIZE`: Minimum piece size (e.g., 16K, 1M, default: 256K)
+  - `--max-piece-size SIZE`: Maximum piece size (e.g., 16M, 64M, default: 16M)
+  - `--include-system`: Include system files (default: False)
+  - `--skip-empty`: Skip empty files instead of failing (default: False)
   - `--force`: Overwrite existing torrents
+  - `--source TEXT`: Add a source string to the torrent metadata
+  - `--comment TEXT`: Add a comment to the torrent metadata
   - `-o/--output OUTPUT`: Output path for the torrent(s):
     - Single mode: Output file path (default: input name + .torrent)
     - Batch mode: Output directory (default: torrents/)
@@ -150,6 +174,25 @@ torrent-directories batch ./movies http://tracker.example.com/announce --clean
   - `--clean`: Clean the manifest by removing missing entries
   - `--max-failures N`: Maximum failures before stopping (0 for unlimited)
 
+### Error Handling
+
+The tool handles various error conditions:
+
+- Empty Files:
+  - By default, attempting to create a torrent from an empty file will fail
+  - Use `--skip-empty` to skip empty files instead of failing
+  - In batch mode with `--skip-empty`, empty files are counted separately from other failures
+
+- Existing Files:
+  - By default, the tool won't overwrite existing torrent files
+  - Use `--force` to overwrite existing files
+  - In batch mode, `--force` also updates the manifest entries
+
+- Maximum Failures:
+  - In batch mode, use `--max-failures N` to stop after N failures
+  - Empty files are only counted as failures if `--skip-empty` is not used
+  - A value of 0 (default) means no limit
+
 ## Manifest System
 
 The tool maintains a manifest file to track processed directories in batch mode. This enables:
@@ -157,6 +200,7 @@ The tool maintains a manifest file to track processed directories in batch mode.
 - Skipping already processed directories
 - Resuming interrupted batch operations
 - Tracking which directories have been processed
+- Automatic backup of the manifest before cleaning
 
 The manifest is stored as a CSV file in the output directory with the following format:
 ```csv
@@ -164,10 +208,11 @@ directory_path,torrent_file,processed_at
 "/path/to/movie1","movie1.torrent","2024-03-15T14:30:00"
 ```
 
-To clean up the manifest and remove entries for missing torrents:
-```bash
-torrent-directories batch ./movies http://tracker.example.com/announce --clean
-```
+The manifest system provides:
+- Automatic skipping of already processed directories (unless `--force` is used)
+- Cleaning of invalid entries with `--clean`
+- Backup of the manifest before cleaning (saved as manifest.csv.bak)
+- Thread-safe operations for concurrent access
 
 ## Development
 
