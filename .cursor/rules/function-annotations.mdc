@@ -1,0 +1,7 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+When creating or editing functions: Always use return type annotations and Use "-> None" if function does not have a return value.
+
