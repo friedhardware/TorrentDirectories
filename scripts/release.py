@@ -296,7 +296,12 @@ def main() -> None:
         ["git", "commit", "-m", f"chore: Release version {new_version}"], check=True
     )
 
+    # Push the commit first
+    print("\nPushing changes to remote...")
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+
     # Create and push tag
+    print("\nCreating and pushing tag...")
     create_git_tag(new_version)
 
     # Build and publish unless skipped

@@ -36,7 +36,7 @@ setup(
     author_email="friedhardware@gmail.com",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    python_requires=">=3.13",
+    python_requires=">=3.11",
     install_requires=[
         "libtorrent>=2.0.0",
         "click>=8.1.3",
@@ -59,6 +59,8 @@ setup(
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
         "Programming Language :: Python :: 3.13",
     ],
 )
