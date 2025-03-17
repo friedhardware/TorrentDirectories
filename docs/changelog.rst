@@ -1,6 +1,19 @@
 Changelog
 =========
 
+[1.1.0] - 2025-03-17
+====================
+
+
+
+Changed
+* Add Markdown version of changelog ([fff30f4])(https://github.com/friedhardware/TorrentDirectories/commit/fff30f4) (friedhardware)
+
+
+Other
+* test: Update release script tests to use version.py ([7e16b9a])(https://github.com/friedhardware/TorrentDirectories/commit/7e16b9a) (friedhardware)
+* chore: Update release script for version.py and improved changelog handling ([127f120])(https://github.com/friedhardware/TorrentDirectories/commit/127f120) (friedhardware)
+* chore: Update version to 1.1.0 and update changelog ([d16ac5d])(https://github.com/friedhardware/TorrentDirectories/commit/d16ac5d) (friedhardware)
 All notable changes to this project will be documented in this file.
 
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
