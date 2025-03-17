@@ -11,9 +11,9 @@ from typing import Dict, List
 
 
 def get_current_version() -> str:
-    """Get the current version from __init__.py"""
-    init_file = Path(__file__).parent.parent / "src" / "torrent" / "__init__.py"
-    with open(init_file) as f:
+    """Get the current version from version.py"""
+    version_file = Path(__file__).parent.parent / "src" / "torrent" / "version.py"
+    with open(version_file) as f:
         version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M)
         if version_match:
             return version_match.group(1)
@@ -21,9 +21,9 @@ def get_current_version() -> str:
 
 
 def update_version(new_version: str) -> None:
-    """Update version in __init__.py"""
-    init_file = Path(__file__).parent.parent / "src" / "torrent" / "__init__.py"
-    with open(init_file) as f:
+    """Update version in version.py"""
+    version_file = Path(__file__).parent.parent / "src" / "torrent" / "version.py"
+    with open(version_file) as f:
         content = f.read()
 
     new_content = re.sub(
@@ -33,7 +33,7 @@ def update_version(new_version: str) -> None:
         flags=re.M,
     )
 
-    with open(init_file, "w") as f:
+    with open(version_file, "w") as f:
         f.write(new_content)
 
 
@@ -111,10 +111,13 @@ def get_git_changes() -> str:
     # Group commits by type
     commits = result.stdout.strip().split("\n")
     grouped_commits: Dict[str, List[str]] = {
-        "Features": [],
-        "Bug Fixes": [],
-        "Documentation": [],
-        "Other Changes": [],
+        "Added": [],
+        "Changed": [],
+        "Deprecated": [],
+        "Removed": [],
+        "Fixed": [],
+        "Security": [],
+        "Other": [],
     }
 
     for commit in commits:
@@ -125,20 +128,24 @@ def get_git_changes() -> str:
 
         # Categorize based on conventional commit prefixes
         if message.startswith("feat:"):
-            grouped_commits["Features"].append(
-                f"* {message[6:]} ([{hash_[:7]}])({commit_url}) ({author})"
+            grouped_commits["Added"].append(
+                f"- {message[6:]} ([{hash_[:7]}])({commit_url}) ({author})"
             )
         elif message.startswith("fix:"):
-            grouped_commits["Bug Fixes"].append(
-                f"* {message[5:]} ([{hash_[:7]}])({commit_url}) ({author})"
+            grouped_commits["Fixed"].append(
+                f"- {message[5:]} ([{hash_[:7]}])({commit_url}) ({author})"
             )
         elif message.startswith("docs:"):
-            grouped_commits["Documentation"].append(
-                f"* {message[6:]} ([{hash_[:7]}])({commit_url}) ({author})"
+            grouped_commits["Changed"].append(
+                f"- {message[6:]} ([{hash_[:7]}])({commit_url}) ({author})"
+            )
+        elif message.startswith("refactor:"):
+            grouped_commits["Changed"].append(
+                f"- {message[9:]} ([{hash_[:7]}])({commit_url}) ({author})"
             )
         else:
-            grouped_commits["Other Changes"].append(
-                f"* {message} ([{hash_[:7]}])({commit_url}) ({author})"
+            grouped_commits["Other"].append(
+                f"- {message} ([{hash_[:7]}])({commit_url}) ({author})"
             )
 
     # Build the changelog text
@@ -152,24 +159,50 @@ def get_git_changes() -> str:
 
 
 def create_changelog(version: str) -> None:
-    """Create or update CHANGELOG.md"""
-    changelog_file = Path(__file__).parent.parent / "CHANGELOG.md"
+    """Create or update CHANGELOG.md and docs/changelog.rst"""
+    # Update Markdown changelog
+    changelog_md = Path(__file__).parent.parent / "CHANGELOG.md"
     changes = get_git_changes()
 
-    if not changelog_file.exists():
-        with open(changelog_file, "w") as f:
+    if not changelog_md.exists():
+        with open(changelog_md, "w") as f:
             f.write("# Changelog\n\n")
+            f.write(
+                "All notable changes to this project will be documented in this file.\n\n"
+            )
+            f.write(
+                "The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),\n"
+            )
+            f.write(
+                "and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).\n\n"
+            )
 
-    with open(changelog_file, "r") as f:
+    with open(changelog_md, "r") as f:
         content = f.read()
 
-    new_entry = f"\n## {version} ({datetime.now().strftime('%Y-%m-%d')})\n\n{changes}"
+    new_entry = f"\n## [{version}] - {datetime.now().strftime('%Y-%m-%d')}\n\n{changes}"
 
     # Insert new entry after the first heading
     new_content = re.sub(r"(# Changelog\n)", f"\\1{new_entry}", content)
 
-    with open(changelog_file, "w") as f:
+    with open(changelog_md, "w") as f:
         f.write(new_content)
+
+    # Update RST changelog
+    changelog_rst = Path(__file__).parent.parent / "docs" / "changelog.rst"
+    if changelog_rst.exists():
+        with open(changelog_rst, "r") as f:
+            rst_content = f.read()
+
+        # Convert markdown to RST format
+        rst_changes = changes.replace("### ", "\n").replace("- ", "* ")
+        rst_entry = f"\n[{version}] - {datetime.now().strftime('%Y-%m-%d')}\n{'=' * len(version) + '=' * 15}\n\n{rst_changes}"
+
+        # Insert new entry after the first heading
+        rst_new_content = re.sub(r"(Changelog\n=+\n)", f"\\1{rst_entry}", rst_content)
+
+        with open(changelog_rst, "w") as f:
+            f.write(rst_new_content)
 
 
 def bump_version(current_version: str, bump_type: str) -> str:
@@ -250,18 +283,18 @@ def main() -> None:
         print("\nError: Tests failed. Aborting release.")
         sys.exit(1)
 
-    # Update version in all files and create changelog
+    # Update version in files
     update_version(new_version)
     update_pyproject_version(new_version)
+
+    # Create changelog
     create_changelog(new_version)
 
     # Commit changes
+    subprocess.run(["git", "add", "."], check=True)
     subprocess.run(
-        ["git", "add", "src/torrent/__init__.py", "pyproject.toml", "CHANGELOG.md"],
-        check=True,
+        ["git", "commit", "-m", f"chore: Release version {new_version}"], check=True
     )
-    subprocess.run(["git", "commit", "-m", f"Release v{new_version}"], check=True)
-    subprocess.run(["git", "push"], check=True)
 
     # Create and push tag
     create_git_tag(new_version)
@@ -269,10 +302,8 @@ def main() -> None:
     # Build and publish unless skipped
     if not args.no_publish:
         build_and_publish()
-    else:
-        print("\nSkipping PyPI publish.")
 
-    print(f"\nSuccessfully released version {new_version}")
+    print(f"\nSuccessfully released version {new_version}!")
 
 
 if __name__ == "__main__":
