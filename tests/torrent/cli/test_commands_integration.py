@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Generator
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -159,10 +160,7 @@ def test_process_batch_force_update_integration(
     assert result == 0
 
     # Get initial timestamps of torrent files
-    initial_timestamps = {
-        f: os.path.getmtime(f)
-        for f in output_dir.glob("*.torrent")
-    }
+    initial_timestamps = {f: os.path.getmtime(f) for f in output_dir.glob("*.torrent")}
 
     # Force update all torrents
     caplog.clear()
@@ -208,4 +206,4 @@ def test_process_single_large_files_integration(
 
     assert result == 0
     assert output_file.exists()
-    assert output_file.stat().st_size > 0 
+    assert output_file.stat().st_size > 0

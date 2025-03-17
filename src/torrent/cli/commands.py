@@ -76,7 +76,14 @@ def process_single(
             logger.error("Use --force to overwrite")
             return 1
 
-        torrent_creator = TorrentCreator(tracker_url, config)
+        # Create config if not provided
+        if config is None:
+            config = TorrentConfig(tracker_url=tracker_url)
+        else:
+            # Update tracker URL in existing config
+            config.tracker_url = tracker_url
+
+        torrent_creator = TorrentCreator(config)
 
         if dry_run:
             handle_dry_run(path, output, config)
@@ -115,7 +122,7 @@ def process_batch(
         output_dir: Directory to store torrent files and manifest (defaults to 'torrents/')
         dry_run: Whether to show what would be done without making changes
         clean: Whether to clean the manifest
-        force: Whether to overwrite existing torrent files
+        force: Whether to overwrite existing torrent files and manifest entries
         max_failures: Maximum allowed failures before stopping
 
     Returns:
@@ -127,7 +134,15 @@ def process_batch(
             os.makedirs(output_dir, exist_ok=True)
 
         manifest = ManifestManager(output_dir)
-        torrent_creator = TorrentCreator(tracker_url, config)
+        
+        # Create config if not provided
+        if config is None:
+            config = TorrentConfig(tracker_url=tracker_url)
+        else:
+            # Update tracker URL in existing config
+            config.tracker_url = tracker_url
+            
+        torrent_creator = TorrentCreator(config)
 
         # Check for missing torrent files
         missing = manifest.get_missing_torrents()
@@ -147,7 +162,7 @@ def process_batch(
                 logger.warning(f"  {path}")
 
             if not dry_run:
-                manifest.clean_manifest(directory)
+                manifest.clean_manifest()
                 logger.info(f"\nRemoved {len(missing)} invalid entries from manifest")
             else:
                 logger.info("\nWould remove invalid entries from manifest")
@@ -184,7 +199,7 @@ def process_batch(
                 # Set output path for the torrent file
                 torrent_file_path = os.path.join(output_dir, f"{subdir}.torrent")
                 torrent_path = torrent_creator.create(full_path, torrent_file_path)
-                manifest.add_entry(full_path, torrent_path)
+                manifest.add_entry(full_path, torrent_path, force=force)
                 logger.info(f"  {subdir}: Created {torrent_path} ✓")
             except Exception as e:
                 logger.error(f"  {subdir}: Failed - {e}")

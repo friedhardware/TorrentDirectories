@@ -9,8 +9,10 @@
   <title>Contributing &mdash; TorrentDirectories 1.0 documentation</title>
       <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css?v=32098709" />
 
   
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
       <script src="_static/jquery.js?v=5d32c60e"></script>
       <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="_static/documentation_options.js?v=f2a433a1"></script>
@@ -27,7 +29,7 @@
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
-        <div class="wy-side-nav-search" >
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
 
           
           
@@ -44,9 +46,76 @@
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
               <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
-<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage Guide</a></li>
-<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-from-pypi">Installing from PyPI</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#installing-from-source">Installing from Source</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#development-installation">Development Installation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#creating-a-simple-torrent">Creating a Simple Torrent</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#command-line-interface">Command Line Interface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#creating-a-torrent">Creating a Torrent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#batch-processing">Batch Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#advanced-features">Advanced Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#manifest-management">Manifest Management</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#configuration-options">Configuration Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="usage.html#piece-size-calculation">Piece Size Calculation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="usage.html#error-handling">Error Handling</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="api/index.html#module-torrent.torrent_creator">TorrentCreator</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator"><code class="docutils literal notranslate"><span class="pre">TorrentCreator</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator.__init__"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator.create"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.create()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator.calculate_optimal_piece_size"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.calculate_optimal_piece_size()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.torrent_creator.TorrentCreator.verify_torrent_file"><code class="docutils literal notranslate"><span class="pre">TorrentCreator.verify_torrent_file()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/index.html#module-torrent.utils.config">Configuration</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig"><code class="docutils literal notranslate"><span class="pre">TorrentConfig</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.tracker_url"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.tracker_url</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.min_piece_size"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.min_piece_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.max_piece_size"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.max_piece_size</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.target_pieces_min"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.target_pieces_min</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.target_pieces_max"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.target_pieces_max</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.skip_hidden"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.skip_hidden</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.skip_system_files"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.skip_system_files</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.private"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.private</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.source"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.source</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.utils.config.TorrentConfig.comment"><code class="docutils literal notranslate"><span class="pre">TorrentConfig.comment</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="api/index.html#module-torrent.manifest">Manifest Management</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestError"><code class="docutils literal notranslate"><span class="pre">ManifestError</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager"><code class="docutils literal notranslate"><span class="pre">ManifestManager</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.__init__"><code class="docutils literal notranslate"><span class="pre">ManifestManager.__init__()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager._create_manifest"><code class="docutils literal notranslate"><span class="pre">ManifestManager._create_manifest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.is_directory_processed"><code class="docutils literal notranslate"><span class="pre">ManifestManager.is_directory_processed()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.add_entry"><code class="docutils literal notranslate"><span class="pre">ManifestManager.add_entry()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.get_missing_torrents"><code class="docutils literal notranslate"><span class="pre">ManifestManager.get_missing_torrents()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.clean_manifest"><code class="docutils literal notranslate"><span class="pre">ManifestManager.clean_manifest()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.get_processed_directories"><code class="docutils literal notranslate"><span class="pre">ManifestManager.get_processed_directories()</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="api/index.html#torrent.manifest.ManifestManager.get_torrent_path"><code class="docutils literal notranslate"><span class="pre">ManifestManager.get_torrent_path()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Contributing</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#development-process">Development Process</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#code-style">Code Style</a></li>
@@ -55,20 +124,26 @@
 <li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#xx">[1.0.0] - 2024-03-XX</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#added">Added</a></li>
+</ul>
+</li>
+</ul>
+</li>
 </ul>
 
         </div>
       </div>
     </nav>
 
-    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
           <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
           <a href="index.html">TorrentDirectories</a>
       </nav>
 
       <div class="wy-nav-content">
-        <div class="rst-content">
+        <div class="rst-content style-external-links">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>

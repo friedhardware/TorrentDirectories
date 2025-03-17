@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = { text = "MIT" }
 authors = [
-    { name = "Josh S", email = "joshs@example.com" },
+    { name = "friedhardware" },
 ]
 dependencies = [
     "libtorrent>=2.0.0",
@@ -30,10 +30,11 @@ dev = [
     "types-PyYAML",
     "types-requests",
     "types-urllib3",
+    "psutil>=5.9.0",
 ]
 
 [project.scripts]
-torrent-directories = "torrent.cli:main"
+torrent-directories = "torrent.cli.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/torrent"]

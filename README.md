@@ -1,49 +1,196 @@
 # TorrentDirectories
 
-A Python tool for creating torrent files from directories with optimal settings and batch processing capabilities.
-
-## Table of Contents
-
-- [Features](#features)
-- [Installation](#installation)
-  - [From Source](#from-source)
-  - [Requirements](#requirements)
-- [Usage](#usage)
-  - [Command Structure](#command-structure)
-  - [Global Options](#global-options)
-  - [Commands](#commands)
-    - [1. File Command](#1-file-command)
-    - [2. Batch Command](#2-batch-command)
-- [Manifest System](#manifest-system)
-  - [Safety Features](#safety-features)
-  - [File Format](#file-format)
-- [Project Structure](#project-structure)
-- [API Reference](#api-reference)
-  - [TorrentCreator](#torrentcreator)
-  - [ManifestManager](#manifestmanager)
-- [Contributing](#contributing)
-- [Release Process](#release-process)
-- [License](#license)
-- [Testing](#testing)
+A Python tool for creating torrent files from directories with optimal settings and batch processing capabilities. Automatically calculates optimal piece sizes and supports both single file/directory and batch processing modes.
 
 ## Features
 
-- Create torrents from single files or directories
-- Batch process multiple directories with resume support
-- Optimal piece size calculation:
-  - Minimum piece size: 16 KiB (hard limit)
-  - Maximum piece size: 64 MiB (hard limit)
-  - Default: 256 KiB minimum, 16 MiB maximum piece size
-  - Targets 1000-2000 pieces for optimal client performance
-- Skip hidden and system files (configurable)
-- Progress reporting and detailed logging
-- Manifest system for tracking processed directories
-- Torrent verification after creation
-- Cross-platform support (Windows, macOS, Linux)
+- ✨ Create torrents from single files or directories
+- 🚀 Batch process multiple directories with resume support
+- 🎯 Automatic optimal piece size calculation
+- 🔒 Private torrents by default (with public option)
+- 📝 Detailed logging and progress reporting
+- 🔄 Resume support via manifest system
+- ✅ Torrent verification after creation
+- 🖥️ Cross-platform support (Windows, macOS, Linux)
 
-## Installation
+## Table of Contents
 
-### From Source
+- [Quick Start](#quick-start)
+- [Requirements](#requirements)
+- [Detailed Usage](#detailed-usage)
+  - [Single File/Directory Mode](#single-filedirectory-mode)
+  - [Batch Mode](#batch-mode)
+  - [Common Options](#common-options)
+  - [Command Order](#command-order)
+- [Manifest System](#manifest-system)
+- [Development](#development)
+  - [Setting Up](#setting-up-development-environment)
+  - [Running Tests](#running-tests)
+  - [Code Style](#code-style)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Quick Start
+
+1. Install from source:
+```bash
+# Clone and enter directory
+git clone https://github.com/friedhardware/TorrentDirectories.git
+cd TorrentDirectories
+
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Unix/macOS
+# Or on Windows: venv\Scripts\activate
+
+# Install in development mode
+pip install -e .
+```
+
+2. Create a torrent from a single file or directory:
+```bash
+# Create a private torrent (default)
+torrent-directories file path/to/content http://tracker.example.com/announce
+
+# Specify output location
+torrent-directories file path/to/content http://tracker.example.com/announce -o output.torrent
+
+# Create a public torrent
+torrent-directories file path/to/content http://tracker.example.com/announce --public
+```
+
+3. Process multiple directories in batch mode:
+```bash
+# Process all subdirectories in a parent directory
+torrent-directories batch path/to/parent http://tracker.example.com/announce
+
+# Specify output directory for torrent files
+torrent-directories batch path/to/parent http://tracker.example.com/announce -o path/to/torrents
+```
+
+## Requirements
+
+- Python 3.8 or later
+- libtorrent 2.0.0 or later
+
+## Detailed Usage
+
+### Single File/Directory Mode
+
+Create a torrent from a single file or directory:
+
+```bash
+torrent-directories file <input_path> <tracker_url> [options]
+
+# Examples:
+
+# Basic usage - creates private torrent
+torrent-directories file ./my_movie http://tracker.example.com/announce
+
+# Specify output location
+torrent-directories file ./my_movie http://tracker.example.com/announce -o my_movie.torrent
+
+# Create public torrent with custom piece size
+torrent-directories file ./my_movie http://tracker.example.com/announce \
+    --public \
+    --min-piece-size 1M \
+    --max-piece-size 32M
+
+# Preview changes without creating files (dry run)
+torrent-directories file ./my_movie http://tracker.example.com/announce --dry-run
+```
+
+### Batch Mode
+
+Process multiple subdirectories in a parent directory:
+
+```bash
+torrent-directories batch <parent_directory> <tracker_url> [options]
+
+# Examples:
+
+# Basic usage - process all subdirectories
+torrent-directories batch ./movies http://tracker.example.com/announce
+
+# Custom output directory and public torrents
+torrent-directories batch ./movies http://tracker.example.com/announce \
+    -o /path/to/torrents \
+    --public
+
+# Process with custom settings and force rebuild
+torrent-directories batch ./movies http://tracker.example.com/announce \
+    --min-piece-size 1M \
+    --force \
+    --include-system
+```
+
+### Common Options
+
+- General Options (before command):
+  - `--verbose` or `-v`: Show detailed progress
+  - `--dry-run`: Preview changes without making them
+  - `--log-file FILE`: Write logs to file
+
+- Torrent Options:
+  - `--private | --public`: Set torrent privacy (mutually exclusive, private by default)
+  - `--min-piece-size SIZE`: Minimum piece size (e.g., 16K, 1M)
+  - `--max-piece-size SIZE`: Maximum piece size (e.g., 16M, 64M)
+  - `--include-system`: Include system files
+  - `--force`: Overwrite existing torrents
+  - `-o/--output OUTPUT`: Output path for the torrent(s):
+    - Single mode: Output file path (default: input name + .torrent)
+    - Batch mode: Output directory (default: torrents/)
+
+- Batch-specific Options:
+  - `--clean`: Clean the manifest by removing missing entries
+  - `--max-failures N`: Maximum failures before stopping (0 for unlimited)
+
+### Command Order
+
+General options must come before the command (file/batch), while torrent-specific options come after:
+
+```bash
+# Correct - General options before command, torrent options after
+torrent-directories --verbose file ./path tracker-url --public --min-piece-size 1M
+
+# Incorrect - torrent options before command (will not work)
+# torrent-directories --public file ./path tracker-url  # DON'T DO THIS
+```
+
+Examples of correct option order:
+```bash
+# Verbose output with custom piece size
+torrent-directories --verbose file ./movie tracker-url --min-piece-size 1M
+
+# Log to file with public flag
+torrent-directories --log-file output.log batch ./movies tracker-url --public
+
+# Dry run with multiple options
+torrent-directories --dry-run file ./movie tracker-url --public --force --min-piece-size 1M
+```
+
+## Manifest System
+
+The tool maintains a manifest file to track processed directories in batch mode. This enables:
+
+- Skipping already processed directories
+- Resuming interrupted batch operations
+- Tracking which directories have been processed
+
+The manifest is stored as a CSV file in the output directory with the following format:
+```csv
+directory_path,torrent_file,processed_at
+"/path/to/movie1","movie1.torrent","2024-03-15T14:30:00"
+```
+
+To clean up the manifest and remove entries for missing torrents:
+```bash
+torrent-directories batch ./movies http://tracker.example.com/announce --clean
+```
+
+## Development
+
+### Setting Up Development Environment
 
 ```bash
 # Clone the repository
@@ -53,373 +200,47 @@ cd TorrentDirectories
 # Create and activate virtual environment
 python3 -m venv venv
 source venv/bin/activate  # On Unix/macOS
-# Or on Windows:
-# venv\Scripts\activate
+# Or on Windows: venv\Scripts\activate
 
-# Install in development mode
-pip install -e .
+# Install development dependencies
+pip install -e ".[dev]"
+
+# Install pre-commit hooks
+pre-commit install
 ```
 
-### Requirements
-
-- Python 3.7 or later
-- libtorrent 2.0.0 or later
-
-## Usage
-
-The tool can be run either as an installed command or as a Python module:
+### Running Tests
 
 ```bash
-# As an installed command
-torrent-directories [command] [options]
+# Run all tests with verbose output and coverage report
+python -m pytest tests/ -v --cov=src/torrent
 
-# As a Python module
-python -m torrent.cli [command] [options]
-```
-
-### Command Structure
-
-The general command structure is:
-```bash
-torrent-directories [global options] <command> [command options] <required arguments>
-```
-
-### Global Options
-
-These options work with all commands and must be specified before the command:
-
-```bash
-# Show program version
-torrent-directories --version
-
-# Enable verbose output (detailed logging)
-torrent-directories -v [command] [args]
-# or
-torrent-directories --verbose [command] [args]
-
-# Write logs to a file
-torrent-directories --log-file path/to/log.txt [command] [args]
-
-# Preview changes without making them (dry run)
-torrent-directories --dry-run [command] [args]
-```
-
-### Commands
-
-The tool supports two main commands: `file` and `batch`
-
-#### 1. File Command
-
-The `file` command creates a torrent from a single file or directory.
-
-Syntax:
-```bash
-torrent-directories file [options] <input_path> <tracker_url>
-```
-
-Required arguments:
-- `input_path`: Path to the file or directory to create a torrent from
-- `tracker_url`: URL of the tracker to include in the torrent
-
-Options:
-```bash
-# Specify custom output path (default: input_name.torrent)
--o, --output PATH          # Example: -o /torrents/movie.torrent
-
-# Force overwrite if output file exists
---force                    # Example: --force
-
-# Custom piece sizes (accepts K, M suffixes)
---min-piece-size SIZE     # Example: --min-piece-size 32K (minimum: 16K)
---max-piece-size SIZE     # Example: --max-piece-size 32M (maximum: 64M)
-
-# Custom target piece count range
---target-pieces RANGE     # Example: --target-pieces 1000-2000
-
-# Include normally skipped files
---include-hidden          # Include hidden files/directories
---include-system          # Include system files
-```
-
-Examples:
-```bash
-# Basic usage - create torrent in current directory
-torrent-directories file ./my_movie http://tracker.example.com/announce
-
-# Specify custom output location
-torrent-directories file -o /torrents/my_movie.torrent ./my_movie http://tracker.example.com/announce
-
-# Force overwrite existing torrent with custom piece size
-torrent-directories file --force --min-piece-size 1M --max-piece-size 32M \
-    -o /torrents/my_movie.torrent ./my_movie http://tracker.example.com/announce
-
-# Include hidden files with verbose output
-torrent-directories -v file --include-hidden \
-    ./my_movie http://tracker.example.com/announce
-
-# Preview torrent creation with all options
-torrent-directories --dry-run file \
-    --min-piece-size 256K \
-    --max-piece-size 16M \
-    --target-pieces 1500-2000 \
-    --include-hidden \
-    --include-system \
-    -o /torrents/my_movie.torrent \
-    ./my_movie \
-    http://tracker.example.com/announce
-```
-
-#### 2. Batch Command
-
-The `batch` command processes multiple subdirectories in a parent directory.
-
-Syntax:
-```bash
-torrent-directories batch [options] <parent_directory> <tracker_url>
-```
-
-Required arguments:
-- `parent_directory`: Directory containing subdirectories to process
-- `tracker_url`: URL of the tracker to include in all torrents
-
-Options:
-```bash
-# Specify output directory for torrent files and manifest (defaults to 'torrents/')
--o, --output PATH        # Example: -o /path/to/output
-
-# Preview changes without making them
---dry-run               # Example: --dry-run
-
-# Clean manifest of missing entries before processing
---clean                 # Example: --clean
-
-# Force rebuild existing torrents
---force                 # Example: --force
-
-# Stop processing after N failures (0 = unlimited)
---max-failures N        # Example: --max-failures 3
-
-# All torrent creation options from file command also work:
---min-piece-size SIZE   # Example: --min-piece-size 256K
---max-piece-size SIZE   # Example: --max-piece-size 16M
---target-pieces RANGE   # Example: --target-pieces 1000-2000
---include-hidden
---include-system
-```
-
-Examples:
-```bash
-# Basic usage - process all subdirectories (output to 'torrents/' directory)
-torrent-directories batch ./movies http://tracker.example.com/announce
-
-# Use custom output directory and force rebuild
-torrent-directories batch \
-    -o /path/to/output \
-    --force \
-    --min-piece-size 1M \
-    --include-hidden \
-    ./movies \
-    http://tracker.example.com/announce
-
-# Process with failure limit and custom piece count
-torrent-directories batch \
-    -o /path/to/output \
-    --max-failures 5 \
-    --target-pieces 1000-2000 \
-    ./movies \
-    http://tracker.example.com/announce
-```
-
-## Manifest System
-
-The manifest system tracks processed directories to prevent duplicate processing and enable resume functionality.
-
-### Safety Features
-
-- Automatic backup of manifest file before modifications
-- Validation of manifest entries against actual torrent files
-- Configurable validation behavior through environment variables
-- CSV format for easy inspection and manual editing
-- Skip functionality for already processed directories
-
-### File Format
-
-The manifest is a CSV file with three fields:
-```csv
-directory_path,torrent_file,processed_at
-"/path/to/movie1","movie1.torrent","2024-03-15T14:30:00"
-```
-
-- `directory_path`: Absolute path to processed directory
-- `torrent_file`: Name of created torrent file
-- `processed_at`: ISO 8601 timestamp of processing
-
-The file is created in the output directory (`torrents/` by default) and updated after each successful torrent creation.
-
-## Project Structure
+# Run only integration tests
+python -m pytest tests/torrent/cli/test_commands_integration.py -v
 
 ```
-TorrentDirectories/
-├── src/
-│   └── torrent/
-│       ├── cli/                    # Command-line interface
-│       │   ├── commands.py         # Command implementations
-│       │   ├── config.py           # Configuration management
-│       │   ├── main.py             # Main entry point
-│       │   └── parser.py           # Argument parsing
-│       ├── utils/                  # Utility functions
-│       │   ├── config.py           # Configuration utilities
-│       │   └── file_utils.py       # File handling utilities
-│       ├── manifest.py             # Manifest system
-│       └── torrent_creator.py      # Core torrent creation
-├── tests/                          # Test suite
-├── scripts/                        # Utility scripts
-├── README.md                       # This file
-├── CHANGELOG.md                    # Version history
-├── LICENSE                         # MIT License
-├── pyproject.toml                  # Project metadata
-└── setup.py                       # Package setup
-```
-
-## API Reference
-
-### TorrentCreator
-
-The main class for creating torrent files.
-
-```python
-from torrent import TorrentCreator
-
-creator = TorrentCreator(
-    min_piece_size="256K",
-    max_piece_size="16M",
-    target_pieces=(1000, 2000),
-    include_hidden=False,
-    include_system=False
-)
-
-# Create a torrent from a directory
-creator.create(
-    input_path="/path/to/directory",
-    tracker_url="http://tracker.example.com/announce",
-    output_path="output.torrent"
-)
-```
-
-### ManifestManager
-
-Manages the manifest system for tracking processed directories.
-
-```python
-from torrent import ManifestManager
-
-# Create with custom configuration
-config = ManifestConfig(
-    filename="custom_manifest.csv",
-    encoding="utf-8"
-)
-
-# Check if a directory has been processed
-is_processed = manifest.is_directory_processed(directory_path)
-
-# Mark a directory as processed
-manifest.mark_directory_processed(directory_path, torrent_path)
-```
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ### Code Style
 
 The project uses several tools to maintain consistent code quality:
 
-- [Black](https://github.com/psf/black) for code formatting
-- [Ruff](https://github.com/astral-sh/ruff) for linting and formatting
-- [isort](https://github.com/pycqa/isort) for import sorting
-- [mypy](https://github.com/python/mypy) for type checking
+- Black for code formatting
+- Ruff for linting and formatting
+- isort for import sorting
+- mypy for type checking
 
-These tools are configured in `pyproject.toml` and run automatically via pre-commit hooks. To set up your development environment:
+These tools are configured in `pyproject.toml` and run automatically via pre-commit hooks.
 
-```bash
-# Install pre-commit hooks
-pre-commit install
+## Contributing
 
-# Run all checks manually
-pre-commit run --all-files
-```
-
-## Release Process
-
-The project uses semantic versioning (MAJOR.MINOR.PATCH) with a single source of truth in `src/torrent/__init__.py`. The release process is automated using `scripts/release.py`.
-
-### Making a Release
-
-The project uses semantic versioning (MAJOR.MINOR.PATCH) with a single source of truth in `src/torrent/__init__.py`. The release process is automated using `scripts/release.py`.
-
-To create a new release:
-
-1. Ensure your working directory is clean:
-   ```bash
-   git status  # Should show no uncommitted changes
-   ```
-
-2. Choose your release type and run the release script:
-   ```bash
-   # For a new feature release (increments minor version)
-   python scripts/release.py
-
-   # For a breaking change (increments major version)
-   python scripts/release.py --bump major
-
-   # For a bug fix (increments patch version)
-   python scripts/release.py --bump patch
-
-   # For a specific version (e.g., for a hotfix)
-   python scripts/release.py --version 0.4.0
-   ```
-
-The release script will:
-- Run the test suite
-- Update version in all files (setup.py, pyproject.toml)
-- Create a git tag
-- Build and test the package
-- Create a release commit
-- Append new changes to CHANGELOG.md from git commit history since last tag
-- Push changes and tags to the remote repository
-
-Optional flags:
-```bash
---no-tests    # Skip running tests
---no-publish  # Skip publishing to PyPI
-```
-
-After the release:
-1. Review the changes in CHANGELOG.md
-2. Create a GitHub release with the new tag
-3. Update any documentation or website content
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `python -m pytest tests/`
+5. Submit a pull request
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Testing
 
-The project uses pytest for testing. To run the tests:
-
-```bash
-# Install test dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Run tests with coverage report
-pytest --cov=torrent
-
-# Run tests with verbose output
-pytest -v
-
-# Run tests and show local variables on failure
-pytest --showlocals
-```

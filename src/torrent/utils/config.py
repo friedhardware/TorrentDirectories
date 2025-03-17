@@ -5,6 +5,7 @@ Configuration classes for torrent creation and manifest management.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 # Constants for piece size limits
 MIN_PIECE_SIZE = 16 * 1024  # 16 KiB
@@ -17,12 +18,16 @@ DEFAULT_MIN_PIECE_SIZE = 256 * 1024  # 256 KiB (default)
 class TorrentConfig:
     """Configuration for torrent creation."""
 
+    tracker_url: str = "http://tracker.example.com:6969/announce"
     min_piece_size: int = DEFAULT_MIN_PIECE_SIZE
     max_piece_size: int = DEFAULT_MAX_PIECE_SIZE
     target_pieces_min: int = 1000
     target_pieces_max: int = 2000
     skip_hidden: bool = True
     skip_system_files: bool = True
+    private: bool = True
+    source: Optional[str] = None
+    comment: Optional[str] = None
 
     def __post_init__(self) -> None:
         """Validate configuration after initialization."""
@@ -38,3 +43,5 @@ class TorrentConfig:
             raise ValueError(
                 "Minimum piece size cannot be larger than maximum piece size"
             )
+        if not self.tracker_url.startswith(("http://", "https://", "udp://")):
+            raise ValueError(f"Invalid tracker URL format: {self.tracker_url}")

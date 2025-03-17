@@ -156,7 +156,7 @@ class ManifestManager:
             finally:
                 fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
-    def clean_manifest(self, output_dir: str) -> None:
+    def clean_manifest(self, output_dir: Optional[str] = None) -> None:
         """Clean the manifest by removing entries with missing torrent files."""
         # First create a backup
         backup_file(self.manifest_path)

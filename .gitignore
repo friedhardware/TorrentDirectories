@@ -30,6 +30,7 @@ wheels/
 # Project specific
 *.torrent
 examples/
+venv/
 
 # Coverage
 .coverage

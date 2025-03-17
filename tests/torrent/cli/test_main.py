@@ -51,53 +51,72 @@ def test_setup_logging_with_file(tmp_path: Path) -> None:
 
 
 @patch("torrent.cli.main.process_single")
-def test_main_file_command(mock_process: Mock) -> None:
-    """Test main function with file command."""
+def test_main_file_command_with_all_options(mock_process: Mock) -> None:
+    """Test main function with file command and all options."""
     mock_process.return_value = 0
-    args = ["file", "path/to/content", "http://tracker.com/announce"]
+    args = [
+        "-v",
+        "--log-file", "test.log",
+        "--dry-run",
+        "file",
+        "path/to/content",
+        "http://tracker.com/announce",
+        "--min-piece-size", "256K",
+        "--max-piece-size", "32M",
+        "--target-pieces", "1000-2000",
+        "--include-system",
+        "--private",
+        "-o", "output.torrent",
+        "--force"
+    ]
 
     assert main(args) == 0
     mock_process.assert_called_once()
+    args_list, kwargs = mock_process.call_args
+    assert kwargs["dry_run"]
+    assert kwargs["force"]
+    assert args_list[2] == "output.torrent"  # Check output parameter in positional args
 
 
 @patch("torrent.cli.main.process_batch")
-def test_main_batch_command(tmp_path: Path, mocker: MockerFixture) -> None:
-    """Test main function with batch command."""
-    directory = tmp_path / "parent"
+def test_main_batch_command_with_all_options(mock_process: Mock, tmp_path: Path) -> None:
+    """Test batch command with all options."""
+    directory = tmp_path / "input"
     directory.mkdir()
     output_dir = tmp_path / "output"
 
-    # Mock process_batch and create_torrent_config
-    mock_process_batch = mocker.patch("torrent.cli.main.process_batch", return_value=0)
-    mock_config = mocker.patch("torrent.cli.main.create_torrent_config")
-    mock_config.return_value = mocker.Mock(name="config")
+    mock_process.return_value = 0
 
-    # Run main with batch command
-    result = main(
-        [
-            "batch",
-            str(directory),
-            "http://tracker.example.com",
-            "--output",
-            str(output_dir),
-            "--clean",
-            "--force",
-            "--max-failures",
-            "5",
-        ]
-    )
+    args = [
+        "-v",
+        "--dry-run",
+        "batch",
+        str(directory),
+        "http://tracker.com/announce",
+        "--min-piece-size", "256K",
+        "--max-piece-size", "32M",
+        "--target-pieces", "1000-2000",
+        "--include-system",
+        "--public",
+        "-o", str(output_dir),
+        "--clean",
+        "--force",
+        "--max-failures", "5"
+    ]
+
+    result = main(args)
 
     assert result == 0
-    mock_process_batch.assert_called_once_with(
-        str(directory),
-        "http://tracker.example.com",
-        clean=True,
-        config=mock_config.return_value,
-        output_dir=str(output_dir),
-        dry_run=False,
-        force=True,
-        max_failures=5,
-    )
+    mock_process.assert_called_once()
+
+    # Get positional and keyword arguments
+    args, kwargs = mock_process.call_args
+    assert args[0] == str(directory)  # First positional arg is directory
+    assert kwargs["output_dir"] == str(output_dir)
+    assert kwargs["force"]
+    assert kwargs["clean"]
+    assert kwargs["dry_run"]
+    assert kwargs["max_failures"] == 5
 
 
 @patch("torrent.cli.main.create_torrent_config")

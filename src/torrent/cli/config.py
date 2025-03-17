@@ -60,26 +60,31 @@ def create_torrent_config(args: argparse.Namespace) -> TorrentConfig:
     Raises:
         ValueError: If argument values are invalid
     """
-    config = TorrentConfig()
-
-    if args.min_piece_size:
-        config.min_piece_size = parse_size(args.min_piece_size)
-    if args.max_piece_size:
-        config.max_piece_size = parse_size(args.max_piece_size)
+    min_piece_size = parse_size(args.min_piece_size) if args.min_piece_size else None
+    max_piece_size = parse_size(args.max_piece_size) if args.max_piece_size else None
 
     if args.target_pieces:
         try:
             min_pieces, max_pieces = map(int, args.target_pieces.split("-"))
+            config = TorrentConfig(
+                min_piece_size=min_piece_size,
+                max_piece_size=max_piece_size,
+                skip_hidden=True,  # Always skip hidden files
+                skip_system_files=not args.include_system,
+                private=not args.public if hasattr(args, 'public') else True,  # Default to private if not specified
+            )
             config.target_pieces_min = min_pieces
             config.target_pieces_max = max_pieces
+            return config
         except ValueError:
             raise ValueError(
                 "Invalid target pieces format. Use MIN-MAX (e.g. 1000-2000)"
             )
 
-    if args.include_hidden:
-        config.skip_hidden = False
-    if args.include_system:
-        config.skip_system_files = False
-
-    return config
+    return TorrentConfig(
+        min_piece_size=min_piece_size,
+        max_piece_size=max_piece_size,
+        skip_hidden=True,  # Always skip hidden files
+        skip_system_files=not args.include_system,
+        private=not args.public if hasattr(args, 'public') else True,  # Default to private if not specified
+    )

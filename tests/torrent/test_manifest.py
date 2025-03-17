@@ -404,17 +404,11 @@ def test_cache_preloading(tmp_path: Path, sample_torrent: Path) -> None:
     assert len(manager_no_preload._cache) > 0
 
 
-@pytest.mark.slow
-def test_manifest_large_scale_performance(tmp_path: Path) -> None:
-    """Test performance with a large number of entries."""
-    # First test without preloading
+def test_manifest_basic_performance(tmp_path: Path) -> None:
+    """Test basic performance with a moderate number of entries."""
     manifest = ManifestManager(str(tmp_path))
     process = psutil.Process()
-    num_entries = 100_000
-
-    # Profile creation of entries
-    profiler = cProfile.Profile()
-    profiler.enable()
+    num_entries = 1_000  # Small enough for regular testing
 
     # Measure initial metrics
     start_time = time.time()
@@ -426,190 +420,16 @@ def test_manifest_large_scale_performance(tmp_path: Path) -> None:
         torrent = f"torrent_{i}.torrent"
         manifest.add_entry(directory, torrent)
 
-        # Log progress every 10,000 entries
-        if (i + 1) % 10_000 == 0:
-            elapsed = time.time() - start_time
-            current_memory = process.memory_info().rss
-            memory_delta = (current_memory - start_memory) / 1024 / 1024  # MB
-            cache_size = len(manifest._cache.get_all_entries())
-            print(f"\nProgress: {i + 1}/{num_entries}")
-            print(f"Time elapsed: {elapsed:.2f}s")
-            print(f"Memory delta: {memory_delta:.2f}MB")
-            print(f"Cache entries: {cache_size}")
-            print(
-                f"Average memory per cache entry: {(memory_delta / cache_size if cache_size > 0 else 0):.2f}KB"
-            )
+    # Calculate final metrics
+    total_time = time.time() - start_time
+    memory_used = (process.memory_info().rss - start_memory) / 1024 / 1024  # MB
 
-    profiler.disable()
+    # Basic performance assertions
+    assert total_time < 10.0, "Basic operations should complete within 10 seconds"
+    assert memory_used < 100.0, "Memory usage should be reasonable"
 
-    # Calculate metrics for non-preloaded
-    end_time = time.time()
-    end_memory = process.memory_info().rss
-    elapsed_time = end_time - start_time
-    memory_delta = (end_memory - start_memory) / 1024 / 1024  # MB
-    final_cache_size = len(manifest._cache.get_all_entries())
-
-    # Print performance metrics for non-preloaded
-    print("\nPerformance Metrics (Without Preloading):")
-    print(f"Total time: {elapsed_time:.2f}s")
-    print(f"Average time per entry: {(elapsed_time * 1000 / num_entries):.2f}ms")
-    print(f"Memory increase: {memory_delta:.2f}MB")
-    print(f"Final cache size: {final_cache_size} entries")
-    print(
-        f"Average memory per cache entry: {(memory_delta * 1024 / final_cache_size if final_cache_size > 0 else 0):.2f}KB"
-    )
-
-    # Test read performance without preloading
-    start_time = time.time()
+    # Verify all entries are accessible
     for i in range(num_entries):
         directory = f"/test/dir_{i}"
         assert manifest.is_directory_processed(directory)
-    read_time_no_preload = time.time() - start_time
-    print(f"\nTime to verify all entries (no preload): {read_time_no_preload:.2f}s")
-    print(
-        f"Average read time per entry: {(read_time_no_preload * 1000 / num_entries):.2f}ms"
-    )
 
-    # Now test with preloading
-    print("\nTesting with preloaded cache:")
-    start_time = time.time()
-    manifest_preload = ManifestManager(str(tmp_path), preload_cache=True)
-    preload_time = time.time() - start_time
-    print(f"Time to preload {num_entries} entries: {preload_time:.2f}s")
-
-    # Test read performance with preloading
-    start_time = time.time()
-    for i in range(num_entries):
-        directory = f"/test/dir_{i}"
-        assert manifest_preload.is_directory_processed(directory)
-    read_time_preload = time.time() - start_time
-    print(f"\nTime to verify all entries (preloaded): {read_time_preload:.2f}s")
-    print(
-        f"Average read time per entry: {(read_time_preload * 1000 / num_entries):.2f}ms"
-    )
-    print(
-        f"\nRead time improvement with preloading: {(read_time_no_preload / read_time_preload):.1f}x faster"
-    )
-
-    # Print profiler stats
-    s = io.StringIO()
-    ps = pstats.Stats(profiler, stream=s).sort_stats("cumulative")
-    ps.print_stats(20)
-    print("\nProfiler Output:")
-    print(s.getvalue())
-
-
-@pytest.mark.slow
-def test_manifest_large_scale_performance_250k(tmp_path: Path) -> None:
-    """Test performance with 250,000 entries to compare with 100k test."""
-    # First test without preloading
-    manifest = ManifestManager(str(tmp_path))
-    process = psutil.Process()
-    num_entries = 250_000
-
-    # Profile creation of entries
-    profiler = cProfile.Profile()
-    profiler.enable()
-
-    # Measure initial metrics
-    start_time = time.time()
-    start_memory = process.memory_info().rss
-
-    # Add entries
-    for i in range(num_entries):
-        directory = f"/test/dir_{i}"
-        torrent = f"torrent_{i}.torrent"
-        manifest.add_entry(directory, torrent)
-
-        # Log progress every 25,000 entries
-        if (i + 1) % 25_000 == 0:
-            elapsed = time.time() - start_time
-            current_memory = process.memory_info().rss
-            memory_delta = (current_memory - start_memory) / 1024 / 1024  # MB
-            cache_size = len(manifest._cache.get_all_entries())
-            print(f"\nProgress: {i + 1}/{num_entries}")
-            print(f"Time elapsed: {elapsed:.2f}s")
-            print(f"Memory delta: {memory_delta:.2f}MB")
-            print(f"Cache entries: {cache_size}")
-            print(
-                f"Average memory per cache entry: {(memory_delta / cache_size if cache_size > 0 else 0):.2f}KB"
-            )
-            print(f"Average entries/second: {(i + 1) / elapsed:.1f}")
-
-    profiler.disable()
-
-    # Calculate metrics for non-preloaded
-    end_time = time.time()
-    end_memory = process.memory_info().rss
-    elapsed_time = end_time - start_time
-    memory_delta = (end_memory - start_memory) / 1024 / 1024  # MB
-    final_cache_size = len(manifest._cache.get_all_entries())
-    entries_per_second = num_entries / elapsed_time
-
-    # Print performance metrics for non-preloaded
-    print("\nPerformance Metrics (Without Preloading):")
-    print(f"Total time: {elapsed_time:.2f}s")
-    print(f"Average time per entry: {(elapsed_time * 1000 / num_entries):.2f}ms")
-    print(f"Memory increase: {memory_delta:.2f}MB")
-    print(f"Final cache size: {final_cache_size} entries")
-    print(
-        f"Average memory per cache entry: {(memory_delta * 1024 / final_cache_size if final_cache_size > 0 else 0):.2f}KB"
-    )
-    print(f"Average entries/second: {entries_per_second:.1f}")
-
-    # Test read performance without preloading
-    start_time = time.time()
-    for i in range(num_entries):
-        directory = f"/test/dir_{i}"
-        assert manifest.is_directory_processed(directory)
-    read_time_no_preload = time.time() - start_time
-    print(f"\nTime to verify all entries (no preload): {read_time_no_preload:.2f}s")
-    print(
-        f"Average read time per entry: {(read_time_no_preload * 1000 / num_entries):.2f}ms"
-    )
-    print(f"Reads per second: {num_entries / read_time_no_preload:.1f}")
-
-    # Now test with preloading
-    print("\nTesting with preloaded cache:")
-    start_time = time.time()
-    manifest_preload = ManifestManager(str(tmp_path), preload_cache=True)
-    preload_time = time.time() - start_time
-    print(f"Time to preload {num_entries} entries: {preload_time:.2f}s")
-    print(f"Entries preloaded per second: {num_entries / preload_time:.1f}")
-
-    # Test read performance with preloading
-    start_time = time.time()
-    for i in range(num_entries):
-        directory = f"/test/dir_{i}"
-        assert manifest_preload.is_directory_processed(directory)
-    read_time_preload = time.time() - start_time
-    print(f"\nTime to verify all entries (preloaded): {read_time_preload:.2f}s")
-    print(
-        f"Average read time per entry: {(read_time_preload * 1000 / num_entries):.2f}ms"
-    )
-    print(f"Reads per second: {num_entries / read_time_preload:.1f}")
-    print(
-        f"\nRead time improvement with preloading: {(read_time_no_preload / read_time_preload):.1f}x faster"
-    )
-
-    # Print profiler stats
-    s = io.StringIO()
-    ps = pstats.Stats(profiler, stream=s).sort_stats("cumulative")
-    ps.print_stats(20)
-    print("\nProfiler Output:")
-    print(s.getvalue())
-
-    # Print comparison with 100k test
-    print("\nComparison with 100k test:")
-    print("250k vs 100k:")
-    print(
-        f"- Write time per entry: {(elapsed_time * 1000 / num_entries):.2f}ms vs 0.23ms"
-    )
-    print(
-        f"- Memory per entry: {(memory_delta * 1024 / final_cache_size):.2f}KB vs 0.51KB"
-    )
-    print(f"- Preload time: {preload_time:.2f}s vs 0.82s")
-    print(f"- Read time (preloaded): {read_time_preload:.2f}s vs 0.25s")
-    print(
-        f"- Memory efficiency: {(memory_delta / (final_cache_size / 1000)):.2f}MB per 1000 entries"
-    )

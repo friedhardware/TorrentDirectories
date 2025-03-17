@@ -344,7 +344,9 @@ def test_private_flag_set(tmp_path: Path) -> None:
 
     # Process should succeed
     process_single(
-        path=str(input_dir), output=str(output_file), tracker_url=tracker_url
+        path=str(input_dir),
+        output=str(output_file),
+        tracker_url=tracker_url,
     )
     assert output_file.exists()
 

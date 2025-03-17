@@ -16,20 +16,21 @@ def create_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  Create a torrent for a single file or directory:
-    %(prog)s file path/to/content http://tracker.example.com:6969/announce
+  Create a private torrent (default):
+    %(prog)s file path/to/content http://tracker.example.com/announce --private
 
-  Process all subdirectories in a parent directory:
-    %(prog)s batch path/to/parent http://tracker.example.com:6969/announce
+  Create a public torrent:
+    %(prog)s file path/to/content http://tracker.example.com/announce --public
 
-  Show more detailed output:
-    %(prog)s -v batch path/to/parent http://tracker.example.com:6969/announce
+  Process all subdirectories with verbose output:
+    %(prog)s -v batch path/to/parent http://tracker.example.com/announce
 
-  Use custom piece size bounds:
-    %(prog)s file --min-piece-size 256K --max-piece-size 32M path/to/content tracker-url
+  Create torrent with custom piece size:
+    %(prog)s file path/to/content tracker-url --min-piece-size 256K --max-piece-size 32M
 """,
     )
 
+    # General options (before command)
     parser.add_argument(
         "--version", action="version", version=f"%(prog)s {__version__}"
     )
@@ -46,35 +47,48 @@ Examples:
         help="Show what would be done without making changes",
     )
 
-    # Global torrent configuration
-    torrent_group = parser.add_argument_group("Torrent Creation Options")
-    torrent_group.add_argument(
-        "--min-piece-size",
-        type=str,
-        help="Minimum piece size (e.g. 16K, 1M). Default: 256K. Must be at least 16K.",
-        default="256K",
-    )
-    torrent_group.add_argument(
-        "--max-piece-size",
-        type=str,
-        help="Maximum piece size (e.g. 16M, 64M). Default: 16M. Cannot exceed 64M.",
-        default="16M",
-    )
-    torrent_group.add_argument(
-        "--target-pieces", help="Target piece count range (e.g. 1000-2000)"
-    )
-    torrent_group.add_argument(
-        "--include-hidden",
-        action="store_true",
-        help="Include hidden files and directories",
-    )
-    torrent_group.add_argument(
-        "--include-system", action="store_true", help="Include system files"
-    )
-
     subparsers = parser.add_subparsers(
         dest="command", required=True, help="Command to execute"
     )
+
+    # Common torrent options for both commands
+    def add_torrent_options(cmd_parser: argparse.ArgumentParser) -> None:
+        """Add common torrent creation options to a subcommand parser."""
+        torrent_group = cmd_parser.add_argument_group("Torrent Creation Options")
+        torrent_group.add_argument(
+            "--min-piece-size",
+            type=str,
+            help="Minimum piece size (e.g. 16K, 1M). Default: 256K. Must be at least 16K.",
+            default="256K",
+        )
+        torrent_group.add_argument(
+            "--max-piece-size",
+            type=str,
+            help="Maximum piece size (e.g. 16M, 64M). Default: 16M. Cannot exceed 64M.",
+            default="16M",
+        )
+        torrent_group.add_argument(
+            "--target-pieces",
+            help="Target piece count range (e.g. 1000-2000)",
+        )
+        torrent_group.add_argument(
+            "--include-system",
+            action="store_true",
+            help="Include system files",
+        )
+        
+        # Create mutually exclusive group for private/public flags
+        visibility_group = torrent_group.add_mutually_exclusive_group()
+        visibility_group.add_argument(
+            "--private",
+            action="store_true",
+            help="Create private torrents (default)",
+        )
+        visibility_group.add_argument(
+            "--public",
+            action="store_true",
+            help="Create public torrents",
+        )
 
     # Single file/directory command
     file_parser = subparsers.add_parser(
@@ -88,6 +102,7 @@ Examples:
     file_parser.add_argument(
         "--force", action="store_true", help="Overwrite existing torrent file"
     )
+    add_torrent_options(file_parser)
 
     # Batch processing command
     batch_parser = subparsers.add_parser(
@@ -112,5 +127,6 @@ Examples:
         default=0,
         help="Maximum allowed failures before stopping (0 for unlimited)",
     )
+    add_torrent_options(batch_parser)
 
     return parser

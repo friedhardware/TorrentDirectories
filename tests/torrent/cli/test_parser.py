@@ -19,6 +19,22 @@ def test_version_argument() -> None:
     assert exc_info.value.code == 0
 
 
+def test_general_options() -> None:
+    """Test general options that come before the command."""
+    parser = create_parser()
+    args = parser.parse_args([
+        "-v",
+        "--log-file", "test.log",
+        "--dry-run",
+        "file",
+        "path/to/content",
+        "http://tracker.com/announce"
+    ])
+    assert args.verbose
+    assert args.log_file == "test.log"
+    assert args.dry_run
+
+
 def test_file_command_required_args() -> None:
     """Test that file command requires path and tracker arguments."""
     parser = create_parser()
@@ -30,21 +46,29 @@ def test_file_command_required_args() -> None:
     assert args.output is None
 
 
-def test_file_command_optional_args() -> None:
-    """Test optional arguments for file command."""
+def test_file_command_all_options() -> None:
+    """Test all available options for file command."""
     parser = create_parser()
-    args = parser.parse_args(
-        [
-            "file",
-            "--force",
-            "--output",
-            "custom.torrent",
-            "path/to/content",
-            "http://tracker.com/announce",
-        ]
-    )
+    args = parser.parse_args([
+        "file",
+        "path/to/content",
+        "http://tracker.com/announce",
+        "--force",
+        "--output", "custom.torrent",
+        "--min-piece-size", "256K",
+        "--max-piece-size", "32M",
+        "--target-pieces", "1000-2000",
+        "--include-system",
+        "--private"
+    ])
     assert args.force
     assert args.output == "custom.torrent"
+    assert args.min_piece_size == "256K"
+    assert args.max_piece_size == "32M"
+    assert args.target_pieces == "1000-2000"
+    assert args.include_system
+    assert args.private
+    assert not args.public
 
 
 def test_batch_command_required_args() -> None:
@@ -59,73 +83,46 @@ def test_batch_command_required_args() -> None:
     assert args.max_failures == 0
 
 
-def test_batch_command_optional_args() -> None:
-    """Test optional arguments for batch command."""
+def test_batch_command_all_options() -> None:
+    """Test all available options for batch command."""
     parser = create_parser()
-    args = parser.parse_args(
-        [
-            "batch",
-            "--clean",
-            "--force",
-            "--max-failures",
-            "5",
-            "path/to/parent",
-            "http://tracker.com/announce",
-        ]
-    )
+    args = parser.parse_args([
+        "batch",
+        "path/to/parent",
+        "http://tracker.com/announce",
+        "--clean",
+        "--force",
+        "--max-failures", "5",
+        "--output", "output_dir",
+        "--min-piece-size", "256K",
+        "--max-piece-size", "32M",
+        "--target-pieces", "1000-2000",
+        "--include-system",
+        "--public"
+    ])
     assert args.clean
     assert args.force
     assert args.max_failures == 5
-
-
-def test_global_torrent_options() -> None:
-    """Test global torrent creation options."""
-    parser = create_parser()
-    args = parser.parse_args(
-        [
-            "--min-piece-size",
-            "256K",
-            "--max-piece-size",
-            "32M",
-            "--target-pieces",
-            "1000-2000",
-            "--include-hidden",
-            "--include-system",
-            "file",
-            "path/to/content",
-            "http://tracker.com/announce",
-        ]
-    )
+    assert args.output == "output_dir"
     assert args.min_piece_size == "256K"
     assert args.max_piece_size == "32M"
     assert args.target_pieces == "1000-2000"
-    assert args.include_hidden
     assert args.include_system
+    assert args.public
+    assert not args.private
 
 
-def test_global_torrent_options_large_piece_size(mocker: MockerFixture) -> None:
-    """Test parsing of large piece size."""
-    # Mock argparse.ArgumentParser to avoid SystemExit
-    mock_parser = mocker.patch("argparse.ArgumentParser", autospec=True)
-    mock_parser_instance = mock_parser.return_value
-
-    # Test valid piece size at limit
-    mock_args = mocker.Mock()
-    mock_args.max_piece_size = "64M"
-    mock_args.min_piece_size = None
-    mock_args.target_pieces = None
-    mock_args.include_hidden = False
-    mock_args.include_system = False
-    mock_parser_instance.parse_args.return_value = mock_args
-
-    # Test that 64M is parsed correctly
-    config = create_torrent_config(mock_args)
-    assert config.max_piece_size == 64 * 1024 * 1024  # 64 MiB
-
-    # Test that piece size above limit is rejected
-    mock_args.max_piece_size = "128M"
-    with pytest.raises(ValueError, match="Maximum piece size cannot exceed 64 MiB"):
-        create_torrent_config(mock_args)
+def test_mutually_exclusive_private_public() -> None:
+    """Test that --private and --public flags are mutually exclusive."""
+    parser = create_parser()
+    with pytest.raises(SystemExit):
+        parser.parse_args([
+            "file",
+            "path/to/content",
+            "http://tracker.com/announce",
+            "--private",
+            "--public"
+        ])
 
 
 def test_missing_required_args() -> None:

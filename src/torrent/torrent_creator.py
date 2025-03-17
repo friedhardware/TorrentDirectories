@@ -6,13 +6,13 @@ from __future__ import annotations
 
 import logging
 import math
-import os
 from pathlib import Path
-from typing import Optional, Union
+from typing import Union
 
 import libtorrent  # type: ignore
 
 from torrent.utils.config import TorrentConfig
+from torrent.utils.file_utils import sync_to_disk
 
 logger = logging.getLogger(__name__)
 
@@ -28,25 +28,19 @@ class TorrentCreator:
     - Torrent verification
 
     Args:
-        tracker_url: URL of the tracker to use
-        config: Optional configuration for torrent creation
+        config: Configuration for torrent creation
     """
 
-    def __init__(
-        self, tracker_url: str, config: Optional[TorrentConfig] = None
-    ) -> None:
-        self.tracker_url = tracker_url
-        self.config = config or TorrentConfig()
-        self._validate_tracker_url()
+    def __init__(self, config: TorrentConfig):
+        """
+        Initialize the torrent creator.
 
-    def _validate_tracker_url(self) -> None:
-        """Validate that the tracker URL is properly formatted."""
-        if not self.tracker_url.startswith(("http://", "https://", "udp://")):
-            raise ValueError(f"Invalid tracker URL format: {self.tracker_url}")
+        Args:
+            config: Configuration for torrent creation
+        """
+        self.config = config
 
-    def create(
-        self, input_path: Union[str, Path], output_path: Union[str, Path]
-    ) -> str:
+    def create(self, input_path: Union[str, Path], output_path: str) -> str:
         """
         Create a torrent file from a file or directory.
 
@@ -58,82 +52,63 @@ class TorrentCreator:
             str: Path to the created torrent file
 
         Raises:
-            ValueError: If the input path does not exist or if the torrent creation fails
+            ValueError: If input path does not exist
+            OSError: If there are issues reading files or writing the torrent
+            RuntimeError: If torrent creation fails
         """
+        # Convert string path to Path object
         input_path = Path(input_path).resolve()
-        if output_path is None:
-            output_path = f"{input_path.name}.torrent"
+        if not input_path.exists():
+            raise ValueError(f"Input path does not exist: {input_path}")
 
+        # Create file storage
         fs = libtorrent.file_storage()
-        parent_input = input_path.parent
-
-        total_files = 0
-        total_size = 0
-
-        # Add files to the torrent
+        
+        # Add files to storage
         if input_path.is_file():
-            size = input_path.stat().st_size
-            fs.add_file(input_path, size)
-            total_files = 1
-            total_size = size
+            fs.add_file(str(input_path.name), input_path.stat().st_size)
+            parent_path = input_path.parent
         else:
-            for root, dirs, files in os.walk(input_path):
-                # Skip hidden directories if configured
-                if self.config.skip_hidden:
-                    dirs[:] = [d for d in dirs if not d.startswith(".")]
+            parent_path = input_path.parent
+            libtorrent.add_files(fs, str(input_path))
 
-                for f in files:
-                    # Skip hidden and system files if configured
-                    if self.config.skip_hidden and f.startswith("."):
-                        continue
-                    if self.config.skip_system_files and f == "Thumbs.db":
-                        continue
+        # Calculate optimal piece size based on total size
+        total_size = fs.total_size()
+        piece_size = self.calculate_optimal_piece_size(total_size)
+        logger.debug(f"Using piece size: {piece_size / 1024:.0f} KiB for {total_size / 1024 / 1024:.1f} MiB content")
 
-                    relative_path = (
-                        input_path.parent / root[len(str(parent_input)) + 1 :] / f
-                    ).relative_to(input_path.parent)
-                    size = (input_path.parent / relative_path).stat().st_size
-                    logger.info(f"{size/1024:10.0f} KiB  {relative_path}")
-                    fs.add_file(str(relative_path), size)
-                    total_files += 1
-                    total_size += size
+        # Create create_torrent object with calculated piece size
+        t = libtorrent.create_torrent(fs, piece_size)
 
-        if fs.num_files() == 0:
-            raise ValueError(f"No files added from {input_path}")
-
-        logger.info(f"\nTotal: {total_files} files, {total_size/1024/1024:.2f} MiB")
-
-        # Calculate optimal piece size and create torrent
-        optimal_piece_size = self.calculate_optimal_piece_size(fs.total_size())
-        logger.info(f"Using piece size: {optimal_piece_size/1024/1024:.2f} MiB")
-
-        t = libtorrent.create_torrent(fs, optimal_piece_size)
-        t.add_tracker(self.tracker_url)
-        t.set_creator("libtorrent %s" % libtorrent.__version__)
-        t.set_priv(True)  # Set private flag to ensure tracker-only operation
-
-        # Generate pieces with progress indicator
-        total_pieces = t.num_pieces()
-        logger.info(f"\nGenerating {total_pieces} pieces...")
-        libtorrent.set_piece_hashes(
-            t,
-            str(parent_input),
-            lambda x: logger.debug(f"Generated piece {x}/{total_pieces}"),
-        )
-        logger.info("Done!")
-
-        # Save the torrent file
-        torrent_data = libtorrent.bencode(t.generate())
-        output_path_str = str(output_path)
-        with open(output_path_str, "wb") as torrent_file:
-            torrent_file.write(torrent_data)
+        # Add tracker
+        t.add_tracker(self.config.tracker_url)
+        
+        # Set the name in the torrent parameters
+        t.set_comment(input_path.name)
+        
+        # Generate the torrent
+        libtorrent.set_piece_hashes(t, str(parent_path))
+        
+        # Set private flag if configured
+        t.set_priv(self.config.private)
+        
+        # Create the torrent
+        torrent = t.generate()
+        
+        # Ensure the name is set in the info dictionary
+        torrent[b"info"][b"name"] = input_path.name.encode()
+        
+        # Write the torrent file
+        with open(output_path, "wb") as f:
+            f.write(libtorrent.bencode(torrent))
+            # Sync the torrent file to disk
+            sync_to_disk(f)
 
         # Verify the created torrent file
-        if not self.verify_torrent_file(output_path_str):
-            os.remove(output_path_str)
-            raise ValueError("Failed to create a valid torrent file")
+        if not self.verify_torrent_file(output_path):
+            raise RuntimeError(f"Failed to verify created torrent file: {output_path}")
 
-        return output_path_str
+        return output_path
 
     def calculate_optimal_piece_size(self, total_size: int) -> int:
         """
@@ -174,12 +149,24 @@ class TorrentCreator:
 
         Returns:
             bool: True if the torrent file is valid
+
+        Note:
+            This method attempts to decode the torrent file to ensure it's valid.
+            It does not verify the actual content or piece hashes.
         """
         try:
             with open(torrent_path, "rb") as f:
                 data = f.read()
             # Try to decode the torrent file
-            libtorrent.bdecode(data)
+            torrent = libtorrent.bdecode(data)
+            # Basic validation of required fields
+            info = torrent.get(b"info")
+            if not info:
+                return False
+            if not info.get(b"name"):
+                return False
+            if not info.get(b"piece length"):
+                return False
             return True
         except (OSError, RuntimeError):
             return False
