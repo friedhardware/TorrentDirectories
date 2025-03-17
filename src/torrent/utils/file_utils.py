@@ -8,7 +8,7 @@ import os
 import re
 import shutil
 from datetime import datetime
-from typing import List
+from typing import BinaryIO, List, TextIO, Union
 
 
 def is_hidden(path: str) -> bool:
@@ -185,5 +185,28 @@ def backup_file(file_path: str) -> str | None:
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_path = f"{file_path}.bak_{timestamp}"
-    shutil.copy2(file_path, backup_path)
+
+    # Copy the file and ensure it's synced to disk
+    with open(file_path, "rb") as src, open(backup_path, "wb") as dst:
+        shutil.copyfileobj(src, dst)
+        sync_to_disk(dst)
+
     return backup_path
+
+
+def sync_to_disk(file_obj: Union[TextIO, int, BinaryIO]) -> None:
+    """
+    Ensure file contents are written to disk.
+
+    Args:
+        file_obj: A file object (text or binary) or file descriptor
+
+    This function will flush file buffers and force the OS to write to disk.
+    For file objects, it will call both flush() and fsync().
+    For file descriptors, it will just call fsync().
+    """
+    if isinstance(file_obj, int):
+        os.fsync(file_obj)
+    else:
+        file_obj.flush()
+        os.fsync(file_obj.fileno())
