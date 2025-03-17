@@ -1,9 +1,9 @@
+:tocdepth: 2
+
 Changelog
 =========
 
 .. _changelog:
-
-:tocdepth: 2
 
 [1.3.0] - 2025-03-17
 --------------------
