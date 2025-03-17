@@ -1,66 +1,43 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=76.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "torrent-directories"
 version = "1.0.0"
 description = "A tool for creating torrent files from directories"
-readme = "README.md"
-requires-python = ">=3.8"
-license = { text = "MIT" }
+requires-python = ">=3.12"
 authors = [
     { name = "friedhardware" },
 ]
 dependencies = [
     "libtorrent>=2.0.0",
+    "click>=8.1.3",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.0.0",
-    "pytest-cov>=4.0.0",
-    "pytest-mock>=3.10.0",
-    "black>=23.0.0",
-    "isort>=5.0.0",
-    "mypy>=1.0.0",
-    "ruff>=0.1.0",
-    "pre-commit>=3.6.0",
-    "types-setuptools",
-    "types-PyYAML",
-    "types-requests",
-    "types-urllib3",
-    "psutil>=5.9.0",
+    "setuptools>=76.0.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "click>=8.1.3",
 ]
 
 [project.scripts]
-torrent-directories = "torrent.cli.main:main"
-
-[tool.hatch.build.targets.wheel]
-packages = ["src/torrent"]
-
-[tool.pytest.ini_options]
-minversion = "7.0"
-addopts = "-ra -q"
-testpaths = [
-    "tests",
-]
+torrent-directories = "torrent.cli.__main__:main"
 
 [tool.black]
 line-length = 88
-target-version = ["py38"]
+target-version = ["py312"]
 include = '\.pyi?$'
 
-[tool.isort]
-profile = "black"
-multi_line_output = 3
-
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.13"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py38"
+target-version = "py312"

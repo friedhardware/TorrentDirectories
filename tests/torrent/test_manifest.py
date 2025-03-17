@@ -4,11 +4,8 @@ Tests for the manifest management system.
 
 from __future__ import annotations
 
-import cProfile
 import csv
-import io
 import os
-import pstats
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -432,4 +429,3 @@ def test_manifest_basic_performance(tmp_path: Path) -> None:
     for i in range(num_entries):
         directory = f"/test/dir_{i}"
         assert manifest.is_directory_processed(directory)
-

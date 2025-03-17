@@ -5,12 +5,12 @@ Core functionality for creating torrent files with optimal settings.
 from __future__ import annotations
 
 import logging
-import math
 from pathlib import Path
 from typing import Union
 
-import libtorrent  # type: ignore
+import libtorrent as lt  # type: ignore
 
+from torrent.cli.exceptions import FileIsEmptyError
 from torrent.utils.config import TorrentConfig
 from torrent.utils.file_utils import sync_to_disk
 
@@ -22,10 +22,22 @@ class TorrentCreator:
     Creates torrent files with optimal settings for both single files and directories.
 
     This class handles the core torrent creation functionality, including:
-    - Optimal piece size calculation
+    - Piece size calculation following strict rules:
+        * Must be a power of 2 (e.g. 16 KiB, 32 KiB, 64 KiB)
+        * Must be a multiple of 16 KiB
+        * Must be between min_piece_size and max_piece_size from config
     - File filtering (hidden files, system files)
+    - Empty file handling (skip or error based on config)
     - Progress reporting
     - Torrent verification
+
+    The default configuration uses:
+    - Minimum piece size: 256 KiB
+    - Maximum piece size: 16 MiB
+    - Private flag: True
+    - Skip hidden files: True
+    - Skip system files: True
+    - Skip empty files: False
 
     Args:
         config: Configuration for torrent creation
@@ -55,6 +67,7 @@ class TorrentCreator:
             ValueError: If input path does not exist
             OSError: If there are issues reading files or writing the torrent
             RuntimeError: If torrent creation fails
+            FileIsEmptyError: If file is empty and skip_empty_files is False
         """
         # Convert string path to Path object
         input_path = Path(input_path).resolve()
@@ -62,45 +75,50 @@ class TorrentCreator:
             raise ValueError(f"Input path does not exist: {input_path}")
 
         # Create file storage
-        fs = libtorrent.file_storage()
-        
+        fs = lt.file_storage()
+
         # Add files to storage
         if input_path.is_file():
-            fs.add_file(str(input_path.name), input_path.stat().st_size)
+            file_size = input_path.stat().st_size
+            if file_size == 0 and self.config.skip_empty_files:
+                raise FileIsEmptyError(str(input_path))
+            fs.add_file(str(input_path.name), file_size)
             parent_path = input_path.parent
         else:
             parent_path = input_path.parent
-            libtorrent.add_files(fs, str(input_path))
+            lt.add_files(fs, str(input_path))
 
         # Calculate optimal piece size based on total size
         total_size = fs.total_size()
         piece_size = self.calculate_optimal_piece_size(total_size)
-        logger.debug(f"Using piece size: {piece_size / 1024:.0f} KiB for {total_size / 1024 / 1024:.1f} MiB content")
+        logger.debug(
+            f"Using piece size: {piece_size / 1024:.0f} KiB for {total_size / 1024 / 1024:.1f} MiB content"
+        )
 
         # Create create_torrent object with calculated piece size
-        t = libtorrent.create_torrent(fs, piece_size)
+        t = lt.create_torrent(fs, piece_size)
 
         # Add tracker
         t.add_tracker(self.config.tracker_url)
-        
+
         # Set the name in the torrent parameters
         t.set_comment(input_path.name)
-        
+
         # Generate the torrent
-        libtorrent.set_piece_hashes(t, str(parent_path))
-        
+        lt.set_piece_hashes(t, str(parent_path))
+
         # Set private flag if configured
         t.set_priv(self.config.private)
-        
+
         # Create the torrent
         torrent = t.generate()
-        
+
         # Ensure the name is set in the info dictionary
         torrent[b"info"][b"name"] = input_path.name.encode()
-        
+
         # Write the torrent file
         with open(output_path, "wb") as f:
-            f.write(libtorrent.bencode(torrent))
+            f.write(lt.bencode(torrent))
             # Sync the torrent file to disk
             sync_to_disk(f)
 
@@ -110,34 +128,50 @@ class TorrentCreator:
 
         return output_path
 
-    def calculate_optimal_piece_size(self, total_size: int) -> int:
-        """
-        Calculate the optimal piece size for a torrent based on its total size.
-
-        The piece size affects both the torrent file size and client memory usage:
-        - Smaller pieces allow more granular downloading but increase torrent file size
-        - Larger pieces reduce overhead but require more sequential downloading
-        - Aim for 1000-2000 pieces total as a balance for most clients
+    def _bound_piece_size(self, size: int) -> int:
+        """Ensure piece size is within configured bounds.
 
         Args:
-            total_size: Total size of the content in bytes
+            size: The piece size to bound
 
         Returns:
-            int: Optimal piece size in bytes (power of 2 between min and max bounds)
+            int: The bounded piece size
         """
-        # Start with minimum piece size that would result in <= max pieces
-        min_viable_piece_size = math.ceil(total_size / self.config.target_pieces_max)
+        min_size: int = int(self.config.min_piece_size)
+        max_size: int = int(self.config.max_piece_size)
+        size_int: int = int(size)
 
-        # Round up to nearest power of 2
-        min_viable_power = math.ceil(math.log2(min_viable_piece_size))
-        piece_size = int(2**min_viable_power)  # Ensure integer result
+        if size_int < min_size:
+            return min_size
+        if size_int > max_size:
+            return max_size
+        return size_int
 
-        # Ensure piece size is within bounds
-        piece_size = max(
-            self.config.min_piece_size, min(piece_size, self.config.max_piece_size)
-        )
+    def calculate_optimal_piece_size(self, total_size: int) -> int:
+        """Calculate optimal piece size based on total file size."""
+        if total_size <= 0:
+            return int(self.config.min_piece_size)
 
-        return piece_size
+        # Define size constants as integers
+        KB: int = int(1024)
+        MB: int = int(KB * 1024)
+        GB: int = int(MB * 1024)
+
+        # Start with a reasonable default (1MB)
+        piece_size: int = MB
+
+        # Adjust based on total size
+        if total_size < int(100 * MB):  # < 100MB
+            piece_size = int(256 * KB)  # 256KB
+        elif total_size < int(1 * GB):  # < 1GB
+            piece_size = MB  # 1MB
+        elif total_size < int(10 * GB):  # < 10GB
+            piece_size = int(4 * MB)  # 4MB
+        else:  # >= 10GB
+            piece_size = int(8 * MB)  # 8MB
+
+        # Ensure piece size is within configured bounds
+        return self._bound_piece_size(piece_size)
 
     @staticmethod
     def verify_torrent_file(torrent_path: str) -> bool:
@@ -158,7 +192,7 @@ class TorrentCreator:
             with open(torrent_path, "rb") as f:
                 data = f.read()
             # Try to decode the torrent file
-            torrent = libtorrent.bdecode(data)
+            torrent = lt.bdecode(data)
             # Basic validation of required fields
             info = torrent.get(b"info")
             if not info:

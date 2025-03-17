@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Generator
 
 import pytest
 from _pytest.logging import LogCaptureFixture
@@ -51,6 +50,7 @@ def test_process_single_integration(
     """Integration test for processing a single directory."""
     output_file = tmp_path / "output.torrent"
     config = TorrentConfig(
+        tracker_url="http://tracker.example.com/announce",
         min_piece_size=16384,  # Small piece size for testing
         max_piece_size=32768,
         private=True,
@@ -79,6 +79,7 @@ def test_process_batch_integration(
     """Integration test for batch processing multiple directories."""
     output_dir = tmp_path / "torrents"
     config = TorrentConfig(
+        tracker_url="http://tracker.example.com/announce",
         min_piece_size=16384,
         max_piece_size=32768,
         private=True,
@@ -112,7 +113,11 @@ def test_process_batch_incremental_integration(
 ) -> None:
     """Integration test for incremental batch processing."""
     output_dir = tmp_path / "torrents"
-    config = TorrentConfig(min_piece_size=16384, max_piece_size=32768)
+    config = TorrentConfig(
+        tracker_url="http://tracker.example.com/announce",
+        min_piece_size=16384,
+        max_piece_size=32768,
+    )
 
     # First run - process all directories
     result = process_batch(
@@ -148,7 +153,11 @@ def test_process_batch_force_update_integration(
 ) -> None:
     """Integration test for forced batch processing update."""
     output_dir = tmp_path / "torrents"
-    config = TorrentConfig(min_piece_size=16384, max_piece_size=32768)
+    config = TorrentConfig(
+        tracker_url="http://tracker.example.com/announce",
+        min_piece_size=16384,
+        max_piece_size=32768,
+    )
 
     # First run - process all directories
     result = process_batch(
@@ -192,6 +201,7 @@ def test_process_single_large_files_integration(
 
     output_file = tmp_path / "large.torrent"
     config = TorrentConfig(
+        tracker_url="http://tracker.example.com/announce",
         min_piece_size=1024 * 1024,  # 1MB pieces for large files
         max_piece_size=2 * 1024 * 1024,  # 2MB max piece size
         private=True,
@@ -207,3 +217,65 @@ def test_process_single_large_files_integration(
     assert result == 0
     assert output_file.exists()
     assert output_file.stat().st_size > 0
+
+
+def test_process_single_with_metadata_integration(
+    sample_directory: Path, tmp_path: Path, caplog: LogCaptureFixture
+) -> None:
+    """Integration test for processing a single directory with metadata."""
+    output_file = tmp_path / "output.torrent"
+    config = TorrentConfig(
+        tracker_url="http://tracker.example.com/announce",
+        min_piece_size=16384,
+        max_piece_size=32768,
+        private=True,
+        source="Test Source",
+        comment="Test Comment",
+    )
+
+    result = process_single(
+        str(sample_directory),
+        "http://tracker.example.com/announce",
+        str(output_file),
+        config=config,
+    )
+
+    assert result == 0
+    assert output_file.exists()
+    assert "Torrent created successfully" in caplog.text
+    assert output_file.stat().st_size > 0
+
+
+def test_process_batch_with_metadata_integration(
+    batch_directory: Path, tmp_path: Path, caplog: LogCaptureFixture
+) -> None:
+    """Integration test for batch processing with metadata."""
+    output_dir = tmp_path / "torrents"
+    config = TorrentConfig(
+        tracker_url="http://tracker.example.com/announce",
+        min_piece_size=16384,
+        max_piece_size=32768,
+        private=True,
+        source="Test Source",
+        comment="Test Comment",
+    )
+
+    result = process_batch(
+        str(batch_directory),
+        "http://tracker.example.com/announce",
+        config=config,
+        output_dir=str(output_dir),
+    )
+
+    assert result == 0
+    assert output_dir.exists()
+
+    # Verify torrent files were created
+    torrent_files = list(output_dir.glob("*.torrent"))
+    assert len(torrent_files) == 3
+    for torrent_file in torrent_files:
+        assert torrent_file.stat().st_size > 0
+
+    # Verify manifest file was created
+    manifest_file = output_dir / "manifest.csv"
+    assert manifest_file.exists()

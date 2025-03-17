@@ -21,7 +21,6 @@ A Python tool for creating torrent files from directories with optimal settings 
   - [Single File/Directory Mode](#single-filedirectory-mode)
   - [Batch Mode](#batch-mode)
   - [Common Options](#common-options)
-  - [Command Order](#command-order)
 - [Manifest System](#manifest-system)
 - [Development](#development)
   - [Setting Up](#setting-up-development-environment)
@@ -70,8 +69,9 @@ torrent-directories batch path/to/parent http://tracker.example.com/announce -o 
 
 ## Requirements
 
-- Python 3.8 or later
+- Python 3.13 or later
 - libtorrent 2.0.0 or later
+- click 8.1.3 or later
 
 ## Detailed Usage
 
@@ -97,7 +97,7 @@ torrent-directories file ./my_movie http://tracker.example.com/announce \
     --max-piece-size 32M
 
 # Preview changes without creating files (dry run)
-torrent-directories file ./my_movie http://tracker.example.com/announce --dry-run
+torrent-directories --dry-run file ./my_movie http://tracker.example.com/announce
 ```
 
 ### Batch Mode
@@ -122,11 +122,15 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
     --min-piece-size 1M \
     --force \
     --include-system
+
+# Clean manifest and process directories
+torrent-directories batch ./movies http://tracker.example.com/announce --clean
 ```
 
 ### Common Options
 
-- General Options (before command):
+- Global Options (before command):
+  - `--version`: Show version information
   - `--verbose` or `-v`: Show detailed progress
   - `--dry-run`: Preview changes without making them
   - `--log-file FILE`: Write logs to file
@@ -135,6 +139,7 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
   - `--private | --public`: Set torrent privacy (mutually exclusive, private by default)
   - `--min-piece-size SIZE`: Minimum piece size (e.g., 16K, 1M)
   - `--max-piece-size SIZE`: Maximum piece size (e.g., 16M, 64M)
+  - `--target-pieces MIN-MAX`: Target piece count range (e.g., 1000-2000)
   - `--include-system`: Include system files
   - `--force`: Overwrite existing torrents
   - `-o/--output OUTPUT`: Output path for the torrent(s):
@@ -144,30 +149,6 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
 - Batch-specific Options:
   - `--clean`: Clean the manifest by removing missing entries
   - `--max-failures N`: Maximum failures before stopping (0 for unlimited)
-
-### Command Order
-
-General options must come before the command (file/batch), while torrent-specific options come after:
-
-```bash
-# Correct - General options before command, torrent options after
-torrent-directories --verbose file ./path tracker-url --public --min-piece-size 1M
-
-# Incorrect - torrent options before command (will not work)
-# torrent-directories --public file ./path tracker-url  # DON'T DO THIS
-```
-
-Examples of correct option order:
-```bash
-# Verbose output with custom piece size
-torrent-directories --verbose file ./movie tracker-url --min-piece-size 1M
-
-# Log to file with public flag
-torrent-directories --log-file output.log batch ./movies tracker-url --public
-
-# Dry run with multiple options
-torrent-directories --dry-run file ./movie tracker-url --public --force --min-piece-size 1M
-```
 
 ## Manifest System
 
@@ -217,7 +198,6 @@ python -m pytest tests/ -v --cov=src/torrent
 
 # Run only integration tests
 python -m pytest tests/torrent/cli/test_commands_integration.py -v
-
 ```
 
 ### Code Style
@@ -242,5 +222,3 @@ These tools are configured in `pyproject.toml` and run automatically via pre-com
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-

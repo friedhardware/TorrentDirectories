@@ -21,4 +21,4 @@ Added
 - Command-line interface
 - Batch processing support
 - Comprehensive test suite
-- Documentation 
+- Documentation

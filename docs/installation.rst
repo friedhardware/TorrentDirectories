@@ -4,7 +4,12 @@ Installation
 Requirements
 ----------------------
 
-TorrentDirectories requires Python 3.8 or later and libtorrent 2.0.0 or later.
+TorrentDirectories requires:
+* Python 3.13 or later
+* libtorrent 2.0.0 or later
+* click 8.1.3 or later
+
+These requirements will be automatically installed when you install TorrentDirectories using pip.
 
 Installing from PyPI
 ----------------------
@@ -14,6 +19,8 @@ The recommended way to install TorrentDirectories is via pip:
 .. code-block:: bash
 
    pip install torrent-directories
+
+This will automatically install all required dependencies (libtorrent and click) if they are not already present.
 
 Installing from Source
 ----------------------
@@ -40,6 +47,8 @@ To install TorrentDirectories from source:
 
       pip install -e .
 
+This will automatically install all required dependencies (libtorrent and click) if they are not already present.
+
 Development Installation
 ----------------------
 
@@ -59,4 +68,5 @@ This will install additional packages needed for development:
 * mypy
 * ruff
 * sphinx
-* sphinx-rtd-theme 
+* sphinx-rtd-theme
+* pre-commit

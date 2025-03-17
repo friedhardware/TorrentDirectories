@@ -11,7 +11,7 @@ import os
 from datetime import datetime
 from typing import List, Optional, Set
 
-from .utils.file_utils import backup_file, sync_to_disk
+from .utils.file_utils import FileLock, backup_file, sync_to_disk
 from .utils.manifest_cache import ManifestCache
 
 logger = logging.getLogger(__name__)
@@ -81,8 +81,7 @@ class ManifestManager:
 
         # Cache miss or disabled, check file
         with open(self.manifest_path, "r", newline="", encoding="utf-8") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_SH)
-            try:
+            with FileLock(f, fcntl.LOCK_SH):
                 reader = csv.DictReader(f)
                 for row in reader:
                     if row["directory_path"] == directory_path:
@@ -92,35 +91,38 @@ class ManifestManager:
                         )
                         return True
                 return False
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
     def add_entry(
         self, directory_path: str, torrent_file: str, force: bool = False
     ) -> None:
         """
-        Add a new entry to the manifest by appending to the file.
+        Add a new entry to the manifest.
 
         Args:
             directory_path: Path to the processed directory
             torrent_file: Path to the created torrent file
             force: Whether to overwrite an existing entry for this directory
-                  Note: With append-only operation, force=True will add duplicate entries
 
         Raises:
             ManifestError: If the directory is already in the manifest and force is False
         """
+        processed_at = datetime.now().isoformat()
+
         # Open file with exclusive lock to prevent race conditions
-        with open(self.manifest_path, "a+", newline="", encoding="utf-8") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-            try:
-                # Check if directory exists
-                if not force:
-                    # Seek to beginning to read existing entries
-                    f.seek(0)
-                    reader = csv.reader(f)
-                    for row in reader:
-                        if row and row[0] == directory_path:
+        with open(self.manifest_path, "r+", newline="", encoding="utf-8") as f:
+            with FileLock(f, fcntl.LOCK_EX):
+                # Read existing entries
+                f.seek(0)
+                reader = csv.reader(f)
+                headers = next(reader)  # Save headers
+                entries = []
+                found_existing = False
+
+                # Process existing entries
+                for row in reader:
+                    if row and row[0] == directory_path:
+                        found_existing = True
+                        if not force:
                             logger.error(
                                 f"Attempted to add duplicate entry for directory: {directory_path}"
                             )
@@ -130,31 +132,40 @@ class ManifestManager:
                             raise ManifestError(
                                 f"Directory already exists in manifest: {directory_path}"
                             )
+                    else:
+                        entries.append(row)
 
-                # Seek to end for appending
-                f.seek(0, 2)  # 2 means seek from end
-                processed_at = datetime.now().isoformat()
+                # Add new entry
+                entries.append([directory_path, torrent_file, processed_at])
+
+                # Write all entries back to file
+                f.seek(0)
+                f.truncate()
                 writer = csv.writer(f, quoting=csv.QUOTE_ALL)
-                writer.writerow([directory_path, torrent_file, processed_at])
+                writer.writerow(headers)
+                writer.writerows(entries)
                 sync_to_disk(f)
+
                 # Update cache
                 self._cache.add_entry(directory_path, torrent_file, processed_at)
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+
+                if found_existing and force:
+                    logger.info(
+                        f"Replaced existing entry for directory: {directory_path}"
+                    )
+                else:
+                    logger.info(f"Added new entry for directory: {directory_path}")
 
     def get_missing_torrents(self) -> Set[str]:
         """Get a set of directory paths whose torrent files are missing."""
         missing = set()
         with open(self.manifest_path, "r", newline="", encoding="utf-8") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_SH)
-            try:
+            with FileLock(f, fcntl.LOCK_SH):
                 reader = csv.DictReader(f)
                 for row in reader:
                     if not os.path.exists(row["torrent_file"]):
                         missing.add(row["directory_path"])
                 return missing
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
     def clean_manifest(self, output_dir: Optional[str] = None) -> None:
         """Clean the manifest by removing entries with missing torrent files."""
@@ -164,8 +175,7 @@ class ManifestManager:
         # Read existing entries
         valid_entries = []
         with open(self.manifest_path, "r+", newline="", encoding="utf-8") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_EX)
-            try:
+            with FileLock(f, fcntl.LOCK_EX):
                 reader = csv.DictReader(f)
                 for row in reader:
                     if os.path.exists(row["torrent_file"]):
@@ -188,8 +198,6 @@ class ManifestManager:
 
                 # Invalidate cache since we modified the file
                 self._cache.invalidate()
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
     def get_processed_directories(self) -> List[str]:
         """Get a list of all processed directory paths."""
@@ -200,14 +208,11 @@ class ManifestManager:
         # Cache miss or disabled, read from file
         processed_directories = []
         with open(self.manifest_path, "r", newline="", encoding="utf-8") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_SH)
-            try:
+            with FileLock(f, fcntl.LOCK_SH):
                 reader = csv.DictReader(f)
                 for row in reader:
                     processed_directories.append(row["directory_path"])
                 return processed_directories
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)
 
     def get_torrent_path(self, directory_path: str) -> Optional[str]:
         """
@@ -226,8 +231,7 @@ class ManifestManager:
 
         # Cache miss or disabled, check file
         with open(self.manifest_path, "r", newline="", encoding="utf-8") as f:
-            fcntl.flock(f.fileno(), fcntl.LOCK_SH)
-            try:
+            with FileLock(f, fcntl.LOCK_SH):
                 reader = csv.DictReader(f)
                 for row in reader:
                     if row["directory_path"] == directory_path:
@@ -237,5 +241,3 @@ class ManifestManager:
                         )
                         return row["torrent_file"]
                 return None
-            finally:
-                fcntl.flock(f.fileno(), fcntl.LOCK_UN)

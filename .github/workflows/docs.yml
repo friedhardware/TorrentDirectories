@@ -54,4 +54,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: docs/_build/html
           force_orphan: true
-          cname: # You can add your custom domain here if you have one 
+          cname: # You can add your custom domain here if you have one

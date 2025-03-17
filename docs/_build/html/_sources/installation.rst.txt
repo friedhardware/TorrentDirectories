@@ -61,4 +61,4 @@ This will install additional packages needed for development:
 * mypy
 * ruff
 * sphinx
-* sphinx-rtd-theme 
+* sphinx-rtd-theme

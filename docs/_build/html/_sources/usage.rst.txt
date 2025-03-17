@@ -128,4 +128,4 @@ TorrentDirectories provides clear error messages for common issues:
     try:
         creator.create("path/to/content", "invalid/output/path/output.torrent")
     except OSError as e:
-        print(f"Error writing torrent file: {e}") 
+        print(f"Error writing torrent file: {e}")

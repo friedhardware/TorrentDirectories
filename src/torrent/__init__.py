@@ -39,6 +39,13 @@ from torrent.cli import main as cli_main
 from torrent.manifest import ManifestError, ManifestManager
 from torrent.torrent_creator import TorrentCreator
 
+from .version import __version__
+
 # This is the single source of truth for the package version
-__version__ = "1.0.0"
-__all__ = ["TorrentCreator", "ManifestManager", "ManifestError", "cli_main"]
+__all__ = [
+    "TorrentCreator",
+    "ManifestManager",
+    "ManifestError",
+    "cli_main",
+    "__version__",
+]

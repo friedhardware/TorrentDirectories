@@ -10,18 +10,18 @@ from pathlib import Path
 from setuptools import find_packages, setup
 
 
-# Read the version from __init__.py
+# Read the version from version.py
 def get_version() -> str:
-    """Get the version string from __init__.py.
+    """Get the version string from version.py.
 
     Returns:
-        str: The version string from __init__.py.
+        str: The version string from version.py.
 
     Raises:
         RuntimeError: If version string cannot be found.
     """
-    init_file = Path(__file__).parent / "src" / "torrent" / "__init__.py"
-    with open(init_file) as f:
+    version_file = Path(__file__).parent / "src" / "torrent" / "version.py"
+    with open(version_file) as f:
         version_match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", f.read(), re.M)
         if version_match:
             return version_match.group(1)
@@ -36,9 +36,10 @@ setup(
     author_email="friedhardware@gmail.com",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    python_requires=">=3.7",
+    python_requires=">=3.13",
     install_requires=[
         "libtorrent>=2.0.0",
+        "click>=8.1.3",
     ],
     extras_require={
         "dev": [
@@ -46,20 +47,18 @@ setup(
             "pytest>=8.0.0",
             "pytest-cov>=6.0.0",
             "pytest-mock>=3.14.0",
+            "click>=8.1.3",
         ],
     },
     entry_points={
         "console_scripts": [
-            "torrent-directories=torrent.cli:main",
+            "torrent-directories=torrent.cli.__main__:main",
         ],
     },
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.13",
     ],
 )

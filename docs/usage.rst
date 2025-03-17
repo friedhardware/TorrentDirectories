@@ -11,25 +11,22 @@ To create a torrent file from a single file or directory:
     from torrent.torrent_creator import TorrentCreator
     from torrent.utils.config import TorrentConfig
 
-    # Create a configuration with a tracker URL
+    # Create configuration
     config = TorrentConfig(
-        tracker_url="http://example.com/announce",
-        private=True,  # Optional: make the torrent private (default)
-        skip_system_files=True,  # Optional: skip system files (default)
-        min_piece_size=256 * 1024,  # Optional: minimum piece size in bytes
-        max_piece_size=16 * 1024 * 1024,  # Optional: maximum piece size in bytes
-        target_pieces_min=1000,  # Optional: target minimum number of pieces
-        target_pieces_max=2000,  # Optional: target maximum number of pieces
+        min_piece_size=256 * 1024,  # 256 KiB minimum piece size
+        max_piece_size=16 * 1024 * 1024,  # 16 MiB maximum piece size
+        skip_hidden=True,  # Skip hidden files
+        skip_system_files=True,  # Skip system files
+        private=True,  # Create private torrent
+        skip_empty_files=False,  # Don't skip empty files
+        tracker_url="http://example.com/announce"  # Tracker URL
     )
 
-    # Initialize the torrent creator
+    # Create torrent creator
     creator = TorrentCreator(config)
 
-    # Create a torrent file
-    creator.create(
-        input_path="path/to/content",
-        output_path="output.torrent"
-    )
+    # Create torrent file
+    creator.create("path/to/directory", "output.torrent")
 
 Command Line Interface
 ----------------------
@@ -75,10 +72,14 @@ You can process multiple directories at once:
         --force \
         --include-system
 
+    # Clean manifest and process directories
+    torrent-directories batch path/to/parent http://tracker.example.com/announce --clean
+
 Common Options
 ~~~~~~~~~~~~~
 
-General Options (before command):
+Global Options (before command):
+    * ``--version``: Show version information
     * ``--verbose`` or ``-v``: Show detailed progress
     * ``--dry-run``: Preview changes without making them
     * ``--log-file FILE``: Write logs to file
@@ -87,12 +88,49 @@ Torrent Options:
     * ``--private | --public``: Set torrent privacy (mutually exclusive, private by default)
     * ``--min-piece-size SIZE``: Minimum piece size (e.g., 16K, 1M)
     * ``--max-piece-size SIZE``: Maximum piece size (e.g., 16M, 64M)
+    * ``--target-pieces MIN-MAX``: Target piece count range (e.g., 1000-2000)
     * ``--include-system``: Include system files
     * ``--force``: Overwrite existing torrents
-    * ``-o/--output OUTPUT``: Output path for the torrent(s)
+    * ``-o/--output OUTPUT``: Output path for the torrent(s):
+        * Single mode: Output file path (default: input name + .torrent)
+        * Batch mode: Output directory (default: torrents/)
 
 Batch-specific Options:
     * ``--clean``: Clean the manifest by removing missing entries
     * ``--max-failures N``: Maximum failures before stopping (0 for unlimited)
 
-Note: General options must come before the command (file/batch), while torrent-specific options come after.
+Manifest System
+~~~~~~~~~~~~~
+
+The tool maintains a manifest file to track processed directories in batch mode. This enables:
+
+* Skipping already processed directories
+* Resuming interrupted batch operations
+* Tracking which directories have been processed
+
+The manifest is stored as a CSV file in the output directory with the following format:
+
+.. code-block:: csv
+
+    directory_path,torrent_file,processed_at
+    "/path/to/movie1","movie1.torrent","2024-03-15T14:30:00"
+
+## Piece Size Selection
+
+The piece size is automatically selected based on the following rules:
+1. Must be a power of 2 (e.g. 16 KiB, 32 KiB, 64 KiB, etc.)
+2. Must be a multiple of 16 KiB
+3. Must be between min_piece_size and max_piece_size
+
+The default configuration uses:
+- Minimum piece size: 256 KiB
+- Maximum piece size: 16 MiB
+
+You can customize these values when creating the config:
+
+.. code-block:: python
+
+    config = TorrentConfig(
+        min_piece_size=16 * 1024,  # 16 KiB minimum
+        max_piece_size=64 * 1024 * 1024,  # 64 MiB maximum
+    )

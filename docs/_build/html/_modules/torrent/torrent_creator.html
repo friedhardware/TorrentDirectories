@@ -9,7 +9,7 @@
       <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
       <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
 
-  
+
     <link rel="shortcut icon" href="../../_static/favicon.ico"/>
       <script src="../../_static/jquery.js?v=5d32c60e"></script>
       <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
@@ -18,17 +18,17 @@
       <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
     <script src="../../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../../genindex.html" />
-    <link rel="search" title="Search" href="../../search.html" /> 
+    <link rel="search" title="Search" href="../../search.html" />
 </head>
 
-<body class="wy-body-for-nav"> 
+<body class="wy-body-for-nav">
   <div class="wy-grid-for-nav">
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search"  style="background: #2980B9" >
 
-          
-          
+
+
           <a href="../../index.html" class="icon icon-home">
             TorrentDirectories
           </a>
@@ -87,7 +87,7 @@
 </div>
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
-             
+
   <h1>Source code for torrent.torrent_creator</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">Core functionality for creating torrent files with optimal settings.</span>
@@ -161,7 +161,7 @@
 
         <span class="c1"># Create file storage</span>
         <span class="n">fs</span> <span class="o">=</span> <span class="n">libtorrent</span><span class="o">.</span><span class="n">file_storage</span><span class="p">()</span>
-        
+
         <span class="c1"># Add files to storage</span>
         <span class="k">if</span> <span class="n">input_path</span><span class="o">.</span><span class="n">is_file</span><span class="p">():</span>
             <span class="n">fs</span><span class="o">.</span><span class="n">add_file</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">input_path</span><span class="o">.</span><span class="n">name</span><span class="p">),</span> <span class="n">input_path</span><span class="o">.</span><span class="n">stat</span><span class="p">()</span><span class="o">.</span><span class="n">st_size</span><span class="p">)</span>
@@ -180,22 +180,22 @@
 
         <span class="c1"># Add tracker</span>
         <span class="n">t</span><span class="o">.</span><span class="n">add_tracker</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">tracker_url</span><span class="p">)</span>
-        
+
         <span class="c1"># Set the name in the torrent parameters</span>
         <span class="n">t</span><span class="o">.</span><span class="n">set_comment</span><span class="p">(</span><span class="n">input_path</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
-        
+
         <span class="c1"># Generate the torrent</span>
         <span class="n">libtorrent</span><span class="o">.</span><span class="n">set_piece_hashes</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">parent_path</span><span class="p">))</span>
-        
+
         <span class="c1"># Set private flag if configured</span>
         <span class="n">t</span><span class="o">.</span><span class="n">set_priv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">private</span><span class="p">)</span>
-        
+
         <span class="c1"># Create the torrent</span>
         <span class="n">torrent</span> <span class="o">=</span> <span class="n">t</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
-        
+
         <span class="c1"># Ensure the name is set in the info dictionary</span>
         <span class="n">torrent</span><span class="p">[</span><span class="sa">b</span><span class="s2">&quot;info&quot;</span><span class="p">][</span><span class="sa">b</span><span class="s2">&quot;name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_path</span><span class="o">.</span><span class="n">name</span><span class="o">.</span><span class="n">encode</span><span class="p">()</span>
-        
+
         <span class="c1"># Write the torrent file</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">output_path</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">libtorrent</span><span class="o">.</span><span class="n">bencode</span><span class="p">(</span><span class="n">torrent</span><span class="p">))</span>
@@ -291,7 +291,7 @@
   Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
     <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
     provided by <a href="https://readthedocs.org">Read the Docs</a>.
-   
+
 
 </footer>
         </div>
@@ -302,7 +302,7 @@
       jQuery(function () {
           SphinxRtdTheme.Navigation.enable(true);
       });
-  </script> 
+  </script>
 
 </body>
 </html>

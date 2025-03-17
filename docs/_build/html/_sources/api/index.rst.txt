@@ -40,4 +40,4 @@ Manifest Management
 .. automodule:: torrent.manifest
    :members:
    :undoc-members:
-   :show-inheritance: 
+   :show-inheritance:

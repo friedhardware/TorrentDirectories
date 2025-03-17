@@ -4,11 +4,36 @@ File system utilities for handling paths, file operations, and size formatting.
 
 from __future__ import annotations
 
+import fcntl
 import os
 import re
 import shutil
+from contextlib import contextmanager
 from datetime import datetime
-from typing import BinaryIO, List, TextIO, Union
+from typing import BinaryIO, Generator, List, TextIO, TypeVar, Union
+
+T = TypeVar("T")
+
+
+@contextmanager
+def FileLock(
+    file: Union[BinaryIO, TextIO], lock_type: int
+) -> Generator[Union[BinaryIO, TextIO], None, None]:
+    """
+    Context manager for file locking operations.
+
+    Args:
+        file: File object to lock
+        lock_type: Type of lock (fcntl.LOCK_SH or fcntl.LOCK_EX)
+
+    Yields:
+        The locked file object
+    """
+    fcntl.flock(file.fileno(), lock_type)
+    try:
+        yield file
+    finally:
+        fcntl.flock(file.fileno(), fcntl.LOCK_UN)
 
 
 def is_hidden(path: str) -> bool:
@@ -139,7 +164,7 @@ def list_files(
     return sorted(files)
 
 
-def get_total_size(paths: List[str]) -> int:
+def get_total_size(paths: list[str]) -> int:
     """
     Calculate the total size of files.
 
@@ -152,17 +177,17 @@ def get_total_size(paths: List[str]) -> int:
     return sum(os.path.getsize(p) for p in paths if os.path.exists(p))
 
 
-def format_size(size_bytes: int) -> str:
+def format_size(size: int) -> str:
     """
     Format a size in bytes to a human readable string.
 
     Args:
-        size_bytes: Size in bytes
+        size: Size in bytes
 
     Returns:
         Formatted string (e.g. "1.23 GB")
     """
-    size_float = float(size_bytes)  # Convert to float for division
+    size_float = float(size)  # Convert to float for division
     for unit in ["B", "KiB", "MiB", "GiB", "TiB"]:
         if size_float < 1024 or unit == "TiB":
             return f"{size_float:.2f} {unit}"

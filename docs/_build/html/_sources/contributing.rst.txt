@@ -81,4 +81,4 @@ We use Sphinx for documentation. To build the docs:
     cd docs
     make html
 
-The documentation will be built in `docs/_build/html`. 
+The documentation will be built in `docs/_build/html`.

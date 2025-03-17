@@ -30,6 +30,13 @@ Features
 * Torrent verification after creation
 * Cross-platform support (Windows, macOS, Linux)
 
+Requirements
+-----------
+
+* Python 3.13 or later
+* libtorrent 2.0.0 or later
+* click 8.1.3 or later
+
 Installation
 ------------
 
@@ -80,4 +87,3 @@ Indices and tables
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
