@@ -1,4 +1,6 @@
-:tocdepth: 2
+.. toctree::
+   :hidden:
+   :toclevels: 2
 
 Changelog
 =========
