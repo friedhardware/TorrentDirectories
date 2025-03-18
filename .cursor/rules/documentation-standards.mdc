@@ -1,0 +1,19 @@
+---
+description: docs/**/*.rst
+globs:
+alwaysApply: false
+---
+   1. Use reStructuredText format for all documentation files
+    2. Follow these section header markers consistently:
+       - = for document title (over and under)
+       - - for sections
+       - ^ for subsections
+       - " for sub-subsections
+    3. Include practical examples in code blocks
+    4. Use cross-references to link between documents
+    5. Keep code examples consistent with the latest version
+    6. Include command-line examples with expected output
+    7. Document all options and their effects
+    8. Use proper indentation for code blocks (3 spaces)
+    9. Include troubleshooting sections for common issues
+    10. Keep line length under 100 characters

@@ -13,7 +13,9 @@ TorrentDirectories is a Python tool for creating torrent files from directories 
    :caption: Contents:
 
    installation
+   quickstart
    usage
+   best_practices
    api/index
    contributing
    changelog

@@ -23,6 +23,8 @@ A Python tool for creating torrent files from directories with optimal settings 
   - [Common Options](#common-options)
   - [Error Handling](#error-handling)
 - [Manifest System](#manifest-system)
+- [Best Practices](#best-practices)
+- [Troubleshooting](#troubleshooting)
 - [Development](#development)
   - [Setting Up](#setting-up-development-environment)
   - [Running Tests](#running-tests)
@@ -74,7 +76,7 @@ torrent-directories batch path/to/parent http://tracker.example.com/announce -o 
 torrent-directories batch path/to/parent http://tracker.example.com/announce \
     --min-piece-size 1M \
     --max-piece-size 32M \
-    --skip-empty \
+    --skip-empty-files \
     --force
 ```
 
@@ -111,7 +113,7 @@ torrent-directories file ./my_movie http://tracker.example.com/announce \
 
 # Skip empty files and include system files
 torrent-directories file ./my_movie http://tracker.example.com/announce \
-    --skip-empty \
+    --skip-empty-files \
     --include-system
 
 # Preview changes without creating files (dry run)
@@ -140,7 +142,7 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
     --min-piece-size 1M \
     --force \
     --include-system \
-    --skip-empty
+    --skip-empty-files
 
 # Clean manifest and process directories with metadata
 torrent-directories batch ./movies http://tracker.example.com/announce \
@@ -162,7 +164,7 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
   - `--min-piece-size SIZE`: Minimum piece size (e.g., 16K, 1M, default: 256K)
   - `--max-piece-size SIZE`: Maximum piece size (e.g., 16M, 64M, default: 16M)
   - `--include-system`: Include system files (default: False)
-  - `--skip-empty`: Skip empty files instead of failing (default: False)
+  - `--skip-empty-files`: Skip empty files instead of failing (default: False)
   - `--force`: Overwrite existing torrents
   - `--source TEXT`: Add a source string to the torrent metadata
   - `--comment TEXT`: Add a comment to the torrent metadata
@@ -173,6 +175,7 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
 - Batch-specific Options:
   - `--clean`: Clean the manifest by removing missing entries
   - `--max-failures N`: Maximum failures before stopping (0 for unlimited)
+  - `--skip-empty-directories / --no-skip-empty-directories`: Control how empty directories are handled (Skip by default)
 
 ### Error Handling
 
@@ -180,8 +183,13 @@ The tool handles various error conditions:
 
 - Empty Files:
   - By default, attempting to create a torrent from an empty file will fail
-  - Use `--skip-empty` to skip empty files instead of failing
-  - In batch mode with `--skip-empty`, empty files are counted separately from other failures
+  - Use `--skip-empty-files` to skip empty files instead of failing
+  - In batch mode with `--skip-empty-files`, empty files are counted separately from other failures
+
+- Empty Directories:
+  - By default, empty directories are skipped in batch mode
+  - Use `--no-skip-empty-directories` to treat empty directories as failures
+  - Empty directories are counted in the final report
 
 - Existing Files:
   - By default, the tool won't overwrite existing torrent files
@@ -190,7 +198,7 @@ The tool handles various error conditions:
 
 - Maximum Failures:
   - In batch mode, use `--max-failures N` to stop after N failures
-  - Empty files are only counted as failures if `--skip-empty` is not used
+  - Empty files are only counted as failures if `--skip-empty-files` is not used
   - A value of 0 (default) means no limit
 
 ## Manifest System
@@ -204,8 +212,9 @@ The tool maintains a manifest file to track processed directories in batch mode.
 
 The manifest is stored as a CSV file in the output directory with the following format:
 ```csv
-directory_path,torrent_file,processed_at
+"directory_path","torrent_file","processed_at"
 "/path/to/movie1","movie1.torrent","2024-03-15T14:30:00"
+"/path/to/movie2","movie2.torrent","2024-03-15T14:31:00"
 ```
 
 The manifest system provides:
@@ -213,6 +222,73 @@ The manifest system provides:
 - Cleaning of invalid entries with `--clean`
 - Backup of the manifest before cleaning (saved as manifest.csv.bak)
 - Thread-safe operations for concurrent access
+
+## Best Practices
+
+For detailed best practices and advanced usage patterns, including:
+- Directory organization strategies
+- Piece size optimization for different content types
+- Batch processing strategies
+- Metadata best practices
+- Error handling and recovery
+- Automation tips
+- Performance optimization
+- Security considerations
+
+See our [Best Practices Guide](docs/best_practices.rst) in the documentation.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Empty File Errors**:
+   ```
+   Error: File path/to/file.txt is empty (0 bytes)
+   ```
+   - **Solution**: Use `--skip-empty-files` option if you want to skip empty files instead of failing
+
+2. **File Already Exists**:
+   ```
+   Error: Output file already exists: path/to/output.torrent
+   ```
+   - **Solution**: Use `--force` to overwrite existing files
+
+3. **Missing Torrent Files in Batch Mode**:
+   ```
+   Error: Found X missing torrent files.
+   Use --clean to remove invalid entries from manifest.
+   ```
+   - **Solution**: Use `--clean` option to fix the manifest and recreate missing torrents
+
+4. **Maximum Failures Reached**:
+   ```
+   Maximum failures reached
+   Error: Failed to process directories
+   ```
+   - **Solution**: Fix the failing directories or use `--skip-empty-files` and `--skip-empty-directories` options. Alternatively, increase or remove the limit with `--max-failures`
+
+### Best Practices
+
+1. **Start with a Dry Run**:
+   ```bash
+   torrent-directories --dry-run batch ./movies http://tracker.example.com/announce
+   ```
+   This will show you what would be done without making any changes.
+
+2. **Use Verbose Mode for Troubleshooting**:
+   ```bash
+   torrent-directories -v batch ./movies http://tracker.example.com/announce --log-file logs.txt
+   ```
+   The `-v` flag provides more information, and `--log-file` saves it to a file.
+
+3. **Handle Empty Files and Directories Appropriately**:
+   - For most use cases, using both `--skip-empty-files` and the default `--skip-empty-directories` options is recommended.
+
+4. **Clean the Manifest When Needed**:
+   - If you've manually deleted torrent files, use the `--clean` option to synchronize the manifest.
+
+5. **Force Update When Content Changes**:
+   - If you've updated the content in a directory, use `--force` to rebuild the torrents.
 
 ## Development
 
@@ -243,27 +319,31 @@ python -m pytest tests/ -v --cov=src/torrent
 
 # Run only integration tests
 python -m pytest tests/torrent/cli/test_commands_integration.py -v
+
+# Run specific test files
+python -m pytest tests/torrent/cli/test_file_command.py -v
+python -m pytest tests/torrent/cli/test_batch_command.py -v
 ```
 
 ### Code Style
 
 The project uses several tools to maintain consistent code quality:
+- `ruff` for linting
+- `black` for code formatting
+- `mypy` for type checking
+- `pre-commit` hooks to automate checks
 
-- Black for code formatting
-- Ruff for linting and formatting
-- isort for import sorting
-- mypy for type checking
-
-These tools are configured in `pyproject.toml` and run automatically via pre-commit hooks.
+Run these tools before submitting changes:
+```bash
+ruff check .
+black .
+mypy src
+```
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests: `python -m pytest tests/`
-5. Submit a pull request
+Contributions are welcome! See the [Contributing Guide](CONTRIBUTING.md) for more information.
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
