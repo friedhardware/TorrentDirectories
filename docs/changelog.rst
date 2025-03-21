@@ -1,6 +1,14 @@
 Changelog
 =========
 
+[1.4.2] - 2025-03-21
+====================
+
+
+
+Added
+* Implement interrupt handling for CLI operations ([ab1d68c])(https://github.com/friedhardware/TorrentDirectories/commit/ab1d68c) (friedhardware)
+* Implement interrupt handling for CLI operations ([90d2e01])(https://github.com/friedhardware/TorrentDirectories/commit/90d2e01) (friedhardware)
 [1.4.1] - 2025-03-21
 ====================
 
