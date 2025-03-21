@@ -515,3 +515,146 @@ def test_cache_functionality(manifest_dir: Path, test_dirs: list[Path]) -> None:
     assert preload_manager.is_directory_processed(
         str(test_dirs[0])
     )  # Should be a cache hit
+
+
+def test_manifest_absolute_paths_add_entry(
+    manifest_manager: ManifestManager, manifest_dir: Path
+) -> None:
+    """Test that add_entry converts relative paths to absolute paths."""
+    # Create test files and directories
+    test_dir = manifest_dir / "test_dir"
+    test_dir.mkdir()
+    test_torrent = manifest_dir / "test.torrent"
+    test_torrent.touch()
+
+    # Save original working directory
+    original_cwd = os.getcwd()
+    try:
+        # Change to manifest directory
+        os.chdir(str(manifest_dir))
+
+        # Test different path formats
+        relative_paths = [
+            ("./test_dir", "./test.torrent"),
+            ("test_dir", "test.torrent"),
+            ("./test_dir/", "./test.torrent"),
+            (str(test_dir), str(test_torrent)),  # Already absolute
+            ("~/test_dir", "~/test.torrent"),  # Home directory expansion
+        ]
+
+        for dir_path, torrent_path in relative_paths:
+            home_test_dir = None
+            home_test_torrent = None
+
+            try:
+                # For home directory test, create the necessary files
+                if dir_path.startswith("~"):
+                    home_test_dir = os.path.expanduser(dir_path)
+                    home_test_torrent = os.path.expanduser(torrent_path)
+                    os.makedirs(os.path.dirname(home_test_dir), exist_ok=True)
+                    os.makedirs(os.path.dirname(home_test_torrent), exist_ok=True)
+                    if not os.path.exists(home_test_dir):
+                        os.makedirs(home_test_dir)
+                    if not os.path.exists(home_test_torrent):
+                        Path(home_test_torrent).touch()
+
+                # Add entry with relative paths
+                manifest_manager.add_entry(dir_path, torrent_path)
+
+                # Get the stored paths
+                stored_torrent = manifest_manager.get_torrent_path(dir_path)
+                assert stored_torrent is not None
+
+                # Verify both paths were converted to absolute
+                assert os.path.isabs(stored_torrent)
+                if dir_path.startswith("~"):
+                    expected_torrent = os.path.realpath(
+                        os.path.expanduser(torrent_path)
+                    )
+                    assert stored_torrent == expected_torrent
+                else:
+                    assert stored_torrent == str(test_torrent.absolute())
+
+                # Clean manifest for next test
+                manifest_manager.clean_manifest(str(manifest_dir))
+
+            finally:
+                # Clean up home directory test files if they were created
+                if home_test_dir and os.path.exists(home_test_dir):
+                    os.rmdir(home_test_dir)
+                if home_test_torrent and os.path.exists(home_test_torrent):
+                    os.remove(home_test_torrent)
+
+    finally:
+        os.chdir(original_cwd)
+
+
+def test_manifest_absolute_paths_batch_operations(
+    manifest_manager: ManifestManager, manifest_dir: Path
+) -> None:
+    """Test that batch operations maintain absolute paths."""
+    # Create test structure
+    test_dirs = []
+    test_torrents = []
+    for i in range(3):
+        test_dir = manifest_dir / f"test_dir_{i}"
+        test_dir.mkdir()
+        test_dirs.append(test_dir)
+
+        test_torrent = manifest_dir / f"test_{i}.torrent"
+        test_torrent.touch()
+        test_torrents.append(test_torrent)
+
+    # Save original working directory
+    original_cwd = os.getcwd()
+    try:
+        # Change to manifest directory
+        os.chdir(str(manifest_dir))
+
+        # Add entries using relative paths
+        for i in range(3):
+            manifest_manager.add_entry(f"./test_dir_{i}", f"./test_{i}.torrent")
+
+        # Test get_processed_directories
+        processed_dirs = manifest_manager.get_processed_directories()
+        assert all(os.path.isabs(path) for path in processed_dirs)
+
+        # Test get_missing_torrents
+        missing = manifest_manager.get_missing_torrents()
+        assert all(os.path.isabs(path) for path in missing)
+
+        # Test after cleaning
+        manifest_manager.clean_manifest(str(manifest_dir))
+        processed_dirs = manifest_manager.get_processed_directories()
+        assert all(os.path.isabs(path) for path in processed_dirs)
+
+    finally:
+        os.chdir(original_cwd)
+
+
+def test_manifest_absolute_paths_symlinks(
+    manifest_manager: ManifestManager, manifest_dir: Path
+) -> None:
+    """Test that symlinks are resolved to absolute paths."""
+    # Create test structure
+    real_dir = manifest_dir / "real_dir"
+    real_dir.mkdir()
+    symlink_dir = manifest_dir / "symlink_dir"
+
+    real_torrent = manifest_dir / "real.torrent"
+    real_torrent.touch()
+    symlink_torrent = manifest_dir / "symlink.torrent"
+
+    # Create symlinks
+    os.symlink(str(real_dir), str(symlink_dir))
+    os.symlink(str(real_torrent), str(symlink_torrent))
+
+    # Add entry using symlink paths
+    manifest_manager.add_entry(str(symlink_dir), str(symlink_torrent))
+
+    # Verify paths are absolute and resolved
+    stored_torrent = manifest_manager.get_torrent_path(str(symlink_dir))
+    assert stored_torrent is not None
+    assert os.path.isabs(stored_torrent)
+    assert not os.path.islink(stored_torrent)
+    assert stored_torrent == str(real_torrent.absolute())

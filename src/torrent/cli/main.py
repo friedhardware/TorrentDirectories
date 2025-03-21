@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import logging
 import os
+import signal
 import sys
+from types import FrameType
 from typing import List, Optional, cast
 
 import click
@@ -21,6 +23,20 @@ from ..version import __version__
 from .commands import handle_dry_run, process_batch, process_single
 
 logger = logging.getLogger(__name__)
+
+# Global flag to track interrupt state
+interrupted = False
+
+
+def signal_handler(signum: int, frame: Optional[FrameType]) -> None:
+    """Handle interrupt signal (Ctrl+C)."""
+    global interrupted
+    if interrupted:  # Second interrupt, exit immediately
+        logger.warning("Forced exit due to second interrupt")
+        sys.exit(ErrorCode.INTERRUPTED.value)
+    interrupted = True
+    logger.info("Interrupt received, cleaning up...")
+    click.echo("\nInterrupt received. Cleaning up... Press Ctrl+C again to force quit.")
 
 
 def create_torrent_config(
@@ -76,9 +92,14 @@ def cli(
     ctx: Context, verbose: int, log_file: Optional[str], dry_run: bool, force: bool
 ) -> None:
     """Create torrent files from directories with optimal settings."""
+    # Set up signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     ctx.ensure_object(dict)
     ctx.obj["dry_run"] = dry_run
     ctx.obj["force"] = force
+    ctx.obj["interrupted"] = False  # Add interrupted flag to context
     setup_logging(verbose > 0, log_file)
 
 
@@ -288,6 +309,12 @@ def main(args: Optional[List[str]] = None) -> int:
             except (TypeError, ValueError):
                 return 1
         # If we get here, result is of an unexpected type
+        return 1
+    except click.exceptions.Abort:  # Handle Ctrl+C
+        logger.info("Operation cancelled by user")
+        # Check if we were interrupted by signal handler
+        if interrupted:
+            return ErrorCode.INTERRUPTED.value
         return 1
     except Exception as e:
         if isinstance(e, SystemExit):

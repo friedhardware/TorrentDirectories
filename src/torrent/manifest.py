@@ -108,8 +108,9 @@ class ManifestManager:
         Raises:
             ManifestError: If the directory is already in the manifest and force is False
         """
-        # Convert to absolute path
-        directory_path = os.path.abspath(directory_path)
+        # Convert to absolute path and resolve symlinks
+        directory_path = os.path.realpath(os.path.expanduser(directory_path))
+        torrent_file = os.path.realpath(os.path.expanduser(torrent_file))
         processed_at = datetime.now().isoformat()
 
         # Check cache first if enabled
@@ -251,6 +252,9 @@ class ManifestManager:
         Returns:
             Path to the torrent file if it exists, None otherwise
         """
+        # Convert to absolute path and resolve symlinks
+        directory_path = os.path.realpath(os.path.expanduser(directory_path))
+
         # Try cache first
         entry = self._cache.get_entry(directory_path)
         if entry is not None:

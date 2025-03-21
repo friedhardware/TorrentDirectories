@@ -22,6 +22,9 @@ from torrent.version import __version__
 
 logger = logging.getLogger(__name__)
 
+# Global flag to track interrupt state
+interrupted = False
+
 
 @dataclass
 class TorrentVerificationResult:
@@ -144,7 +147,17 @@ class TorrentCreator:
             t.add_tracker(self.config.tracker_url)
 
             # Set piece hashes before generating
-            lt.set_piece_hashes(t, str(input_path.parent))
+            try:
+                lt.set_piece_hashes(t, str(input_path.parent))
+            except RuntimeError:
+                # Check if we were interrupted
+                if interrupted:
+                    logger.info("Torrent creation interrupted by user")
+                    raise TorrentCreationError(
+                        message="Torrent creation interrupted by user",
+                        details={"path": str(output_path)},
+                    )
+                raise  # Re-raise if not interrupted
 
             # Generate torrent file
             torrent = t.generate()
@@ -179,6 +192,8 @@ class TorrentCreator:
                     os.remove(output_path)
             except OSError:
                 pass  # Ignore cleanup errors
+            if isinstance(e, TorrentCreationError):
+                raise
             raise TorrentCreationError(
                 message=f"Failed to create torrent: {e}",
                 details={"error": str(e)},

@@ -37,6 +37,9 @@ class ErrorCode(Enum):
     MISSING_TORRENT_FILES = 6
     DIRECTORY_NOT_FOUND = 8
 
+    # New error codes
+    INTERRUPTED = 130  # Standard Unix exit code for interrupt
+
 
 class TorrentError(Exception):
     """Base class for all torrent exceptions."""
@@ -111,16 +114,23 @@ class OutputFileExistsError(TorrentError):
 
 
 class TorrentCreationError(TorrentError):
-    """Error during torrent creation."""
+    """Error raised when torrent creation fails."""
 
-    def __init__(self, message: str, details: Optional[dict[str, Any]] = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        details: Optional[dict[str, Any]] = None,
+        original_error: Optional[Exception] = None,
+    ) -> None:
         """Initialize the error.
 
         Args:
             message: The error message.
-            details: Additional details about the error.
+            details: Optional dictionary with additional error details.
+            original_error: Optional original exception that caused this error.
         """
         super().__init__(message, ErrorCode.TORRENT_CREATION_ERROR, details)
+        self.original_error = original_error
 
 
 class InvalidConfigError(TorrentError):
