@@ -1,0 +1,13 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+- Always include type annotations for all parameters
+- Use @click.pass_context for commands that need access to shared context
+- Include detailed help messages for all options
+- Handle exceptions with click.ClickException
+- Return exit codes (0 for success, non-zero for failure)
+- Use click.echo() for output to console
+- Don't change existing config parameters without confirmation or extra analysis
+- Write tests for each command and options that are added

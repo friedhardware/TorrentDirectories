@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import fcntl
 import os
-import re
 import shutil
 from contextlib import contextmanager
 from datetime import datetime
@@ -111,21 +110,6 @@ def is_system_file(path: str) -> bool:
     return os.path.basename(path) in system_files
 
 
-def get_safe_path(path: str) -> str:
-    """
-    Convert a path to a safe format for use in filenames.
-
-    Args:
-        path: Path to convert
-
-    Returns:
-        Path with special characters replaced with underscores
-    """
-    # Replace invalid filename characters with underscores
-    safe = re.sub(r'[<>:"/\\|?*]', "_", path)
-    return safe
-
-
 def list_files(
     directory: str, skip_hidden: bool = True, skip_system: bool = True
 ) -> List[str]:
@@ -166,15 +150,48 @@ def list_files(
 
 def get_total_size(paths: list[str]) -> int:
     """
-    Calculate the total size of files.
+    Calculate the total size of files and directories.
+
+    For files, gets their size directly.
+    For directories, recursively traverses and sums the size of all contained files.
+    Handles symlinks by following them but protects against circular links.
+    Skips files that can't be accessed due to permissions.
+
+    Note: Empty files (0 bytes) are included in the total size calculation.
+    This maintains compatibility with the original behavior where empty files
+    are detected and handled separately by the calling code.
 
     Args:
-        paths: List of file paths
+        paths: List of file or directory paths
 
     Returns:
-        Total size in bytes
+        Total size in bytes of all accessible files
     """
-    return sum(os.path.getsize(p) for p in paths if os.path.exists(p))
+    total = 0
+    seen_paths = set()  # Track paths to avoid circular symlinks
+
+    def _get_size(path: str) -> int:
+        if not os.path.exists(path):
+            return 0
+
+        # Resolve any symlinks and check for circles
+        real_path = os.path.realpath(path)
+        if real_path in seen_paths:
+            return 0
+        seen_paths.add(real_path)
+
+        if os.path.isfile(path):
+            return os.path.getsize(path)
+        elif os.path.isdir(path):
+            size = 0
+            for entry in os.scandir(path):
+                size += _get_size(entry.path)
+            return size
+        return 0
+
+    # Calculate total size for all paths
+    total = sum(_get_size(path) for path in paths)
+    return total
 
 
 def format_size(size: int) -> str:
@@ -235,3 +252,32 @@ def sync_to_disk(file_obj: Union[TextIO, int, BinaryIO]) -> None:
     else:
         file_obj.flush()
         os.fsync(file_obj.fileno())
+
+
+def is_directory_empty(dir_path: str) -> bool:
+    """
+    Check if a directory is empty.
+
+    A directory is considered empty if either:
+    1. It contains no files or subdirectories
+    2. All files in the directory (and subdirectories) have zero bytes
+
+    Args:
+        dir_path: Path to the directory to check
+
+    Returns:
+        True if the directory is empty (no files/subdirs or all files are zero bytes),
+        False otherwise
+    """
+    # First check if directory has any entries at all
+    if not any(os.scandir(dir_path)):
+        return True
+
+    # If it has entries, check if all files have zero total bytes
+    try:
+        total_size = get_total_size([dir_path])
+        return total_size == 0
+    except OSError:
+        # If we can't access some files, consider it non-empty
+        # to avoid silent failures
+        return False

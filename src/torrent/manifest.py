@@ -11,6 +11,8 @@ import os
 from datetime import datetime
 from typing import List, Optional, Set
 
+import click  # Import at function level to avoid circular dependency
+
 from .utils.file_utils import FileLock, backup_file, sync_to_disk
 from .utils.manifest_cache import ManifestCache
 
@@ -126,12 +128,16 @@ class ManifestManager:
                             logger.error(
                                 f"Attempted to add duplicate entry for directory: {directory_path}"
                             )
-                            logger.error(
-                                "This could indicate a concurrent process or duplicate operation"
-                            )
+                            logger.error("Use --force to update existing entries")
                             raise ManifestError(
-                                f"Directory already exists in manifest: {directory_path}"
+                                f"Directory already exists in manifest: {directory_path}. Use --force to update."
                             )
+                        else:
+                            # Skip this entry as we'll add the new one
+                            logger.info(
+                                f"Updating existing entry for directory: {directory_path}"
+                            )
+                            continue
                     else:
                         entries.append(row)
 
@@ -149,9 +155,9 @@ class ManifestManager:
                 # Update cache
                 self._cache.add_entry(directory_path, torrent_file, processed_at)
 
-                if found_existing and force:
+                if found_existing:
                     logger.info(
-                        f"Replaced existing entry for directory: {directory_path}"
+                        f"Updated existing entry for directory: {directory_path}"
                     )
                 else:
                     logger.info(f"Added new entry for directory: {directory_path}")
@@ -168,18 +174,38 @@ class ManifestManager:
                 return missing
 
     def clean_manifest(self, output_dir: Optional[str] = None) -> None:
-        """Clean the manifest by removing entries with missing torrent files."""
+        """Clean the manifest by removing entries with missing torrent files.
+
+        Args:
+            output_dir: Optional new output directory. If provided, update torrent paths
+                       to use this directory for any existing entries.
+        """
         # First create a backup
         backup_file(self.manifest_path)
 
         # Read existing entries
         valid_entries = []
+        removed_count = 0
         with open(self.manifest_path, "r+", newline="", encoding="utf-8") as f:
             with FileLock(f, fcntl.LOCK_EX):
                 reader = csv.DictReader(f)
                 for row in reader:
-                    if os.path.exists(row["torrent_file"]):
+                    torrent_file = row["torrent_file"]
+
+                    # Update torrent path if output_dir provided
+                    if output_dir:
+                        torrent_name = os.path.basename(torrent_file)
+                        torrent_file = os.path.join(output_dir, torrent_name)
+                        row["torrent_file"] = torrent_file
+
+                    if os.path.exists(torrent_file):
                         valid_entries.append(row)
+                    else:
+                        removed_count += 1
+                        logger.info(
+                            f"Removing entry for missing torrent: {torrent_file}"
+                        )
+                        click.echo(f"Removed entry for missing torrent: {torrent_file}")
 
                 # Write back only valid entries
                 f.seek(0)
@@ -198,6 +224,12 @@ class ManifestManager:
 
                 # Invalidate cache since we modified the file
                 self._cache.invalidate()
+
+                if removed_count > 0:
+                    logger.info(
+                        f"Removed {removed_count} invalid entries from manifest"
+                    )
+                    click.echo(f"Removed {removed_count} invalid entries from manifest")
 
     def get_processed_directories(self) -> List[str]:
         """Get a list of all processed directory paths."""

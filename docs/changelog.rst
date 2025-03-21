@@ -6,6 +6,19 @@ Changelog
 [1.3.0] - 2025-03-17
 --------------------
 
+Fixed
+~~~~~
+* Improved file existence checking in single file mode to handle both explicit and default output paths
+* Fixed type safety issues in progress reporting and batch command handling
+* Enhanced error handling for file existence checks
+* Improved type annotations throughout the codebase
+
+Changed
+~~~~~~~
+* Refactored progress reporting to use proper type annotations
+* Enhanced test coverage for file existence scenarios
+* Improved code organization in utils modules
+
 [1.2.0] - 2025-03-17
 --------------------
 

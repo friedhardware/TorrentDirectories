@@ -41,3 +41,19 @@ Manifest Management
    :members:
    :undoc-members:
    :show-inheritance:
+
+Error Handling
+-------------
+
+.. automodule:: torrent.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Progress Reporting
+----------------
+
+.. automodule:: torrent.utils.progress
+   :members:
+   :undoc-members:
+   :show-inheritance:

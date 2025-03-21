@@ -1,0 +1,10 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+- Create custom exception classes for specific error cases
+- Use click.ClickException for CLI error reporting
+- Include descriptive error messages
+- Handle both expected and unexpected exceptions
+- Provide appropriate exit codes for different error scenarios

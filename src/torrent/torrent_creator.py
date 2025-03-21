@@ -5,16 +5,30 @@ Core functionality for creating torrent files with optimal settings.
 from __future__ import annotations
 
 import logging
+import os
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import libtorrent as lt  # type: ignore
 
-from torrent.cli.exceptions import FileIsEmptyError
+from torrent.exceptions import NoDataError, OutputFileExistsError, TorrentCreationError
 from torrent.utils.config import TorrentConfig
-from torrent.utils.file_utils import sync_to_disk
+from torrent.version import __version__
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class TorrentVerificationResult:
+    """Result of torrent file verification."""
+
+    success: bool
+    info_hash: Optional[str] = None
+    piece_length: Optional[int] = None
+    total_size: Optional[int] = None
+    num_pieces: Optional[int] = None
+    error: Optional[str] = None
 
 
 class TorrentCreator:
@@ -27,9 +41,12 @@ class TorrentCreator:
         * Must be a multiple of 16 KiB
         * Must be between min_piece_size and max_piece_size from config
     - File filtering (hidden files, system files)
-    - Empty file handling (skip or error based on config)
     - Progress reporting
     - Torrent verification
+    - Empty file handling:
+        * Individual empty files (0 bytes) are allowed and included in the torrent
+        * However, the total size of all files must be > 0 bytes
+        * This is a libtorrent requirement as it needs data to create pieces
 
     The default configuration uses:
     - Minimum piece size: 256 KiB
@@ -37,13 +54,12 @@ class TorrentCreator:
     - Private flag: True
     - Skip hidden files: True
     - Skip system files: True
-    - Skip empty files: False
 
     Args:
         config: Configuration for torrent creation
     """
 
-    def __init__(self, config: TorrentConfig):
+    def __init__(self, config: TorrentConfig) -> None:
         """
         Initialize the torrent creator.
 
@@ -52,81 +68,111 @@ class TorrentCreator:
         """
         self.config = config
 
-    def create(self, input_path: Union[str, Path], output_path: str) -> str:
+    def create(
+        self, input_path: Union[str, Path], output_path: Union[str, Path]
+    ) -> str:
         """
         Create a torrent file from a file or directory.
 
         Args:
-            input_path: Path to the file or directory to create a torrent from
-            output_path: Path where to save the torrent file
+            input_path: Path to the input file or directory
+            output_path: Path where the torrent file should be saved
 
         Returns:
             str: Path to the created torrent file
 
         Raises:
-            ValueError: If input path does not exist
-            OSError: If there are issues reading files or writing the torrent
-            RuntimeError: If torrent creation fails
-            FileIsEmptyError: If file is empty and skip_empty_files is False
+            TorrentError: If the torrent creation fails
+            OutputFileExistsError: If the output file already exists
+            NoDataError: If the total size of all files is 0 bytes. Note that individual
+                empty files are allowed, but there must be at least some data overall
+                to create pieces from.
         """
-        # Convert string path to Path object
-        input_path = Path(input_path).resolve()
+        input_path = Path(input_path)
+        output_path = Path(output_path)
+
         if not input_path.exists():
-            raise ValueError(f"Input path does not exist: {input_path}")
+            raise TorrentCreationError(
+                message=f"Input path does not exist: {input_path}",
+                details={"path": str(input_path)},
+            )
 
-        # Create file storage
+        if output_path.exists():
+            raise OutputFileExistsError(str(output_path))
+
         fs = lt.file_storage()
-
-        # Add files to storage
-        if input_path.is_file():
-            file_size = input_path.stat().st_size
-            if file_size == 0 and self.config.skip_empty_files:
-                raise FileIsEmptyError(str(input_path))
-            fs.add_file(str(input_path.name), file_size)
-            parent_path = input_path.parent
-        else:
-            parent_path = input_path.parent
+        try:
             lt.add_files(fs, str(input_path))
+        except RuntimeError as e:
+            if "no files" in str(e):
+                # This error means no files were found at all
+                raise NoDataError(str(input_path), is_directory=True)
+            raise TorrentCreationError(
+                message=f"Failed to add files: {e}",
+                details={"error": str(e)},
+                original_error=e,
+            )
 
-        # Calculate optimal piece size based on total size
-        total_size = fs.total_size()
-        piece_size = self.calculate_optimal_piece_size(total_size)
-        logger.debug(
-            f"Using piece size: {piece_size / 1024:.0f} KiB for {total_size / 1024 / 1024:.1f} MiB content"
-        )
+        if fs.total_size() == 0:
+            # This error means files were found but their total size is 0 bytes
+            raise NoDataError(str(input_path), is_directory=input_path.is_dir())
 
-        # Create create_torrent object with calculated piece size
-        t = lt.create_torrent(fs, piece_size)
+        try:
+            # Calculate optimal piece size based on total size
+            total_size = fs.total_size()
+            piece_size = self.calculate_optimal_piece_size(total_size)
+            logger.debug(
+                f"Using piece size: {piece_size / 1024:.0f} KiB for {total_size / 1024 / 1024:.1f} MiB content"
+            )
 
-        # Add tracker
-        t.add_tracker(self.config.tracker_url)
+            # Create the torrent
+            t = lt.create_torrent(fs, piece_size)
+            t.set_creator(f"TorrentDirectories v{__version__}")
+            t.set_comment(self.config.comment)
+            t.set_priv(self.config.private)
+            t.add_tracker(self.config.tracker_url)
 
-        # Set the name in the torrent parameters
-        t.set_comment(input_path.name)
+            # Set piece hashes before generating
+            lt.set_piece_hashes(t, str(input_path.parent))
 
-        # Generate the torrent
-        lt.set_piece_hashes(t, str(parent_path))
+            # Generate torrent file
+            torrent = t.generate()
 
-        # Set private flag if configured
-        t.set_priv(self.config.private)
+            # Add source as a custom field in the info dictionary
+            if self.config.source:
+                torrent[b"info"][b"source"] = self.config.source.encode()
 
-        # Create the torrent
-        torrent = t.generate()
+            # Save the torrent file
+            with open(output_path, "wb") as f:
+                f.write(lt.bencode(torrent))
 
-        # Ensure the name is set in the info dictionary
-        torrent[b"info"][b"name"] = input_path.name.encode()
+            # Verify the created torrent
+            verification_result = self.verify_torrent_file(str(output_path))
+            if not verification_result.success:
+                # If verification fails, try to clean up and raise an error
+                try:
+                    os.remove(output_path)
+                except OSError:
+                    pass  # Ignore cleanup errors
+                raise TorrentCreationError(
+                    message=f"Failed to verify torrent: {verification_result.error}",
+                    details={"verification_error": verification_result.error},
+                )
 
-        # Write the torrent file
-        with open(output_path, "wb") as f:
-            f.write(lt.bencode(torrent))
-            # Sync the torrent file to disk
-            sync_to_disk(f)
+            return str(output_path)
 
-        # Verify the created torrent file
-        if not self.verify_torrent_file(output_path):
-            raise RuntimeError(f"Failed to verify created torrent file: {output_path}")
-
-        return output_path
+        except Exception as e:
+            # Clean up the output file if it exists
+            try:
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+            except OSError:
+                pass  # Ignore cleanup errors
+            raise TorrentCreationError(
+                message=f"Failed to create torrent: {e}",
+                details={"error": str(e)},
+                original_error=e,
+            )
 
     def _bound_piece_size(self, size: int) -> int:
         """Ensure piece size is within configured bounds.
@@ -148,22 +194,26 @@ class TorrentCreator:
         return size_int
 
     def calculate_optimal_piece_size(self, total_size: int) -> int:
-        """Calculate optimal piece size based on total file size."""
-        if total_size <= 0:
-            return int(self.config.min_piece_size)
+        """
+        Calculate the optimal piece size for a torrent based on its total size.
 
-        # Define size constants as integers
-        KB: int = int(1024)
-        MB: int = int(KB * 1024)
-        GB: int = int(MB * 1024)
+        Args:
+            total_size: Total size of the torrent in bytes
 
-        # Start with a reasonable default (1MB)
-        piece_size: int = MB
+        Returns:
+            int: Optimal piece size in bytes
+        """
+        # Constants for piece size calculation
+        KB = 1024
+        MB = 1024 * KB
+        GB = 1024 * MB
 
-        # Adjust based on total size
-        if total_size < int(100 * MB):  # < 100MB
-            piece_size = int(256 * KB)  # 256KB
-        elif total_size < int(1 * GB):  # < 1GB
+        # Calculate piece size based on total size
+        if total_size < 50 * MB:  # < 50MB
+            piece_size = 256 * KB  # 256KB
+        elif total_size < 150 * MB:  # < 150MB
+            piece_size = MB  # 1MB
+        elif total_size < GB:  # < 1GB
             piece_size = MB  # 1MB
         elif total_size < int(10 * GB):  # < 10GB
             piece_size = int(4 * MB)  # 4MB
@@ -174,7 +224,7 @@ class TorrentCreator:
         return self._bound_piece_size(piece_size)
 
     @staticmethod
-    def verify_torrent_file(torrent_path: str) -> bool:
+    def verify_torrent_file(torrent_path: str) -> TorrentVerificationResult:
         """
         Verify that a torrent file is valid and can be loaded.
 
@@ -182,11 +232,7 @@ class TorrentCreator:
             torrent_path: Path to the torrent file
 
         Returns:
-            bool: True if the torrent file is valid
-
-        Note:
-            This method attempts to decode the torrent file to ensure it's valid.
-            It does not verify the actual content or piece hashes.
+            TorrentVerificationResult: Object containing verification results and metadata
         """
         try:
             with open(torrent_path, "rb") as f:
@@ -196,11 +242,40 @@ class TorrentCreator:
             # Basic validation of required fields
             info = torrent.get(b"info")
             if not info:
-                return False
-            if not info.get(b"name"):
-                return False
-            if not info.get(b"piece length"):
-                return False
-            return True
-        except (OSError, RuntimeError):
-            return False
+                return TorrentVerificationResult(
+                    success=False, error="Missing info dictionary"
+                )
+
+            # Extract metadata
+            info_hash = str(lt.torrent_info(torrent).info_hash())
+            piece_length = info.get(b"piece length")
+            pieces = info.get(b"pieces")
+            if not piece_length or not pieces:
+                return TorrentVerificationResult(
+                    success=False, error="Missing piece information"
+                )
+
+            # Calculate total size and number of pieces
+            total_size = 0
+            if b"files" in info:  # Multi-file mode
+                for file_info in info[b"files"]:
+                    total_size += file_info[b"length"]
+            else:  # Single file mode
+                total_size = info[b"length"]
+
+            num_pieces = len(pieces) // 20  # SHA1 hash is 20 bytes
+
+            return TorrentVerificationResult(
+                success=True,
+                info_hash=info_hash,
+                piece_length=piece_length,
+                total_size=total_size,
+                num_pieces=num_pieces,
+            )
+
+        except FileNotFoundError:
+            return TorrentVerificationResult(
+                success=False, error="No such file or directory"
+            )
+        except Exception as e:
+            return TorrentVerificationResult(success=False, error=str(e))

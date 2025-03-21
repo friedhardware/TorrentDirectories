@@ -1,0 +1,25 @@
+---
+description: For libtorrent integration
+globs:
+alwaysApply: false
+---
+- Use libtorrent 2.0.0 or later with type hints (import as lt)
+- Follow memory-efficient practices for large files
+- Implement progress reporting for long operations
+- Add comprehensive torrent verification
+- Support all standard metadata fields
+- Handle trackers properly
+- Provide clear error messages for libtorrent-specific issues
+- Test with various file sizes and structures
+- Document piece size selection strategy
+- Include error recovery mechanisms
+
+
+- Piece size must be a power of 2 and multiple of 16KiB
+- Minimum piece size: 16 KiB, enforced by validation
+- Maximum piece size: 64 MiB, enforced by validation
+- Default minimum piece size: 256 KiB
+- Default maximum piece size: 16 MiB
+- Ensure piece size is bounded by min/max config values
+- Creation process requires proper progress callback handling
+- Verify created torrent files to ensure validity

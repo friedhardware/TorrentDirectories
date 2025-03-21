@@ -114,22 +114,49 @@ Batch-specific Options:
 Error Handling
 ~~~~~~~~~~~~~
 
-The tool handles various error conditions:
+The tool provides comprehensive error handling for various scenarios:
 
-* Empty Files:
-    * By default, attempting to create a torrent from an empty file will fail
-    * Use ``--skip-empty`` to skip empty files instead of failing
-    * In batch mode with ``--skip-empty``, empty files are counted separately from other failures
+File Existence
+^^^^^^^^^^^^^
 
-* Existing Files:
-    * By default, the tool won't overwrite existing torrent files
-    * Use ``--force`` to overwrite existing files
-    * In batch mode, ``--force`` also updates the manifest entries
+When creating torrent files, the tool checks for existing files:
 
-* Maximum Failures:
-    * In batch mode, use ``--max-failures N`` to stop after N failures
-    * Empty files are only counted as failures if ``--skip-empty`` is not used
-    * A value of 0 (default) means no limit
+.. code-block:: bash
+
+    # Attempting to create a torrent where the output file exists
+    torrent-directories file path/to/content http://tracker.example.com/announce
+    # Error: Output file already exists: content.torrent
+    # Use --force to overwrite existing files
+
+    # Using --force to overwrite existing files
+    torrent-directories --force file path/to/content http://tracker.example.com/announce
+    # Success: Torrent created successfully
+
+This applies to both explicitly specified output paths and default paths:
+
+.. code-block:: bash
+
+    # With explicit output path
+    torrent-directories file path/to/content http://tracker.example.com/announce -o output.torrent
+
+    # With default output path (content.torrent)
+    torrent-directories file path/to/content http://tracker.example.com/announce
+
+Progress Reporting
+^^^^^^^^^^^^^^^^
+
+The tool provides detailed progress reporting with proper type handling:
+
+.. code-block:: bash
+
+    # Enable verbose output for detailed progress
+    torrent-directories -v file path/to/content http://tracker.example.com/announce
+    # Progress: 45.5% (123/270 files processed)
+
+    # In batch mode
+    torrent-directories -v batch path/to/parent http://tracker.example.com/announce
+    # Processing directory: movie1 (1/5)
+    # Progress: 67.8% (234/345 files processed)
 
 Manifest System
 ~~~~~~~~~~~~~

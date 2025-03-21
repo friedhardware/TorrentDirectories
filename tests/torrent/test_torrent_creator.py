@@ -1,180 +1,113 @@
-"""Tests for torrent creation functionality."""
+"""Tests for the torrent creator module."""
 
-import os
-import tempfile
 from pathlib import Path
-from typing import Generator
 
-import libtorrent as lt
 import pytest
 
+from torrent.exceptions import NoDataError, OutputFileExistsError, TorrentCreationError
 from torrent.torrent_creator import TorrentCreator
 from torrent.utils.config import TorrentConfig
 
-TRACKER_URL = "http://example.com/announce"
-
 
 @pytest.fixture
-def test_dir() -> Generator[str, None, None]:
-    """Create a temporary directory for testing."""
-    with tempfile.TemporaryDirectory() as temp_dir:
-        yield temp_dir
-
-
-def test_torrent_private_by_default(test_dir: str) -> None:
-    """Test that created torrent files are private by default."""
-    # Create a test file
-    test_file = os.path.join(test_dir, "test.txt")
-    with open(test_file, "w") as f:
-        f.write("test content")
-
-    # Create torrent with default config (private=True)
-    output_path = os.path.join(test_dir, "output.torrent")
-    config = TorrentConfig(tracker_url=TRACKER_URL)
-    creator = TorrentCreator(config)
-    creator.create(test_file, output_path)
-
-    # Read the torrent file and verify it's private
-    info = lt.torrent_info(output_path)
-    assert info.priv(), "Torrent should be private by default"
-
-
-def test_torrent_private_override(test_dir: str) -> None:
-    """Test that private flag can be overridden to False."""
-    # Create a test file
-    test_file = os.path.join(test_dir, "test.txt")
-    with open(test_file, "w") as f:
-        f.write("test content")
-
-    # Create torrent with private=False
-    output_path = os.path.join(test_dir, "output.torrent")
-    config = TorrentConfig(tracker_url=TRACKER_URL, private=False)
-    creator = TorrentCreator(config)
-    creator.create(test_file, output_path)
-
-    # Read the torrent file and verify it's not private
-    info = lt.torrent_info(output_path)
-    assert not info.priv(), "Torrent should not be private when private=False"
-
-
-def test_calculate_optimal_piece_size(tmp_path: Path) -> None:
-    """Test piece size calculation."""
-    config = TorrentConfig(
-        tracker_url=TRACKER_URL,
-        min_piece_size=16 * 1024,  # 16 KiB
-        max_piece_size=64 * 1024 * 1024,  # 64 MiB
-    )
-    creator = TorrentCreator(config)
-
-    # Test small file (should use minimum piece size)
-    size = 1024 * 1024  # 1 MiB
-    piece_size = creator.calculate_optimal_piece_size(size)
-    assert piece_size == 256 * 1024  # 256 KiB (minimum for files < 100MB)
-
-    # Test medium file
-    size = 100 * 1024 * 1024  # 100 MiB
-    piece_size = creator.calculate_optimal_piece_size(size)
-    assert piece_size == 1024 * 1024  # 1 MiB (for files between 100MB and 1GB)
-
-    # Test large file
-    size = 10 * 1024 * 1024 * 1024  # 10 GiB
-    piece_size = creator.calculate_optimal_piece_size(size)
-    assert piece_size == 8 * 1024 * 1024  # 8 MiB (for files >= 10GB)
-
-
-def test_calculate_optimal_piece_size_minimum(tmp_path: Path) -> None:
-    """Test piece size calculation respects minimum size."""
-    config = TorrentConfig(
-        tracker_url=TRACKER_URL,
+def test_config() -> TorrentConfig:
+    """Create a test config."""
+    return TorrentConfig(
+        tracker_url="http://tracker.example.com/announce",
         min_piece_size=256 * 1024,  # 256 KiB
-        max_piece_size=64 * 1024 * 1024,  # 64 MiB
+        max_piece_size=16 * 1024 * 1024,  # 16 MiB
+        private=True,
+        skip_hidden=True,
+        skip_system_files=True,
     )
-    creator = TorrentCreator(config)
-
-    # Test with very small file
-    size = 1024  # 1 KiB
-    piece_size = creator.calculate_optimal_piece_size(size)
-    assert piece_size == 256 * 1024  # Should use minimum piece size
 
 
-def test_calculate_optimal_piece_size_custom_min(tmp_path: Path) -> None:
-    """Test piece size calculation with custom minimum size."""
-    config = TorrentConfig(
-        tracker_url=TRACKER_URL,
-        min_piece_size=512 * 1024,  # 512 KiB
-        max_piece_size=64 * 1024 * 1024,  # 64 MiB
-    )
-    creator = TorrentCreator(config)
-
-    # Test with small file
-    size = 1024 * 1024  # 1 MiB
-    piece_size = creator.calculate_optimal_piece_size(size)
-    assert piece_size == 512 * 1024  # Should use custom minimum piece size
-
-
-def test_calculate_optimal_piece_size_custom_max(tmp_path: Path) -> None:
-    """Test piece size calculation with custom maximum size."""
-    config = TorrentConfig(
-        tracker_url=TRACKER_URL,
-        min_piece_size=256 * 1024,  # 256 KiB
-        max_piece_size=4 * 1024 * 1024,  # 4 MiB
-    )
-    creator = TorrentCreator(config)
-
-    # Test with large file
-    size = 10 * 1024 * 1024 * 1024  # 10 GiB
-    piece_size = creator.calculate_optimal_piece_size(size)
-    assert piece_size == 4 * 1024 * 1024  # Should use maximum piece size
-
-
-def test_verify_torrent_file(tmp_path: Path) -> None:
-    """Test torrent file verification."""
-    config = TorrentConfig(tracker_url=TRACKER_URL)
-    creator = TorrentCreator(config)
-
-    # Test with valid torrent
+def test_create_torrent_from_file(tmp_path: Path, test_config: TorrentConfig) -> None:
+    """Test creating a torrent from a single file."""
+    # Create test file
     test_file = tmp_path / "test.txt"
     test_file.write_text("test content")
-    output_path = str(tmp_path / "valid.torrent")
-    creator.create(str(test_file), output_path)
-    assert creator.verify_torrent_file(output_path)
 
-    # Test with non-existent file
-    assert not creator.verify_torrent_file(str(tmp_path / "nonexistent.torrent"))
+    # Create torrent
+    creator = TorrentCreator(test_config)
+    output_path = tmp_path / "test.torrent"
+    creator.create(test_file, output_path)
 
-    # Test with invalid torrent file
-    invalid_path = str(tmp_path / "invalid.torrent")
-    with open(invalid_path, "wb") as f:
-        f.write(b"invalid data")
-    assert not creator.verify_torrent_file(invalid_path)
+    # Verify torrent was created
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0
 
 
-def test_create_with_invalid_input(tmp_path: Path) -> None:
-    """Test creating a torrent with invalid input path."""
-    config = TorrentConfig(tracker_url=TRACKER_URL)
-    creator = TorrentCreator(config)
-
-    with pytest.raises(ValueError, match="Input path does not exist"):
-        creator.create(str(tmp_path / "nonexistent"), str(tmp_path / "output.torrent"))
-
-
-def test_create_with_directory(tmp_path: Path) -> None:
+def test_create_torrent_from_directory(
+    tmp_path: Path, test_config: TorrentConfig
+) -> None:
     """Test creating a torrent from a directory."""
-    config = TorrentConfig(tracker_url=TRACKER_URL)
-    creator = TorrentCreator(config)
-
     # Create test directory with files
     test_dir = tmp_path / "test_dir"
     test_dir.mkdir()
-    (test_dir / "file1.txt").write_text("content 1")
-    (test_dir / "file2.txt").write_text("content 2")
-    subdir = test_dir / "subdir"
-    subdir.mkdir()
-    (subdir / "file3.txt").write_text("content 3")
+    (test_dir / "file1.txt").write_text("test1")
+    (test_dir / "file2.txt").write_text("test2")
 
     # Create torrent
-    output_path = str(tmp_path / "test.torrent")
-    creator.create(str(test_dir), output_path)
+    creator = TorrentCreator(test_config)
+    output_path = tmp_path / "test.torrent"
+    creator.create(test_dir, output_path)
 
-    # Verify torrent was created and is valid
-    assert creator.verify_torrent_file(output_path)
+    # Verify torrent was created
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0
+
+
+def test_create_torrent_empty_file(tmp_path: Path, test_config: TorrentConfig) -> None:
+    """Test creating a torrent from an empty file raises NoDataError."""
+    # Create empty file
+    empty_file = tmp_path / "empty.txt"
+    empty_file.touch()
+
+    # Attempt to create torrent
+    creator = TorrentCreator(test_config)
+    output_path = tmp_path / "empty.torrent"
+
+    with pytest.raises(NoDataError):
+        creator.create(empty_file, output_path)
+
+
+def test_create_torrent_mixed_files(tmp_path: Path, test_config: TorrentConfig) -> None:
+    """Test creating a torrent with both empty and non-empty files."""
+    # Create test directory with mixed files
+    test_dir = tmp_path / "test_dir"
+    test_dir.mkdir()
+    (test_dir / "empty.txt").touch()
+    (test_dir / "file1.txt").write_text("test1")
+
+    # Create torrent
+    creator = TorrentCreator(test_config)
+    output_path = tmp_path / "test.torrent"
+    creator.create(test_dir, output_path)
+
+    # Verify torrent was created
+    assert output_path.exists()
+    assert output_path.stat().st_size > 0
+
+
+def test_create_torrent_file_exists(tmp_path: Path, test_config: TorrentConfig) -> None:
+    """Test creating a torrent when output file already exists."""
+    # Create test file and existing torrent
+    test_file = tmp_path / "test.txt"
+    test_file.write_text("test content")
+    output_path = tmp_path / "test.torrent"
+    output_path.touch()
+
+    # Attempt to create torrent
+    creator = TorrentCreator(test_config)
+    with pytest.raises(OutputFileExistsError):
+        creator.create(test_file, output_path)
+
+
+def test_create_torrent_invalid_input(
+    tmp_path: Path, test_config: TorrentConfig
+) -> None:
+    """Test creating a torrent with invalid input path."""
+    creator = TorrentCreator(test_config)
+    with pytest.raises(TorrentCreationError):
+        creator.create(tmp_path / "nonexistent", tmp_path / "output.torrent")

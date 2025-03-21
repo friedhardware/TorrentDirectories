@@ -1,0 +1,179 @@
+---
+description: Writing, adding, organizing tests in python, pytest.
+globs:
+alwaysApply: false
+---
+# Testing Improvements for TorrentDirectories
+
+This document outlines recommendations for continuing the improvement of tests in the TorrentDirectories project.
+
+## Test Naming Conventions
+
+1. **Descriptive Names**: Test names should clearly describe what functionality they're testing
+   - Use names like `test_file_command_empty_file_handling` rather than `test_empty_file`
+   - Include the behavior being tested in the name, not just the component
+
+2. **Consistent Naming Pattern**: Use a consistent pattern for all test names
+   - `test_<component>_<functionality>_<scenario>`
+   - Components: file_command, batch_command, manifest, etc.
+   - Example: `test_manifest_race_condition_handling`
+
+3. **Group Related Tests**: When a component has many tests, group them into test classes
+   - Example: `class TestSkipEmptyFilesOption` for all tests related to that option
+   - This improves discoverability and organization
+
+## Test Documentation
+
+1. **Multi-line Docstrings**: Use detailed multi-line docstrings for each test
+   ```python
+   def test_something():
+       """
+       Test description.
+
+       Verifies that:
+       1. Specific behavior A works
+       2. Edge case B is handled correctly
+       3. Error condition C produces the expected result
+       """
+   ```
+
+2. **Document Test Fixtures**: Each fixture should have a docstring explaining:
+   - What it provides
+   - How it should be used
+   - Any parameters or return values
+
+3. **Section Headers**: Use section headers in test files to group related tests
+   ```python
+   # Basic functionality tests
+   # ...
+
+   # Edge case tests
+   # ...
+
+   # Error condition tests
+   # ...
+   ```
+
+## Test Structure Improvements
+
+1. **Test Class Organization**: When a module has many tests, organize them into classes
+   ```python
+   class TestBasicFunctionality:
+       """Tests for basic functionality."""
+       # Basic tests here
+
+   class TestEdgeCases:
+       """Tests for edge cases."""
+       # Edge case tests here
+   ```
+
+2. **Use Setup/Teardown Methods**: For tests with common setup, use class-level setup
+   ```python
+   class TestSomething:
+       @classmethod
+       def setup_class(cls):
+           # Common setup
+
+       @classmethod
+       def teardown_class(cls):
+           # Common teardown
+   ```
+
+3. **Parametrized Tests**: Use pytest's parametrize for testing multiple scenarios
+   ```python
+   @pytest.mark.parametrize("input,expected", [
+       ("value1", "result1"),
+       ("value2", "result2"),
+   ])
+   def test_parametrized(input, expected):
+       # Test logic
+   ```
+
+## Test Coverage Focus
+
+1. **Security Testing**: Add specific tests for security concerns
+   - IDNA domain validation
+   - URL security
+   - Certificate validation
+
+2. **Performance Testing**: Expand performance tests
+   - Large file handling
+   - Batch processing with many directories
+   - Memory usage tests
+
+3. **Concurrent Access**: Improve tests for concurrent operations
+   - Simulate race conditions with thread coordination
+   - Test file locking with multiple processes
+
+## Implementation
+
+To implement these improvements:
+
+1. Start with high-priority test files based on critical functionality
+2. Refactor each file to follow the new conventions
+3. Add missing tests for uncovered edge cases and security concerns
+4. Document patterns in this guideline file for future reference
+
+## Example
+
+**Before**:
+```python
+def test_manifest():
+    """Test manifest."""
+    # Test code
+```
+
+**After**:
+```python
+class TestManifest:
+    """Test suite for manifest functionality."""
+
+    def test_manifest_creation(self):
+        """
+        Test manifest creation.
+
+        Verifies that:
+        1. Manifest file is created with correct headers
+        2. Default paths are used when not specified
+        3. File permissions are set correctly
+        """
+        # Test code
+```
+
+## Integration with Existing Rules
+
+These improvements build on the existing test-organization cursor rule, providing more specific guidance for documentation and structure.
+
+Test files should be organized as follows:
+
+1. test_main.py - Core CLI tests and basic command parsing
+   - Version/help commands
+   - Main function tests
+   - Basic CLI argument parsing
+
+2. test_file_command.py - File command specific tests
+   - Single file torrent creation
+   - File validation
+   - Progress tracking
+   - Piece size calculation
+   - Web seed handling
+   - Tracker validation
+   - Torrent verification
+
+3. test_batch_command.py - Batch command specific tests
+   - Directory processing
+   - Empty directory handling
+   - Failure handling
+   - Clean operations
+   - Manifest generation
+
+4. test_options.py - Option specific tests
+   - Skip empty option
+   - Force option
+   - Dry run option
+   - Timestamp handling
+   - Progress reporting
+
+Common test fixtures and utilities should be placed in conftest.py.
+Each test file should focus on a specific component/feature set.
+Integration tests spanning multiple components should be clearly marked.

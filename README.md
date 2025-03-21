@@ -12,6 +12,10 @@ A Python tool for creating torrent files from directories with optimal settings 
 - 🔄 Resume support via manifest system
 - ✅ Torrent verification after creation
 - 🖥️ Cross-platform support (Windows, macOS, Linux)
+- 🛡️ Robust error handling with clear messages
+- 📊 Type-safe progress reporting
+- 🔍 Smart file existence checks
+- 🧪 Comprehensive test coverage
 
 ## Table of Contents
 
@@ -72,11 +76,10 @@ torrent-directories batch path/to/parent http://tracker.example.com/announce
 # Specify output directory for torrent files
 torrent-directories batch path/to/parent http://tracker.example.com/announce -o path/to/torrents
 
-# Process with custom settings
+# Process with custom settings and force rebuild
 torrent-directories batch path/to/parent http://tracker.example.com/announce \
     --min-piece-size 1M \
     --max-piece-size 32M \
-    --skip-empty-files \
     --force
 ```
 
@@ -175,28 +178,27 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
 - Batch-specific Options:
   - `--clean`: Clean the manifest by removing missing entries
   - `--max-failures N`: Maximum failures before stopping (0 for unlimited)
-  - `--skip-empty-directories / --no-skip-empty-directories`: Control how empty directories are handled (Skip by default)
 
 ### Error Handling
 
-The tool handles various error conditions:
+The tool handles various error conditions with clear messages and appropriate exit codes:
 
-- Empty Files:
+- **File Existence**:
+  - Smart detection of existing files for both explicit and default paths
+  - Clear error messages with instructions for using `--force`
+  - Safe overwrite handling with proper backup
+
+- **Progress Reporting**:
+  - Type-safe progress calculations
+  - Clear percentage and file count display
+  - Real-time updates in verbose mode
+
+- **Empty Files**:
   - By default, attempting to create a torrent from an empty file will fail
   - Use `--skip-empty-files` to skip empty files instead of failing
-  - In batch mode with `--skip-empty-files`, empty files are counted separately from other failures
+  - In batch mode with `--skip-empty-files`, empty files are counted separately
 
-- Empty Directories:
-  - By default, empty directories are skipped in batch mode
-  - Use `--no-skip-empty-directories` to treat empty directories as failures
-  - Empty directories are counted in the final report
-
-- Existing Files:
-  - By default, the tool won't overwrite existing torrent files
-  - Use `--force` to overwrite existing files
-  - In batch mode, `--force` also updates the manifest entries
-
-- Maximum Failures:
+- **Maximum Failures**:
   - In batch mode, use `--max-failures N` to stop after N failures
   - Empty files are only counted as failures if `--skip-empty-files` is not used
   - A value of 0 (default) means no limit
@@ -265,7 +267,7 @@ See our [Best Practices Guide](docs/best_practices.rst) in the documentation.
    Maximum failures reached
    Error: Failed to process directories
    ```
-   - **Solution**: Fix the failing directories or use `--skip-empty-files` and `--skip-empty-directories` options. Alternatively, increase or remove the limit with `--max-failures`
+   - **Solution**: Fix the failing directories or use `--max-failures` to increase/remove the failure limit
 
 ### Best Practices
 
@@ -281,13 +283,10 @@ See our [Best Practices Guide](docs/best_practices.rst) in the documentation.
    ```
    The `-v` flag provides more information, and `--log-file` saves it to a file.
 
-3. **Handle Empty Files and Directories Appropriately**:
-   - For most use cases, using both `--skip-empty-files` and the default `--skip-empty-directories` options is recommended.
-
-4. **Clean the Manifest When Needed**:
+3. **Clean the Manifest When Needed**:
    - If you've manually deleted torrent files, use the `--clean` option to synchronize the manifest.
 
-5. **Force Update When Content Changes**:
+4. **Force Update When Content Changes**:
    - If you've updated the content in a directory, use `--force` to rebuild the torrents.
 
 ## Development

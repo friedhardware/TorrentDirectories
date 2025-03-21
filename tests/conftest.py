@@ -11,8 +11,15 @@ from typing import Generator, Iterator, Optional
 
 import pytest
 from _pytest.logging import LogCaptureFixture
+from click.testing import CliRunner
 
 from torrent.utils.config import TorrentConfig
+
+
+@pytest.fixture
+def runner() -> CliRunner:
+    """Create a Click CLI test runner."""
+    return CliRunner()
 
 
 @pytest.fixture

@@ -1,0 +1,54 @@
+---
+description:
+globs:
+alwaysApply: true
+---
+### Test Organization
+
+- Use pytest fixtures for common setup (empty files, test files, mocked configurations)
+- Create test cases at multiple levels:
+  - Unit tests for individual functions
+  - Integration tests for component interactions
+  - CLI tests for command-line interfaces
+  - End-to-end tests for full workflows
+
+### Test Case Design
+
+- Test both success and failure scenarios for every feature
+- Include edge cases (empty files, maximum file sizes, etc.)
+- Test all CLI options and combinations
+- Cover error handling paths thoroughly
+- Validate error messages and exit codes
+- Test progress reporting and callback mechanisms
+- Verify proper torrent metadata and structure
+- Create tests that span file types (single files vs. directories)
+
+### CLI Testing Best Practices
+
+- Use click.testing.CliRunner for CLI tests
+- Test dry-run modes to verify output without file creation
+- Validate output messages match expected formats
+- For file operations that might already exist, include --force flag tests
+- Test verbose output modes (-v flag)
+- Test skip_empty_files functionality in both success and failure modes
+- Verify tracker URL validation in both success and failure modes
+
+### Test Implementation Guidelines
+
+- Avoid over-mocking core functionality
+- Use real torrent creation for integration tests
+- Mock only external dependencies and slow operations
+- Use isolated filesystem for file operation tests
+- Clean up test artifacts after test completion
+- Include appropriate assertions for all test outcomes
+- Structure tests to be deterministic and repeatable
+- Implement tests following the Arrange-Act-Assert pattern
+
+### Performance and Security Testing
+
+- Include tests for minimum/maximum piece size validation
+- Test handling of malicious or invalid inputs
+- Verify that file overwrite protection works correctly
+- Test handling of concurrent operations when applicable
+- Validate behavior with extremely large file sizes
+- Test cleanup operations and manifest maintenance

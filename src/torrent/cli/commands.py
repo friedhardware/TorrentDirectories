@@ -6,23 +6,19 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, Union
 
 import click
 
+from ..exceptions import ErrorCode, NoDataError, OutputFileExistsError, TorrentError
 from ..manifest import ManifestManager
 from ..torrent_creator import TorrentCreator
 from ..utils.config import TorrentConfig
-from ..utils.file_utils import format_size, get_total_size, list_files
-from ..utils.logging_utils import log_batch_progress
-from .exceptions import (
-    BatchProcessingError,
-    FileIsEmptyError,
-    MaxFailuresExceededError,
-    MissingTorrentFilesError,
-    NoSubdirectoriesError,
-    OutputFileExistsError,
-    TorrentCreationError,
+from ..utils.file_utils import (
+    format_size,
+    get_total_size,
+    is_directory_empty,
+    list_files,
 )
 
 logger = logging.getLogger(__name__)
@@ -34,32 +30,74 @@ def handle_dry_run(
     config: Optional[TorrentConfig],
     is_batch: bool = False,
 ) -> None:
-    """Handle the dry run logic for both single and batch processing."""
-    click.echo("\nDry run mode - no changes will be made")
-    click.echo(f"Would create torrent from: {path}")
+    """Handle the dry run logic for both single and batch processing.
 
-    if output:
-        click.echo(f"Would save to: {output}")
-
+    Args:
+        path: Path to process (file, directory, or parent directory for batch)
+        output: Output path for torrent file(s)
+        config: Torrent configuration
+        is_batch: Whether this is a batch operation
+    """
     if is_batch:
-        # Get subdirectories to process
-        subdirs = [d for d in os.listdir(path) if os.path.isdir(os.path.join(path, d))]
-        if not subdirs:
-            raise NoSubdirectoriesError(path)
-        click.echo(f"\nWould process {len(subdirs)} directories:")
-        for d in sorted(subdirs):
-            click.echo(f"  {d}")
+        # Handle batch processing dry run
+        if not os.path.isdir(path):
+            raise TorrentError(
+                message=f"Path is not a directory: {path}",
+                error_code=ErrorCode.DIRECTORY_NOT_FOUND,
+            )
+
+        click.echo(f"Would process directory: {path}")
+        output_dir = output or os.path.join(path, "torrents")
+        click.echo(f"Would save torrents to: {output_dir}")
+
+        files = list_files(path)
+        if not files:
+            click.echo("Warning: Directory is empty")
+        else:
+            total_size = get_total_size([path])
+            click.echo(f"Total size: {format_size(total_size)}")
+            click.echo(f"\nDirectories that would be processed ({len(files)} total):")
+            for f in sorted(files):
+                click.echo(f"  {f}")
     else:
         # Handle single file/directory dry run
+        if not os.path.exists(path):
+            raise TorrentError(
+                message=f"Path does not exist: {path}",
+                error_code=ErrorCode.FILE_NOT_FOUND,
+            )
+
+        click.echo(f"Would create torrent from: {path}")
+        output_path = output or f"{path}.torrent"
+        click.echo(f"Would save to: {output_path}")
+        if os.path.exists(output_path):
+            click.echo("Note: Output file already exists (use --force to overwrite)")
+
         if os.path.isfile(path):
             size = os.path.getsize(path)
             click.echo(f"File size: {format_size(size)}")
         else:
-            total_size = get_total_size([path])
-            click.echo(f"Directory size: {format_size(total_size)}")
-            click.echo("\nFiles that would be included:")
-            for f in sorted(list_files(path)):
-                click.echo(f"  {f}")
+            files = list_files(path)
+            if not files:
+                click.echo("Warning: Directory is empty")
+            else:
+                total_size = get_total_size([path])
+                click.echo(f"Directory size: {format_size(total_size)}")
+                click.echo(f"\nFiles that would be included ({len(files)} total):")
+                for f in sorted(files):
+                    file_size = os.path.getsize(os.path.join(path, f))
+                    click.echo(f"  {f} ({format_size(file_size)})")
+
+    # Show configuration that would be used
+    if config:
+        click.echo("\nConfiguration:")
+        click.echo(f"  Private: {config.private}")
+        click.echo(f"  Min piece size: {format_size(config.min_piece_size)}")
+        click.echo(f"  Max piece size: {format_size(config.max_piece_size)}")
+        if config.source:
+            click.echo(f"  Source: {config.source}")
+        if config.comment:
+            click.echo(f"  Comment: {config.comment}")
 
 
 def process_single(
@@ -69,94 +107,39 @@ def process_single(
     config: Optional[TorrentConfig] = None,
     dry_run: bool = False,
     force: bool = False,
-) -> int:
+) -> Union[int, TorrentError]:
     """
     Create a torrent file from a single file or directory.
 
     Args:
-        path: Path to process
+        path: Path to file or directory
         tracker_url: Tracker URL to use
-        output: Optional custom output path
+        output: Optional output path for torrent file
         config: Optional torrent configuration
         dry_run: Whether to show what would be done without making changes
-        force: Whether to overwrite existing torrent file
+        force: Whether to overwrite existing torrent files
 
     Returns:
-        Exit code (0 for success, non-zero for failure)
-
-    Raises:
-        OutputFileExistsError: If output file exists and force is not set
-        TorrentCreationError: If torrent creation fails
-        FileIsEmptyError: If file is empty and skip_empty_files is False
+        0 for success, TorrentError for failures
     """
     try:
+        # Check if path exists
+        if not os.path.exists(path):
+            return TorrentError(
+                message=f"Path does not exist: {path}",
+                error_code=ErrorCode.FILE_NOT_FOUND,
+            )
+
         # Check if output file exists
-        if output and os.path.exists(output) and not force:
-            raise OutputFileExistsError(output)
-
-        # Create config if not provided
-        if config is None:
-            config = TorrentConfig(tracker_url=tracker_url)
-        else:
-            # Update tracker URL in existing config
-            config.tracker_url = tracker_url
-
-        torrent_creator = TorrentCreator(config)
-
-        if dry_run:
-            handle_dry_run(path, output, config)
-            return 0
-
-        # Actually create the torrent
         output_path = (
             output if output is not None else f"{os.path.basename(path)}.torrent"
         )
-        torrent_path = torrent_creator.create(path, output_path)
-        click.echo(f"\nTorrent created successfully: {torrent_path}")
-        return 0
+        if os.path.exists(output_path) and not force:
+            return TorrentError(
+                message=f"Output file already exists: {output_path}",
+                error_code=ErrorCode.FILE_EXISTS,
+            )
 
-    except Exception as e:
-        if isinstance(
-            e, (OutputFileExistsError, TorrentCreationError, FileIsEmptyError)
-        ):
-            raise
-        raise TorrentCreationError(e)
-
-
-def process_batch(
-    directory: str,
-    tracker_url: str,
-    config: Optional[TorrentConfig] = None,
-    output_dir: str = "torrents/",
-    dry_run: bool = False,
-    force: bool = False,
-    clean: bool = False,
-    max_failures: int = 0,
-) -> int:
-    """
-    Create torrent files for all subdirectories in a directory.
-
-    Args:
-        directory: Directory containing subdirectories to process
-        tracker_url: Tracker URL to use
-        config: Optional torrent configuration
-        output_dir: Directory to store torrent files and manifest (defaults to 'torrents/')
-        dry_run: Whether to show what would be done without making changes
-        force: Whether to overwrite existing torrent files
-        clean: Whether to clean manifest of missing torrent files
-        max_failures: Maximum number of failures before stopping (0 for unlimited)
-
-    Returns:
-        Exit code (0 for success, non-zero for failure)
-
-    Raises:
-        NoSubdirectoriesError: If directory has no subdirectories
-        MissingTorrentFilesError: If manifest has missing torrent files and clean is False
-        MaxFailuresExceededError: If number of failures exceeds max_failures
-        BatchProcessingError: If batch processing encounters an error
-        FileIsEmptyError: If file is empty and skip_empty_files is False
-    """
-    try:
         # Create config if not provided
         if config is None:
             config = TorrentConfig(tracker_url=tracker_url)
@@ -164,103 +147,243 @@ def process_batch(
             # Update tracker URL in existing config
             config.tracker_url = tracker_url
 
-        torrent_creator = TorrentCreator(config)
-
-        # Get subdirectories to process
-        subdirs = [
-            d
-            for d in os.listdir(directory)
-            if os.path.isdir(os.path.join(directory, d))
-        ]
-
-        if not subdirs:
-            raise NoSubdirectoriesError(directory)
-
         if dry_run:
-            handle_dry_run(directory, None, config, is_batch=True)
+            handle_dry_run(path, output, config, is_batch=False)
             return 0
 
-        # Create output directory and manifest manager
-        os.makedirs(output_dir, exist_ok=True)
-        manifest = ManifestManager(output_dir)
+        # If force is True and file exists, remove it first
+        if force and os.path.exists(output_path):
+            os.remove(output_path)
 
-        # Check for missing torrent files
-        missing = manifest.get_missing_torrents()
-        if missing and not clean:
-            raise MissingTorrentFilesError(list(missing))
+        torrent_creator = TorrentCreator(config)
+        try:
+            torrent_path = torrent_creator.create(path, output_path)
+            click.echo(f"\nTorrent created successfully: {torrent_path}")
+            return 0
+        except OutputFileExistsError as e:
+            click.echo(f"Error: {e}", err=True)
+            return TorrentError(
+                message=str(e),
+                error_code=ErrorCode.FILE_EXISTS,
+                details={"path": str(e)},
+            )
+        except Exception as e:
+            if isinstance(e, TorrentError):
+                return e
+            return TorrentError(
+                message=str(e),
+                error_code=ErrorCode.TORRENT_CREATION_ERROR,
+                details={"error": str(e)},
+            )
 
-        # Handle manifest cleaning
-        if clean and missing:
-            click.echo("\nFound missing torrent files:", err=True)
-            for path in sorted(missing):
-                click.echo(f"  {path}", err=True)
-
-            manifest.clean_manifest()
-            click.echo(f"\nRemoved {len(missing)} invalid entries from manifest")
-
-        # Process each subdirectory
-        failures = (
-            0  # Counts non-empty failures or all failures if skip_empty_files is False
+    except Exception as e:
+        if isinstance(e, TorrentError):
+            return e
+        return TorrentError(
+            message=str(e),
+            error_code=ErrorCode.TORRENT_CREATION_ERROR,
+            details={"original_error": str(e)},
         )
-        skipped = 0  # Counts empty files that were skipped
 
-        with click.progressbar(subdirs, label="Processing directories") as bar:
-            for subdir in bar:
-                full_path = os.path.join(directory, subdir)
 
-                # Skip if already processed and not forcing
-                if not force and manifest.is_directory_processed(full_path):
-                    log_batch_progress(subdir)
+def process_batch(
+    parent_dir: str,
+    tracker_url: str,
+    output_dir: str = "torrents/",
+    config: Optional[TorrentConfig] = None,
+    dry_run: bool = False,
+    force: bool = False,
+    max_failures: int = 0,
+    clean: bool = False,
+) -> Union[int, TorrentError]:
+    """
+    Process all subdirectories in a parent directory.
+
+    Args:
+        parent_dir: Parent directory containing subdirectories to process
+        tracker_url: Tracker URL to use
+        output_dir: Output directory for torrent files
+        config: Optional torrent configuration
+        dry_run: Whether to show what would be done without making changes
+        force: Whether to overwrite existing torrent files
+        max_failures: Maximum allowed failures before stopping (-1 for unlimited, 0 to stop on first failure)
+        clean: Whether to clean the manifest by removing missing entries
+
+    Returns:
+        0 for success, TorrentError for failures
+    """
+    try:
+        # Check if parent directory exists
+        if not os.path.exists(parent_dir):
+            return TorrentError(
+                message=f"Parent directory does not exist: {parent_dir}",
+                error_code=ErrorCode.DIRECTORY_NOT_FOUND,
+            )
+
+        # Check if directory is empty
+        subdirs = [
+            d
+            for d in os.listdir(parent_dir)
+            if os.path.isdir(os.path.join(parent_dir, d))
+        ]
+        if not subdirs:
+            return TorrentError(
+                message=f"Parent directory is empty: {parent_dir}",
+                error_code=ErrorCode.EMPTY_DIRECTORY,
+            )
+
+        # Create config if not provided
+        if config is None:
+            config = TorrentConfig(tracker_url=tracker_url)
+        else:
+            # Update tracker URL in existing config
+            config.tracker_url = tracker_url
+
+        if dry_run:
+            handle_dry_run(parent_dir, output_dir, config, is_batch=True)
+            return 0
+
+        # Create output directory if not in dry run mode
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Initialize manifest
+        manifest = ManifestManager(output_dir)
+        # Check for missing torrent files
+        missing_files = manifest.get_missing_torrents()
+        if missing_files:
+            if clean:
+                click.echo(
+                    f"Found {len(missing_files)} missing torrent files. Cleaning manifest..."
+                )
+                manifest.clean_manifest()
+                click.echo("Manifest cleaned. Proceeding with processing...")
+            else:
+                return TorrentError(
+                    message=f"Found {len(missing_files)} missing torrent files. Use --clean to remove invalid entries.",
+                    error_code=ErrorCode.MISSING_TORRENT_FILES,
+                )
+
+        failures = 0
+        processed = 0
+        empty_files = 0
+        last_error: Optional[TorrentError] = None
+        error_codes = set()  # Track unique error codes
+
+        for subdir in sorted(subdirs):
+            dir_path = os.path.join(parent_dir, subdir)
+            output_path = os.path.join(output_dir, f"{subdir}.torrent")
+
+            try:
+                # Skip if already processed and not forcing update
+                if manifest.is_directory_processed(dir_path) and not force:
+                    click.echo(f"Skipping {subdir} (already processed)")
                     continue
 
-                # Create torrent and add to manifest
-                try:
-                    # Set output path for the torrent file
-                    torrent_file_path = os.path.join(output_dir, f"{subdir}.torrent")
-                    try:
-                        torrent_path = torrent_creator.create(
-                            full_path, torrent_file_path
-                        )
-                        manifest.add_entry(full_path, torrent_path, force=force)
-                        log_batch_progress(subdir, torrent_path)
-                    except FileIsEmptyError as e:
-                        if config.skip_empty_files:
-                            click.echo(f"  {subdir}: Skipping empty file", err=True)
-                            skipped += 1
-                        else:
-                            click.echo(f"  {subdir}: Failed - {e}", err=True)
-                            failures += 1
-                            if failures >= max_failures:
-                                raise MaxFailuresExceededError(failures)
-                except FileIsEmptyError as e:
-                    # Handle empty file error in outer block too
-                    if config.skip_empty_files:
-                        click.echo(f"  {subdir}: Skipping empty file", err=True)
-                        skipped += 1
-                    else:
-                        click.echo(f"  {subdir}: Failed - {e}", err=True)
-                        failures += 1
-                        if failures >= max_failures:
-                            raise MaxFailuresExceededError(failures)
-                except Exception as e:
-                    click.echo(f"  {subdir}: Failed - {e}", err=True)
+                # Check if directory is empty before attempting to create torrent
+                if is_directory_empty(dir_path):
                     failures += 1
-                    if failures >= max_failures:
-                        raise MaxFailuresExceededError(failures)
+                    error = TorrentError(
+                        message=f"Directory is empty: {subdir}",
+                        error_code=ErrorCode.EMPTY_DIRECTORY,
+                    )
+                    last_error = error
+                    error_codes.add(error.error_code)
+                    click.echo(f"Error: {error.message}", err=True)
+                    if max_failures >= 0 and failures >= max_failures:
+                        return TorrentError(
+                            message=f"Maximum failures reached ({failures})",
+                            error_code=ErrorCode.MAX_FAILURES_EXCEEDED,
+                        )
+                    continue
 
+                # Check for existing output file
+                if os.path.exists(output_path) and not force:
+                    failures += 1
+                    error = TorrentError(
+                        message=f"Output file already exists: {output_path}. Use --force to overwrite existing files.",
+                        error_code=ErrorCode.FILE_EXISTS,
+                    )
+                    last_error = error
+                    error_codes.add(error.error_code)
+                    click.echo(f"Error: {error.message}", err=True)
+                    if max_failures >= 0 and failures >= max_failures:
+                        return TorrentError(
+                            message=f"Maximum failures reached ({failures})",
+                            error_code=ErrorCode.MAX_FAILURES_EXCEEDED,
+                        )
+                    continue
+                elif os.path.exists(output_path) and force:
+                    # Delete existing output file if it exists
+                    if os.path.exists(output_path):
+                        os.remove(output_path)
+
+                torrent_creator = TorrentCreator(config)
+
+                try:
+                    torrent_path = torrent_creator.create(dir_path, output_path)
+                    manifest.add_entry(dir_path, torrent_path, force=force)
+                    processed += 1
+                    click.echo(f"Created torrent for {subdir}")
+                except NoDataError as e:
+                    empty_files += 1
+                    failures += 1
+                    error = TorrentError(
+                        message=str(e),
+                        error_code=ErrorCode.EMPTY_DIRECTORY,
+                    )
+                    last_error = error
+                    error_codes.add(error.error_code)
+                    if max_failures >= 0 and failures >= max_failures:
+                        return TorrentError(
+                            message=f"Maximum failures reached ({failures})",
+                            error_code=ErrorCode.MAX_FAILURES_EXCEEDED,
+                        )
+                    click.echo(f"Error: {error.message}", err=True)
+                    continue
+                except Exception as e:
+                    if isinstance(e, TorrentError):
+                        return e
+                    return TorrentError(
+                        message=str(e),
+                        error_code=ErrorCode.TORRENT_CREATION_ERROR,
+                        details={"error": str(e)},
+                    )
+
+            except Exception as e:
+                failures += 1
+                click.echo(f"Error processing {subdir}: {e}", err=True)
+                if max_failures >= 0 and failures >= max_failures:
+                    return TorrentError(
+                        message=f"Maximum failures reached ({failures})",
+                        error_code=ErrorCode.MAX_FAILURES_EXCEEDED,
+                    )
+
+        # Print summary
+        click.echo("\nProcessing complete:")
+        click.echo(f"✓ Processed: {processed}")
+        if empty_files > 0:
+            click.echo(f"⚠ Empty files/directories: {empty_files}")
         if failures > 0:
-            click.echo(f"\nCompleted with {failures} failures", err=True)
-            return 1
-
-        if skipped > 0:
-            click.echo(f"\nSkipped {skipped} empty files", err=True)
-
+            click.echo(f"❌ Failed: {failures}")
+            # If only one directory was attempted and it failed, return its specific error
+            if len(subdirs) == 1:
+                return last_error or TorrentError(
+                    message="Failed to process directory",
+                    error_code=ErrorCode.BATCH_PROCESSING_ERROR,
+                    details={"directory": str(subdirs[0])},
+                )
+            # Otherwise return BATCH_PROCESSING_ERROR
+            return TorrentError(
+                message=f"Failed to process {failures} directories",
+                error_code=ErrorCode.BATCH_PROCESSING_ERROR,
+                details={"failures": failures},
+            )
         return 0
 
     except Exception as e:
-        if isinstance(
-            e,
-            (NoSubdirectoriesError, MissingTorrentFilesError, MaxFailuresExceededError),
-        ):
-            raise
-        raise BatchProcessingError(e)
+        if isinstance(e, TorrentError):
+            return e
+        return TorrentError(
+            message=str(e),
+            error_code=ErrorCode.ERROR,
+        )
