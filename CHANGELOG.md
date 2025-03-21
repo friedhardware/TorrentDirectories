@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.4.0] - 2025-03-20
+
+
+### Changed
+- add comprehensive best practices guide and update documentation ([87f2296])(https://github.com/friedhardware/TorrentDirectories/commit/87f2296) (friedhardware)
+-  simplify logging and improve test output handling - Remove log_and_echo function in favor of direct click.echo calls - Update integration tests to use direct function calls instead of Click runner - Fix black formatting in commands.py ([c7ffc42])(https://github.com/friedhardware/TorrentDirectories/commit/c7ffc42) (friedhardware)
+- simplify changelog structure and fix heading underlines ([c61e8c0])(https://github.com/friedhardware/TorrentDirectories/commit/c61e8c0) (friedhardware)
+- update changelog to use toctree for table of contents control ([b2daccf])(https://github.com/friedhardware/TorrentDirectories/commit/b2daccf) (friedhardware)
+- adjust changelog heading levels and move tocdepth directive ([4a060ca])(https://github.com/friedhardware/TorrentDirectories/commit/4a060ca) (friedhardware)
+- update changelog headings to show in table of contents ([69b424d])(https://github.com/friedhardware/TorrentDirectories/commit/69b424d) (friedhardware)
+- update changelog to use rubric directives for version headings ([923413b])(https://github.com/friedhardware/TorrentDirectories/commit/923413b) (friedhardware)
+- hide version headings from table of contents ([ac45cce])(https://github.com/friedhardware/TorrentDirectories/commit/ac45cce) (friedhardware)
+- standardize changelog heading levels and formatting ([2257ad1])(https://github.com/friedhardware/TorrentDirectories/commit/2257ad1) (friedhardware)
+-  make PyPI publishing opt-in with --publish flag ([8fac6fc])(https://github.com/friedhardware/TorrentDirectories/commit/8fac6fc) (friedhardware)
+
+### Fixed
+- improve file existence checks and type safety ([6c2f0ad])(https://github.com/friedhardware/TorrentDirectories/commit/6c2f0ad) (friedhardware)
+
+### Other
+- chore: remove test artifacts from manual testing - Remove test_empty_batch directory and its contents - Remove torrents/manifest.csv ([dd8882f])(https://github.com/friedhardware/TorrentDirectories/commit/dd8882f) (friedhardware)
+- chore: remove generated docs from git tracking ([821b20e])(https://github.com/friedhardware/TorrentDirectories/commit/821b20e) (friedhardware)
 ## [1.3.0] - 2025-03-17
 
 

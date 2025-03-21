@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "torrent-directories"
-version = "1.3.0"
+version = "1.4.0"
 description = "A tool for creating torrent files from directories"
 requires-python = ">=3.12"
 authors = [
