@@ -452,3 +452,114 @@ def test_batch_command_output_exists(runner: CliRunner) -> None:
         )
         assert result.exit_code == 0
         assert "Created torrent for test_dir" in result.output
+
+
+def test_batch_command_system_files(runner: CliRunner, tmp_path: Path) -> None:
+    """Test that batch command skips system files by default."""
+    # Create test content
+    content_dir = tmp_path / "content"
+    content_dir.mkdir()
+
+    # Create test directories with regular and system files
+    dirs: DirStructure = {
+        "dir1": {
+            "file1.txt": "Content 1",
+            ".DS_Store": "system file",  # macOS system file
+        },
+        "dir2": {
+            "file2.txt": "Content 2",
+            ".Thumbs.db": "system file",  # Windows system file
+        },
+        "dir3": {
+            "file3.txt": "Content 3",
+            ".directory": "system file",  # KDE system file
+        },
+    }
+
+    # Create the directory structure
+    create_test_structure(content_dir, dirs)
+
+    # Create output directory
+    output_dir = tmp_path / "torrents"
+    output_dir.mkdir()
+
+    # Run batch command without including system files (default)
+    result = runner.invoke(
+        cli,
+        [
+            "batch",
+            str(content_dir),
+            "http://tracker.example.com/announce",
+            "--output",
+            str(output_dir),
+        ],
+    )
+
+    assert result.exit_code == 0
+
+    # Verify torrents were created and don't contain system files
+    for dir_name in ["dir1", "dir2", "dir3"]:
+        torrent_path = output_dir / f"{dir_name}.torrent"
+        assert torrent_path.exists(), f"Torrent file not found: {torrent_path}"
+
+        # Verify torrent structure
+        import libtorrent as lt
+
+        with open(torrent_path, "rb") as f:
+            torrent_data = lt.bdecode(f.read())
+            assert b"info" in torrent_data
+            files = torrent_data[b"info"][b"files"]
+            paths = {
+                b"/".join(cast(List[bytes], f[b"path"])).decode()
+                for f in cast(List[Dict[bytes, Any]], files)
+            }
+            # Only regular files should be included
+            assert f"file{dir_name[-1]}.txt" in paths
+            system_files = [".DS_Store", ".Thumbs.db", ".directory"]
+            for sys_file in system_files:
+                assert (
+                    sys_file not in paths
+                ), f"System file {sys_file} was included in torrent"
+
+    # Run batch command with --include-system
+    output_dir_with_system = tmp_path / "torrents_with_system"
+    output_dir_with_system.mkdir()
+
+    result = runner.invoke(
+        cli,
+        [
+            "batch",
+            str(content_dir),
+            "http://tracker.example.com/announce",
+            "--output",
+            str(output_dir_with_system),
+            "--include-system",
+        ],
+    )
+
+    assert result.exit_code == 0
+
+    # Verify torrents were created and contain system files
+    for dir_name in ["dir1", "dir2", "dir3"]:
+        torrent_path = output_dir_with_system / f"{dir_name}.torrent"
+        assert torrent_path.exists(), f"Torrent file not found: {torrent_path}"
+
+        # Verify torrent structure
+        import libtorrent as lt
+
+        with open(torrent_path, "rb") as f:
+            torrent_data = lt.bdecode(f.read())
+            assert b"info" in torrent_data
+            files = torrent_data[b"info"][b"files"]
+            paths = {
+                b"/".join(cast(List[bytes], f[b"path"])).decode()
+                for f in cast(List[Dict[bytes, Any]], files)
+            }
+            # Both regular and system files should be included
+            assert f"file{dir_name[-1]}.txt" in paths
+            if dir_name == "dir1":
+                assert ".DS_Store" in paths
+            elif dir_name == "dir2":
+                assert ".Thumbs.db" in paths
+            else:
+                assert ".directory" in paths

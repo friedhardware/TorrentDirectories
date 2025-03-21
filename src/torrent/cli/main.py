@@ -73,7 +73,7 @@ def create_torrent_config(
         tracker_url=tracker_url,
         min_piece_size=min_size or 256 * 1024,  # Default to 256K if None
         max_piece_size=max_size or 16 * 1024 * 1024,  # Default to 16M if None
-        skip_hidden=True,
+        skip_hidden=not include_system,  # If including system files, don't skip hidden files
         skip_system_files=not include_system,
         private=not public,
     )
@@ -148,8 +148,8 @@ def file(
             not private,
             tracker_url=tracker,
         )
-        config.source = source
-        config.comment = comment
+        config.source = source or ""
+        config.comment = comment or ""
 
         if ctx.obj["dry_run"]:
             handle_dry_run(path, output, config)
@@ -240,8 +240,8 @@ def batch(
             not private,
             tracker_url=tracker,
         )
-        config.source = source
-        config.comment = comment
+        config.source = source or ""
+        config.comment = comment or ""
 
         # Check if output directory is inside parent directory
         abs_parent = os.path.abspath(directory)
@@ -302,7 +302,7 @@ def main(args: Optional[List[str]] = None) -> int:
         if isinstance(result, bool):
             return 0 if result else 1
         if isinstance(result, int):
-            return cast(int, result)
+            return result
         if isinstance(result, str):
             try:
                 return int(result)
