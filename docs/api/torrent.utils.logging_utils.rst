@@ -1,7 +1,7 @@
-Manifest Management
-=================
+Logging Utilities
+================
 
-.. automodule:: torrent.manifest
+.. automodule:: torrent.utils.logging_utils
    :members:
    :undoc-members:
    :show-inheritance:

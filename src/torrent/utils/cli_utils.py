@@ -49,8 +49,17 @@ def list_files(path: Union[str, Path], relative: bool = True) -> List[str]:
 
     Returns:
         List of file paths
+
+    Raises:
+        FileNotFoundError: If the directory does not exist
+        NotADirectoryError: If the path exists but is not a directory
     """
     path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"Directory does not exist: {path}")
+    if not path.is_dir():
+        raise NotADirectoryError(f"Path is not a directory: {path}")
+
     files = []
     for root, _, filenames in os.walk(path):
         for filename in filenames:

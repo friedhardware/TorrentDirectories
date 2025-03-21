@@ -1,3 +1,7 @@
+"""
+Sphinx configuration for TorrentDirectories documentation.
+"""
+
 # Configuration file for the Sphinx documentation builder.
 #
 # For the full list of built-in configuration values, see the documentation:
@@ -8,25 +12,28 @@
 
 import os
 import sys
+from datetime import datetime
 from typing import List
 
 sys.path.insert(0, os.path.abspath(".."))
 
 project = "TorrentDirectories"
-copyright = "2025, friedhardware"
+copyright = f"{datetime.now().year}, friedhardware"
 author = "friedhardware"
 
 version = "1.0"
-release = "1.0"
+release = "1.0.0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",
-    "sphinx.ext.viewcode",
-    "sphinx.ext.napoleon",
-    "sphinx.ext.intersphinx",
+    "sphinx.ext.autodoc",  # Automatically include docstrings
+    "sphinx.ext.napoleon",  # Support for NumPy and Google style docstrings
+    "sphinx.ext.intersphinx",  # Link to other project's documentation
+    "sphinx.ext.viewcode",  # Add links to highlighted source code
+    "sphinx.ext.coverage",  # Check documentation coverage
+    "sphinx.ext.githubpages",  # Create .nojekyll file for GitHub Pages
 ]
 
 templates_path = ["_templates"]
@@ -60,16 +67,65 @@ html_theme_options = {
 
 # Napoleon settings
 napoleon_google_docstring = True
-napoleon_numpy_docstring = True
+napoleon_numpy_docstring = False
 napoleon_include_init_with_doc = True
-napoleon_include_private_with_doc = True
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_admonition_for_references = True
+napoleon_use_ivar = True
+napoleon_use_param = True
+napoleon_use_rtype = True
+napoleon_type_aliases = None
 
 # Intersphinx settings
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
+    "click": ("https://click.palletsprojects.com/en/stable/", None),
+    "libtorrent": ("https://www.libtorrent.org/python_binding.html", None),
 }
 
 # AutoDoc settings
-autodoc_member_order = "bysource"
-autodoc_typehints = "description"
-add_module_names = False
+autodoc_default_options = {
+    "members": True,
+    "member-order": "bysource",
+    "special-members": "__init__",
+    "undoc-members": True,
+    "exclude-members": "__weakref__",
+    "show-inheritance": True,
+}
+
+# Add mock imports for external dependencies
+autodoc_mock_imports = ["libtorrent", "click"]
+
+# Coverage settings
+coverage_show_missing_items = True
+
+# ViewCode settings
+viewcode_follow_imported_members = True
+
+# -- Options for LaTeX output ---------------------------------------------
+
+latex_elements = {
+    # Paper size ('letterpaper' or 'a4paper')
+    "papersize": "a4paper",
+    # Font size ('10pt', '11pt' or '12pt')
+    "pointsize": "11pt",
+    # Additional LaTeX packages
+    "preamble": r"""
+        \usepackage{charter}
+        \usepackage{inconsolata}
+    """,
+}
+
+# Grouping the document tree into LaTeX files
+latex_documents = [
+    (
+        "index",  # source start file
+        "TorrentDirectories.tex",  # target name
+        "TorrentDirectories Documentation",  # title
+        author,  # author
+        "manual",  # documentclass
+    ),
+]

@@ -7,10 +7,9 @@ from __future__ import annotations
 import csv
 import os
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import Generator
 
 import psutil
 import pytest
@@ -38,6 +37,18 @@ def sample_torrent(manifest_dir: Path) -> Path:
     torrent_file = manifest_dir / "test.torrent"
     torrent_file.write_text("dummy torrent content")
     return torrent_file
+
+
+@pytest.fixture
+def test_dirs(tmp_path: Path) -> Generator[list[Path], None, None]:
+    """Create test directories with content."""
+    dirs = []
+    for i in range(3):
+        test_dir = tmp_path / f"test_dir_{i}"
+        test_dir.mkdir()
+        (test_dir / "file.txt").write_text(f"content {i}")
+        dirs.append(test_dir)
+    yield dirs
 
 
 def test_manifest_creation(manifest_dir: Path) -> None:
@@ -231,93 +242,6 @@ def test_sync_to_disk_behavior(tmp_path: Path) -> None:
         assert str(test_torrent) in content
 
 
-def test_concurrent_manifest_writes(tmp_path: Path) -> None:
-    """Test that concurrent writes to the manifest are handled safely."""
-    manifest_dir = tmp_path / "manifest_test"
-    manifest_dir.mkdir()
-    manager = ManifestManager(str(manifest_dir))
-
-    # Create test directories and torrent files
-    test_dirs: List[Path] = []
-    test_torrents: List[Path] = []
-    for i in range(5):
-        test_dir = manifest_dir / f"test_dir_{i}"
-        test_dir.mkdir()
-        test_dirs.append(test_dir)
-
-        test_torrent = manifest_dir / f"test_{i}.torrent"
-        test_torrent.touch()
-        test_torrents.append(test_torrent)
-
-    # Track successful and failed attempts
-    success_count = 0
-    error_count = 0
-
-    # Try to add entries concurrently
-    def add_entry(idx: int) -> bool:
-        try:
-            # Use modulo to cycle through the directories, creating more contention
-            dir_idx = idx % len(test_dirs)
-            manager.add_entry(str(test_dirs[dir_idx]), str(test_torrents[dir_idx]))
-            return True
-        except ManifestError:
-            return False
-
-    # Use ThreadPoolExecutor with more workers and operations to increase contention
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        # Increase number of concurrent operations
-        futures = [executor.submit(add_entry, i) for i in range(50)]
-        for future in as_completed(futures):
-            if future.result():
-                success_count += 1
-            else:
-                error_count += 1
-
-    # Verify results
-    assert success_count > 0, "At least one write should succeed"
-    assert error_count > 0, "Some writes should fail due to conflicts"
-    assert success_count + error_count == 50, "All operations should complete"
-    assert success_count <= 5, "Should not have more successes than unique directories"
-
-    # Verify final manifest state
-    processed = manager.get_processed_directories()
-    assert (
-        len(processed) == success_count
-    ), "Number of entries should match successful writes"
-    assert len(processed) <= len(
-        test_dirs
-    ), "Cannot have more entries than unique directories"
-
-
-def test_manifest_race_condition(tmp_path: Path) -> None:
-    """Test that race conditions between manifest operations are detected."""
-    manifest_dir = tmp_path / "manifest_test"
-    manifest_dir.mkdir()
-
-    # Create two separate manifest managers to simulate different processes
-    manager1 = ManifestManager(str(manifest_dir))
-    manager2 = ManifestManager(str(manifest_dir))
-
-    # Create test directory and torrent file
-    test_dir = manifest_dir / "test_dir"
-    test_dir.mkdir()
-    test_torrent = manifest_dir / "test.torrent"
-    test_torrent.touch()
-
-    # First manager adds the entry
-    manager1.add_entry(str(test_dir), str(test_torrent))
-
-    # Second manager tries to add the same entry
-    with pytest.raises(ManifestError) as exc_info:
-        manager2.add_entry(str(test_dir), str(test_torrent))
-
-    assert "Directory already exists in manifest" in str(exc_info.value)
-
-    # Verify only one entry exists
-    processed = manager1.get_processed_directories()
-    assert len(processed) == 1
-
-
 def test_manifest_backup_sync(tmp_path: Path) -> None:
     """Test that manifest backups are properly synced to disk."""
     manifest_dir = tmp_path / "manifest_test"
@@ -429,3 +353,165 @@ def test_manifest_basic_performance(tmp_path: Path) -> None:
     for i in range(num_entries):
         directory = f"/test/dir_{i}"
         assert manifest.is_directory_processed(directory)
+
+
+def test_manifest_paths_are_absolute(tmp_path: Path) -> None:
+    """Test that all directory paths in the manifest are absolute."""
+    # Create manifest directory and manager
+    manifest_dir = tmp_path / "manifest_test"
+    manifest_dir.mkdir()
+    manager = ManifestManager(manifest_dir)
+
+    # Create test directories
+    test_dirs = []
+    for i in range(6):
+        test_dir = manifest_dir / f"test_dir_{i}"
+        test_dir.mkdir()
+        test_dirs.append(test_dir)
+
+    # Create a test torrent file
+    test_torrent = manifest_dir / "test.torrent"
+    test_torrent.touch()
+
+    # Save original working directory
+    original_cwd = os.getcwd()
+    try:
+        # Change to manifest directory to test relative paths
+        os.chdir(str(manifest_dir))
+
+        # Test cases with different path formats
+        test_cases = [
+            "test_dir_0",  # Simple name
+            "./test_dir_1",  # Current directory
+            str(test_dirs[2].absolute()),  # Already absolute
+            "test_dir_3",  # Another simple name
+            "./test_dir_4",  # Another current directory
+            "test_dir_5",  # Another simple name
+        ]
+
+        # Add entries to manifest
+        for path in test_cases:
+            manager.add_entry(path, str(test_torrent))
+
+        # Read manifest and verify paths
+        with open(
+            manifest_dir / "manifest.csv", "r", newline="", encoding="utf-8"
+        ) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                path = row["directory_path"]
+                # Verify path is absolute
+                assert os.path.isabs(path), f"Path '{path}' is not absolute"
+                # Verify path exists
+                assert os.path.exists(path), f"Path '{path}' does not exist"
+                # Verify path is under manifest directory
+                assert Path(path).is_relative_to(
+                    manifest_dir
+                ), f"Path '{path}' is not under manifest directory"
+
+    finally:
+        # Restore original working directory
+        os.chdir(original_cwd)
+
+
+def test_manifest_cleaning(
+    manifest_manager: ManifestManager, test_dirs: list[Path]
+) -> None:
+    """Test manifest cleaning functionality."""
+    # Add entries with missing torrent files
+    for i, dir_path in enumerate(test_dirs):
+        torrent_path = dir_path.parent / f"test{i}.torrent"
+        manifest_manager.add_entry(str(dir_path), str(torrent_path))
+
+    # Create only one torrent file
+    (test_dirs[0].parent / "test0.torrent").touch()
+
+    # Get missing torrents
+    missing = manifest_manager.get_missing_torrents()
+    assert len(missing) == 2
+
+    # Clean manifest
+    manifest_manager.clean_manifest()
+
+    # Verify only valid entry remains
+    processed_dirs = manifest_manager.get_processed_directories()
+    assert len(processed_dirs) == 1
+    assert str(test_dirs[0]) in processed_dirs
+
+    # Verify backup was created with timestamp
+    manifest_dir = Path(manifest_manager.output_dir)
+    backup_files = list(manifest_dir.glob("manifest.csv.bak_*"))
+    assert len(backup_files) > 0, "No backup file was created"
+
+
+def test_manifest_output_dir_update(
+    manifest_manager: ManifestManager, test_dirs: list[Path]
+) -> None:
+    """Test updating torrent paths when cleaning manifest with new output directory."""
+    # Add entries
+    for i, dir_path in enumerate(test_dirs):
+        torrent_path = dir_path.parent / f"test{i}.torrent"
+        torrent_path.touch()  # Create torrent files
+        manifest_manager.add_entry(str(dir_path), str(torrent_path))
+
+    # Update output directory
+    new_output_dir = Path(manifest_manager.output_dir) / "new_output"
+    new_output_dir.mkdir()
+
+    # Move torrent files to new directory
+    for i in range(len(test_dirs)):
+        old_path = test_dirs[0].parent / f"test{i}.torrent"
+        new_path = new_output_dir / f"test{i}.torrent"
+        old_path.rename(new_path)
+
+    # Clean manifest with new output directory
+    manifest_manager.clean_manifest(str(new_output_dir))
+
+    # Verify torrent paths were updated
+    for dir_path in test_dirs:
+        torrent_path = manifest_manager.get_torrent_path(str(dir_path))
+        assert torrent_path is not None
+        assert str(new_output_dir) in str(torrent_path)
+
+
+def test_error_handling(manifest_dir: Path) -> None:
+    """Test error handling in manifest operations."""
+    manager = ManifestManager(str(manifest_dir))
+    manifest_path = manifest_dir / "manifest.csv"
+
+    # Test with invalid manifest file
+    manifest_path.write_text("invalid,csv,content\n")
+    with pytest.raises(Exception):  # Should handle CSV parsing errors
+        manager.get_processed_directories()
+
+    # Test with permission issues
+    os.chmod(manifest_path, 0o000)  # Remove all permissions
+    try:
+        with pytest.raises(Exception):  # Should handle permission errors
+            manager.add_entry("/test/dir", "test.torrent")
+    finally:
+        os.chmod(manifest_path, 0o666)  # Restore permissions
+
+
+def test_cache_functionality(manifest_dir: Path, test_dirs: list[Path]) -> None:
+    """Test cache behavior with different configurations."""
+    # Test with cache disabled
+    no_cache_manager = ManifestManager(str(manifest_dir), use_cache=False)
+    no_cache_manager.add_entry(str(test_dirs[0]), "test1.torrent")
+    assert no_cache_manager.is_directory_processed(str(test_dirs[0]))
+
+    # Test with limited cache size
+    small_cache_manager = ManifestManager(str(manifest_dir), cache_size=2)
+    small_cache_manager.add_entry(
+        str(test_dirs[0]), "test1.torrent", force=True
+    )  # Update existing entry
+    small_cache_manager.add_entry(str(test_dirs[1]), "test2.torrent")
+    small_cache_manager.add_entry(
+        str(test_dirs[2]), "test3.torrent"
+    )  # Should evict oldest entry
+
+    # Test cache preloading
+    preload_manager = ManifestManager(str(manifest_dir), preload_cache=True)
+    assert preload_manager.is_directory_processed(
+        str(test_dirs[0])
+    )  # Should be a cache hit

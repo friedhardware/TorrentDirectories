@@ -1,5 +1,9 @@
 """
 Core functionality for creating torrent files with optimal settings.
+
+This module provides the TorrentCreator class for creating torrent files with optimized
+piece sizes and settings. It handles both single files and directories, with support
+for private torrents, custom trackers, and source tags.
 """
 
 from __future__ import annotations
@@ -21,7 +25,16 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class TorrentVerificationResult:
-    """Result of torrent file verification."""
+    """Result of torrent file verification.
+
+    Attributes:
+        success: Whether verification was successful
+        info_hash: The info hash of the torrent if verification succeeded
+        piece_length: The piece length in bytes if verification succeeded
+        total_size: The total size in bytes if verification succeeded
+        num_pieces: The number of pieces if verification succeeded
+        error: Error message if verification failed
+    """
 
     success: bool
     info_hash: Optional[str] = None
@@ -32,57 +45,55 @@ class TorrentVerificationResult:
 
 
 class TorrentCreator:
-    """
-    Creates torrent files with optimal settings for both single files and directories.
+    """Creates torrent files with optimal settings for both single files and directories.
 
     This class handles the core torrent creation functionality, including:
-    - Piece size calculation following strict rules:
-        * Must be a power of 2 (e.g. 16 KiB, 32 KiB, 64 KiB)
-        * Must be a multiple of 16 KiB
-        * Must be between min_piece_size and max_piece_size from config
-    - File filtering (hidden files, system files)
-    - Progress reporting
-    - Torrent verification
-    - Empty file handling:
-        * Individual empty files (0 bytes) are allowed and included in the torrent
-        * However, the total size of all files must be > 0 bytes
-        * This is a libtorrent requirement as it needs data to create pieces
+
+    * Piece size calculation following strict rules:
+        - Must be a power of 2 (e.g. 16 KiB, 32 KiB, 64 KiB)
+        - Must be a multiple of 16 KiB
+        - Must be between min_piece_size and max_piece_size from config
+    * File filtering (hidden files, system files)
+    * Torrent verification
+    * Empty file handling:
+        - Individual empty files (0 bytes) are allowed and included in the torrent
+        - However, the total size of all files must be > 0 bytes
+        - This is a libtorrent requirement as it needs data to create pieces
 
     The default configuration uses:
-    - Minimum piece size: 256 KiB
-    - Maximum piece size: 16 MiB
-    - Private flag: True
-    - Skip hidden files: True
-    - Skip system files: True
+
+    * Minimum piece size: 256 KiB
+    * Maximum piece size: 16 MiB
+    * Private flag: True
+    * Skip hidden files: True
+    * Skip system files: True
 
     Args:
-        config: Configuration for torrent creation
+        config: Configuration object containing torrent creation settings
     """
 
     def __init__(self, config: TorrentConfig) -> None:
-        """
-        Initialize the torrent creator.
+        """Initialize the torrent creator.
 
         Args:
-            config: Configuration for torrent creation
+            config: Configuration object containing torrent creation settings
         """
         self.config = config
 
     def create(
         self, input_path: Union[str, Path], output_path: Union[str, Path]
     ) -> str:
-        """
-        Create a torrent file from a file or directory.
+        """Create a torrent file from a file or directory.
 
         Args:
-            input_path: Path to the input file or directory
+            input_path: Path to the input file or directory to create a torrent from
             output_path: Path where the torrent file should be saved
 
         Returns:
             str: Path to the created torrent file
 
         Raises:
-            TorrentError: If the torrent creation fails
+            TorrentCreationError: If the torrent creation fails for any reason
             OutputFileExistsError: If the output file already exists
             NoDataError: If the total size of all files is 0 bytes. Note that individual
                 empty files are allowed, but there must be at least some data overall
@@ -178,10 +189,10 @@ class TorrentCreator:
         """Ensure piece size is within configured bounds.
 
         Args:
-            size: The piece size to bound
+            size: The piece size in bytes to bound
 
         Returns:
-            int: The bounded piece size
+            int: The piece size bounded between min_piece_size and max_piece_size
         """
         min_size: int = int(self.config.min_piece_size)
         max_size: int = int(self.config.max_piece_size)
@@ -194,8 +205,17 @@ class TorrentCreator:
         return size_int
 
     def calculate_optimal_piece_size(self, total_size: int) -> int:
-        """
-        Calculate the optimal piece size for a torrent based on its total size.
+        """Calculate the optimal piece size for a torrent based on its total size.
+
+        The piece size is chosen based on the total size of the torrent:
+        * < 50 MB: 256 KB pieces
+        * < 150 MB: 1 MB pieces
+        * < 1 GB: 1 MB pieces
+        * < 10 GB: 4 MB pieces
+        * >= 10 GB: 8 MB pieces
+
+        The calculated size is then bounded by min_piece_size and max_piece_size
+        from the configuration.
 
         Args:
             total_size: Total size of the torrent in bytes
@@ -225,14 +245,18 @@ class TorrentCreator:
 
     @staticmethod
     def verify_torrent_file(torrent_path: str) -> TorrentVerificationResult:
-        """
-        Verify that a torrent file is valid and can be loaded.
+        """Verify that a torrent file is valid and can be loaded.
+
+        This method attempts to load and decode the torrent file, verifying that
+        it contains all required fields and can be parsed by libtorrent.
 
         Args:
-            torrent_path: Path to the torrent file
+            torrent_path: Path to the torrent file to verify
 
         Returns:
-            TorrentVerificationResult: Object containing verification results and metadata
+            TorrentVerificationResult: Object containing verification results and metadata.
+                If verification succeeds, includes info_hash, piece_length, total_size,
+                and num_pieces. If verification fails, includes an error message.
         """
         try:
             with open(torrent_path, "rb") as f:

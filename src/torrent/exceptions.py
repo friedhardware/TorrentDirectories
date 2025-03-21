@@ -272,7 +272,7 @@ class InvalidTrackerURLError(TorrentError):
     def __init__(self, url: str, reason: str) -> None:
         super().__init__(
             f"Invalid tracker URL ({url}): {reason}",
-            ErrorCode.ERROR,
+            ErrorCode.INVALID_TRACKER_URL,
             {"url": url, "reason": reason},
         )
 

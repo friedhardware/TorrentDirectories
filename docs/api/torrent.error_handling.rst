@@ -1,7 +1,7 @@
-Manifest Management
-=================
+Error Handling
+=============
 
-.. automodule:: torrent.manifest
+.. automodule:: torrent.error_handling
    :members:
    :undoc-members:
    :show-inheritance:

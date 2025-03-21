@@ -216,7 +216,14 @@ def test_file_exists_error(runner: CliRunner, tmp_path: Path) -> None:
 
     # First try without force (should fail)
     result = runner.invoke(
-        cli, ["file", str(test_file), "http://tracker.example.com/announce"]
+        cli,
+        [
+            "file",
+            str(test_file),
+            "--output",
+            str(output_file),
+            "http://tracker.example.com/announce",
+        ],
     )
     assert result.exit_code == 12  # FILE_EXISTS error code
     assert "already exists" in result.output.lower()
@@ -225,7 +232,15 @@ def test_file_exists_error(runner: CliRunner, tmp_path: Path) -> None:
 
     # Now try with force (should succeed)
     result = runner.invoke(
-        cli, ["--force", "file", str(test_file), "http://tracker.example.com/announce"]
+        cli,
+        [
+            "--force",
+            "file",
+            str(test_file),
+            "--output",
+            str(output_file),
+            "http://tracker.example.com/announce",
+        ],
     )
     assert result.exit_code == 0  # Success with --force
     assert output_file.exists()  # New file should be created

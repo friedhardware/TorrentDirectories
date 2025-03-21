@@ -1,59 +1,41 @@
 API Reference
 ============
 
+Core Modules
+-----------
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
-   torrent.torrent_creator
-   torrent.utils.config
    torrent.manifest
+   torrent.torrent_creator
 
-.. module:: torrent.torrent_creator
-   :no-index:
-
-.. module:: torrent.utils.config
-   :no-index:
-
-.. module:: torrent.manifest
-   :no-index:
-
-TorrentCreator
+Utility Modules
 --------------
 
-.. automodule:: torrent.torrent_creator
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 2
 
-Configuration
--------------
+   torrent.utils.cli_utils
+   torrent.utils.config
+   torrent.utils.file_utils
+   torrent.utils.logging_utils
+   torrent.utils.manifest_cache
 
-.. automodule:: torrent.utils.config
-   :members:
-   :undoc-members:
-   :show-inheritance:
+CLI Modules
+----------
 
-Manifest Management
--------------------
+.. toctree::
+   :maxdepth: 2
 
-.. automodule:: torrent.manifest
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   torrent.cli.commands
+   torrent.cli.main
 
 Error Handling
 -------------
 
-.. automodule:: torrent.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. toctree::
+   :maxdepth: 2
 
-Progress Reporting
-----------------
-
-.. automodule:: torrent.utils.progress
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   torrent.error_handling
+   torrent.exceptions

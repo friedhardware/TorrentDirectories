@@ -1,7 +1,7 @@
-Manifest Management
-=================
+Exceptions
+==========
 
-.. automodule:: torrent.manifest
+.. automodule:: torrent.exceptions
    :members:
    :undoc-members:
    :show-inheritance:

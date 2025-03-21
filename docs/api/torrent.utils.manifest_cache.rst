@@ -1,7 +1,7 @@
-Manifest Management
-=================
+Manifest Cache
+=============
 
-.. automodule:: torrent.manifest
+.. automodule:: torrent.utils.manifest_cache
    :members:
    :undoc-members:
    :show-inheritance:

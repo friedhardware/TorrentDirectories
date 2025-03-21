@@ -16,6 +16,9 @@ A Python tool for creating torrent files from directories with optimal settings 
 - 📊 Type-safe progress reporting
 - 🔍 Smart file existence checks
 - 🧪 Comprehensive test coverage
+- 🔐 Thread-safe operations
+- 📈 Performance optimization
+- 🔄 Automatic backup creation
 
 ## Table of Contents
 
@@ -33,6 +36,7 @@ A Python tool for creating torrent files from directories with optimal settings 
   - [Setting Up](#setting-up-development-environment)
   - [Running Tests](#running-tests)
   - [Code Style](#code-style)
+  - [Documentation](#documentation)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -222,7 +226,7 @@ The manifest is stored as a CSV file in the output directory with the following 
 The manifest system provides:
 - Automatic skipping of already processed directories (unless `--force` is used)
 - Cleaning of invalid entries with `--clean`
-- Backup of the manifest before cleaning (saved as manifest.csv.bak)
+- Backup of the manifest before cleaning (saved as manifest.csv.bak_<timestamp>)
 - Thread-safe operations for concurrent access
 
 ## Best Practices
@@ -236,6 +240,8 @@ For detailed best practices and advanced usage patterns, including:
 - Automation tips
 - Performance optimization
 - Security considerations
+- Testing guidelines
+- Maintenance procedures
 
 See our [Best Practices Guide](docs/best_practices.rst) in the documentation.
 
@@ -337,6 +343,89 @@ Run these tools before submitting changes:
 ruff check .
 black .
 mypy src
+```
+
+### Documentation
+
+The project uses Sphinx for documentation. The documentation source files are in the `docs/` directory.
+
+#### Building Documentation
+
+```bash
+# Install documentation dependencies
+pip install -e ".[docs]"
+
+# Build HTML documentation
+cd docs
+make html
+
+# Build PDF documentation (requires LaTeX)
+make latexpdf
+
+# Clean build directory
+make clean
+```
+
+#### Writing Documentation
+
+- API documentation is automatically generated from docstrings
+- ReStructuredText (`.rst`) files in `docs/` contain manual documentation
+- The documentation follows the NumPy docstring format
+
+Key files:
+- `docs/conf.py`: Sphinx configuration
+- `docs/index.rst`: Documentation home page
+- `docs/api/`: API reference documentation
+- `docs/usage.rst`: Usage guide
+- `docs/best_practices.rst`: Best practices guide
+
+#### Documentation Standards
+
+1. **API Documentation**:
+   - Use NumPy style docstrings
+   - Include type hints
+   - Document exceptions
+   - Provide usage examples
+
+2. **RST Files**:
+   - Use proper section hierarchy
+   - Include cross-references
+   - Add code examples where relevant
+   - Keep formatting consistent
+
+3. **Building and Testing**:
+   - Build docs before committing changes
+   - Check for Sphinx warnings
+   - Verify all links work
+   - Test code examples
+
+Example docstring format:
+```python
+def create_torrent(path: str, tracker_url: str) -> None:
+    """Create a torrent file from the given path.
+
+    Parameters
+    ----------
+    path : str
+        Path to the file or directory to create a torrent from.
+    tracker_url : str
+        URL of the tracker to use.
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    TorrentError
+        If the torrent creation fails.
+    ValueError
+        If the path does not exist.
+
+    Examples
+    --------
+    >>> create_torrent("path/to/file", "http://tracker.example.com/announce")
+    """
 ```
 
 ## Contributing

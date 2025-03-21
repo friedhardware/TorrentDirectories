@@ -1,7 +1,7 @@
-Manifest Management
-=================
+File Utilities
+=============
 
-.. automodule:: torrent.manifest
+.. automodule:: torrent.utils.file_utils
    :members:
    :undoc-members:
    :show-inheritance:

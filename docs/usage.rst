@@ -1,202 +1,200 @@
-Usage
-=====
+Usage Guide
+===========
+
+This guide covers the main features and usage patterns of TorrentDirectories.
 
 Basic Usage
 ----------
 
-To create a torrent file from a single file or directory:
-
-.. code-block:: python
-
-    from torrent.torrent_creator import TorrentCreator
-    from torrent.utils.config import TorrentConfig
-
-    # Create configuration
-    config = TorrentConfig(
-        min_piece_size=256 * 1024,  # 256 KiB minimum piece size
-        max_piece_size=16 * 1024 * 1024,  # 16 MiB maximum piece size
-        skip_hidden=True,  # Skip hidden files
-        skip_system_files=True,  # Skip system files
-        private=True,  # Create private torrent
-        skip_empty_files=False,  # Don't skip empty files
-        tracker_url="http://example.com/announce"  # Tracker URL
-    )
-
-    # Create torrent creator
-    creator = TorrentCreator(config)
-
-    # Create torrent file
-    creator.create("path/to/directory", "output.torrent")
-
-Command Line Interface
-----------------------
-
 Creating a Single Torrent
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-TorrentDirectories provides a command-line interface for common operations.
+To create a torrent from a single file or directory::
 
-.. code-block:: bash
+    torrent-directories file <path> <tracker_url> [options]
 
-    # Create a private torrent from a single file or directory (default)
+Example::
+
+    # Create a private torrent (default)
     torrent-directories file path/to/content http://tracker.example.com/announce
 
-    # Create a public torrent with custom output location
-    torrent-directories file path/to/content http://tracker.example.com/announce --public -o output.torrent
+    # Specify output location
+    torrent-directories file path/to/content http://tracker.example.com/announce -o output.torrent
 
-    # Create a torrent with custom piece size settings and metadata
+    # Create a public torrent with metadata
     torrent-directories file path/to/content http://tracker.example.com/announce \
-        --min-piece-size 1M \
-        --max-piece-size 32M \
+        --public \
         --source "My Release Group" \
         --comment "Great content!"
-
-    # Skip empty files and include system files
-    torrent-directories file path/to/content http://tracker.example.com/announce \
-        --skip-empty \
-        --include-system
-
-    # Preview changes without creating files (dry run)
-    torrent-directories --dry-run file path/to/content http://tracker.example.com/announce
 
 Batch Processing
 ~~~~~~~~~~~~~~~
 
-You can process multiple directories at once:
+Process multiple directories at once::
 
-.. code-block:: bash
+    torrent-directories batch <parent_directory> <tracker_url> [options]
 
-    # Process all subdirectories in a parent directory
+Example::
+
+    # Process all subdirectories
     torrent-directories batch path/to/parent http://tracker.example.com/announce
 
-    # Specify output directory for torrent files
-    torrent-directories batch path/to/parent http://tracker.example.com/announce -o path/to/torrents
+    # Specify output directory and clean manifest
+    torrent-directories batch path/to/parent http://tracker.example.com/announce \
+        -o path/to/torrents \
+        --clean
 
     # Process with custom settings and force rebuild
     torrent-directories batch path/to/parent http://tracker.example.com/announce \
         --min-piece-size 1M \
-        --force \
-        --include-system \
-        --skip-empty
-
-    # Clean manifest and process directories with metadata
-    torrent-directories batch path/to/parent http://tracker.example.com/announce \
-        --clean \
-        --source "My Release Group" \
-        --comment "Batch release"
+        --max-piece-size 32M \
+        --force
 
 Common Options
+-------------
+
+Global Options
 ~~~~~~~~~~~~~
 
-Global Options (before command):
-    * ``--version``: Show version information
-    * ``--verbose`` or ``-v``: Show detailed progress
-    * ``--dry-run``: Preview changes without making them
-    * ``--log-file FILE``: Write logs to file
+These options can be used with any command:
 
-Torrent Options:
-    * ``--private | --public``: Set torrent privacy (mutually exclusive, private by default)
-    * ``--min-piece-size SIZE``: Minimum piece size (e.g., 16K, 1M, default: 256K)
-    * ``--max-piece-size SIZE``: Maximum piece size (e.g., 16M, 64M, default: 16M)
-    * ``--include-system``: Include system files (default: False)
-    * ``--skip-empty``: Skip empty files instead of failing (default: False)
-    * ``--force``: Overwrite existing torrents
-    * ``--source TEXT``: Add a source string to the torrent metadata
-    * ``--comment TEXT``: Add a comment to the torrent metadata
-    * ``-o/--output OUTPUT``: Output path for the torrent(s):
-        * Single mode: Output file path (default: input name + .torrent)
-        * Batch mode: Output directory (default: torrents/)
+- ``--version``: Show version information
+- ``--verbose`` or ``-v``: Show detailed progress
+- ``--dry-run``: Preview changes without making them
+- ``--log-file FILE``: Write logs to file
+- ``--force``: Overwrite existing torrent files
 
-Batch-specific Options:
-    * ``--clean``: Clean the manifest by removing missing entries
-    * ``--max-failures N``: Maximum failures before stopping (0 for unlimited)
+Torrent Options
+~~~~~~~~~~~~~~
+
+These options control torrent creation:
+
+- ``--private | --public``: Set torrent privacy (default: private)
+- ``--min-piece-size SIZE``: Minimum piece size (e.g., 16K, 1M, default: 256K)
+- ``--max-piece-size SIZE``: Maximum piece size (e.g., 16M, 64M, default: 16M)
+- ``--include-system``: Include system files (default: False)
+- ``--skip-empty-files``: Skip empty files instead of failing (default: False)
+- ``--source TEXT``: Add a source string to the torrent metadata
+- ``--comment TEXT``: Add a comment to the torrent metadata
+- ``-o/--output OUTPUT``: Output path for the torrent(s)
+
+Batch-specific Options
+~~~~~~~~~~~~~~~~~~~~
+
+Additional options for batch processing:
+
+- ``--clean``: Clean the manifest by removing missing entries
+- ``--max-failures N``: Maximum failures before stopping (0 for unlimited)
 
 Error Handling
-~~~~~~~~~~~~~
+-------------
 
-The tool provides comprehensive error handling for various scenarios:
+The tool provides detailed error messages and appropriate exit codes:
 
 File Existence
-^^^^^^^^^^^^^
-
-When creating torrent files, the tool checks for existing files:
-
-.. code-block:: bash
-
-    # Attempting to create a torrent where the output file exists
-    torrent-directories file path/to/content http://tracker.example.com/announce
-    # Error: Output file already exists: content.torrent
-    # Use --force to overwrite existing files
-
-    # Using --force to overwrite existing files
-    torrent-directories --force file path/to/content http://tracker.example.com/announce
-    # Success: Torrent created successfully
-
-This applies to both explicitly specified output paths and default paths:
-
-.. code-block:: bash
-
-    # With explicit output path
-    torrent-directories file path/to/content http://tracker.example.com/announce -o output.torrent
-
-    # With default output path (content.torrent)
-    torrent-directories file path/to/content http://tracker.example.com/announce
-
-Progress Reporting
-^^^^^^^^^^^^^^^^
-
-The tool provides detailed progress reporting with proper type handling:
-
-.. code-block:: bash
-
-    # Enable verbose output for detailed progress
-    torrent-directories -v file path/to/content http://tracker.example.com/announce
-    # Progress: 45.5% (123/270 files processed)
-
-    # In batch mode
-    torrent-directories -v batch path/to/parent http://tracker.example.com/announce
-    # Processing directory: movie1 (1/5)
-    # Progress: 67.8% (234/345 files processed)
-
-Manifest System
 ~~~~~~~~~~~~~
 
-The tool maintains a manifest file to track processed directories in batch mode. This enables:
+- Checks for existing files before creation
+- Provides clear messages about using ``--force`` to overwrite
+- Creates backups when overwriting with ``--force``
 
-* Skipping already processed directories
-* Resuming interrupted batch operations
-* Tracking which directories have been processed
-* Automatic backup of the manifest before cleaning
+Progress Reporting
+~~~~~~~~~~~~~~~~
 
-The manifest is stored as a CSV file in the output directory with the following format:
+- Shows real-time progress in verbose mode
+- Reports file counts and sizes
+- Displays percentage completion for large operations
 
-.. code-block:: csv
+Empty Files
+~~~~~~~~~~
 
-    directory_path,torrent_file,processed_at
+- By default, fails when encountering empty files
+- Use ``--skip-empty-files`` to ignore empty files
+- Reports skipped files in batch mode
+
+Maximum Failures
+~~~~~~~~~~~~~~
+
+- In batch mode, use ``--max-failures N`` to control error tolerance
+- 0 means continue regardless of failures
+- Reports failed items in summary
+
+Manifest System
+-------------
+
+The manifest system tracks processed directories in batch mode:
+
+Structure
+~~~~~~~~
+
+The manifest is stored as a CSV file with the following format::
+
+    "directory_path","torrent_file","processed_at"
     "/path/to/movie1","movie1.torrent","2024-03-15T14:30:00"
+    "/path/to/movie2","movie2.torrent","2024-03-15T14:31:00"
 
-The manifest system provides:
+Features
+~~~~~~~~
 
-* Automatic skipping of already processed directories (unless ``--force`` is used)
-* Cleaning of invalid entries with ``--clean``
-* Backup of the manifest before cleaning (saved as manifest.csv.bak)
-* Thread-safe operations for concurrent access
+- Automatic skipping of already processed directories
+- Manifest cleaning with ``--clean`` option
+- Automatic backup before cleaning
+- Thread-safe operations for concurrent access
+- Caching system for improved performance
 
-## Piece Size Selection
+Cache System
+~~~~~~~~~~~
 
-The piece size is automatically selected based on the following rules:
-1. Must be a power of 2 (e.g. 16 KiB, 32 KiB, 64 KiB, etc.)
-2. Must be a multiple of 16 KiB
-3. Must be between min_piece_size and max_piece_size
+The manifest cache system provides:
 
-The default configuration uses:
-- Minimum piece size: 256 KiB
-- Maximum piece size: 16 MiB
+- Efficient lookup of processed directories
+- Automatic cache invalidation on changes
+- Size-limited caching to control memory usage
+- Thread-safe cache operations
 
-You can customize these values using the command-line options:
+Advanced Usage
+-------------
 
-.. code-block:: bash
+Dry Run Mode
+~~~~~~~~~~~
 
-    torrent-directories file path/to/content http://tracker.example.com/announce \
-        --min-piece-size 1M \
-        --max-piece-size 32M
+Use ``--dry-run`` to preview changes::
+
+    torrent-directories --dry-run batch ./movies http://tracker.example.com/announce
+
+This shows:
+
+- Files that would be processed
+- Output locations
+- Total size and file counts
+- Configuration that would be used
+
+Logging
+~~~~~~~
+
+Control logging output:
+
+- Use ``-v`` for detailed progress
+- Use ``--log-file`` to save logs
+- Logs include timestamps and operation details
+- Unicode support for international file names
+
+Performance Optimization
+~~~~~~~~~~~~~~~~~~~~~~
+
+The tool automatically optimizes:
+
+- Piece sizes based on content
+- Cache usage for batch operations
+- File system operations
+- Progress reporting frequency
+
+Security Features
+~~~~~~~~~~~~~~~
+
+Built-in security measures:
+
+- File locking for concurrent access
+- Backup creation before modifications
+- Permission checking
+- Safe handling of special files

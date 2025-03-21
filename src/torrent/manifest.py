@@ -101,66 +101,39 @@ class ManifestManager:
         Add a new entry to the manifest.
 
         Args:
-            directory_path: Path to the processed directory
+            directory_path: Path to the processed directory (will be converted to absolute path)
             torrent_file: Path to the created torrent file
             force: Whether to overwrite an existing entry for this directory
 
         Raises:
             ManifestError: If the directory is already in the manifest and force is False
         """
+        # Convert to absolute path
+        directory_path = os.path.abspath(directory_path)
         processed_at = datetime.now().isoformat()
 
-        # Open file with exclusive lock to prevent race conditions
-        with open(self.manifest_path, "r+", newline="", encoding="utf-8") as f:
+        # Check cache first if enabled
+        if self._cache.is_enabled() and not force:
+            cache_entry = self._cache.get_entry(directory_path)
+            if cache_entry is not None:
+                logger.error(
+                    f"Attempted to add duplicate entry for directory: {directory_path}"
+                )
+                logger.error("Use --force to update existing entries")
+                raise ManifestError(
+                    f"Directory already exists in manifest: {directory_path}. Use --force to update."
+                )
+
+        # Simply append the new entry
+        with open(self.manifest_path, "a", newline="", encoding="utf-8") as f:
             with FileLock(f, fcntl.LOCK_EX):
-                # Read existing entries
-                f.seek(0)
-                reader = csv.reader(f)
-                headers = next(reader)  # Save headers
-                entries = []
-                found_existing = False
-
-                # Process existing entries
-                for row in reader:
-                    if row and row[0] == directory_path:
-                        found_existing = True
-                        if not force:
-                            logger.error(
-                                f"Attempted to add duplicate entry for directory: {directory_path}"
-                            )
-                            logger.error("Use --force to update existing entries")
-                            raise ManifestError(
-                                f"Directory already exists in manifest: {directory_path}. Use --force to update."
-                            )
-                        else:
-                            # Skip this entry as we'll add the new one
-                            logger.info(
-                                f"Updating existing entry for directory: {directory_path}"
-                            )
-                            continue
-                    else:
-                        entries.append(row)
-
-                # Add new entry
-                entries.append([directory_path, torrent_file, processed_at])
-
-                # Write all entries back to file
-                f.seek(0)
-                f.truncate()
                 writer = csv.writer(f, quoting=csv.QUOTE_ALL)
-                writer.writerow(headers)
-                writer.writerows(entries)
+                writer.writerow([directory_path, torrent_file, processed_at])
                 sync_to_disk(f)
 
-                # Update cache
-                self._cache.add_entry(directory_path, torrent_file, processed_at)
-
-                if found_existing:
-                    logger.info(
-                        f"Updated existing entry for directory: {directory_path}"
-                    )
-                else:
-                    logger.info(f"Added new entry for directory: {directory_path}")
+        # Update cache
+        self._cache.add_entry(directory_path, torrent_file, processed_at)
+        logger.info(f"Added new entry for directory: {directory_path}")
 
     def get_missing_torrents(self) -> Set[str]:
         """Get a set of directory paths whose torrent files are missing."""
@@ -241,9 +214,31 @@ class ManifestManager:
         processed_directories = []
         with open(self.manifest_path, "r", newline="", encoding="utf-8") as f:
             with FileLock(f, fcntl.LOCK_SH):
-                reader = csv.DictReader(f)
-                for row in reader:
-                    processed_directories.append(row["directory_path"])
+                try:
+                    reader = csv.DictReader(f)
+                    if not reader.fieldnames or set(reader.fieldnames) != {
+                        "directory_path",
+                        "torrent_file",
+                        "processed_at",
+                    }:
+                        raise ManifestError(
+                            "Invalid manifest file format: missing or incorrect headers"
+                        )
+                    for row in reader:
+                        if not all(
+                            key in row
+                            for key in [
+                                "directory_path",
+                                "torrent_file",
+                                "processed_at",
+                            ]
+                        ):
+                            raise ManifestError(
+                                "Invalid manifest file format: missing required fields"
+                            )
+                        processed_directories.append(row["directory_path"])
+                except csv.Error as e:
+                    raise ManifestError(f"Error parsing manifest file: {str(e)}")
                 return processed_directories
 
     def get_torrent_path(self, directory_path: str) -> Optional[str]:

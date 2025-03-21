@@ -1,7 +1,7 @@
-Manifest Management
-=================
+CLI Commands
+============
 
-.. automodule:: torrent.manifest
+.. automodule:: torrent.cli.commands
    :members:
    :undoc-members:
    :show-inheritance:

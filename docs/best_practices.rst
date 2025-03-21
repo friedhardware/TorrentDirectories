@@ -1,305 +1,277 @@
-Best Practices & Advanced Usage
-============================
+Best Practices Guide
+==================
 
-This guide covers best practices and advanced usage patterns for TorrentDirectories, based on real-world experience and testing.
+This guide provides best practices for using TorrentDirectories effectively.
 
 Directory Organization
 --------------------
 
-When organizing your content for torrent creation, follow these guidelines:
+Structure Your Content
+~~~~~~~~~~~~~~~~~~~~
 
-1. **Consistent Structure**: Keep a consistent directory structure, especially for batch processing:
+Organize your content in a way that makes sense for batch processing:
 
-   .. code-block:: text
+- Keep related content in separate directories
+- Use consistent naming conventions
+- Avoid deeply nested directories
+- Keep file and directory names simple and descriptive
 
-       media/
-       ├── Movies/
-       │   ├── Movie1 (2024)/
-       │   │   ├── movie.mkv
-       │   │   └── extras/
-       │   └── Movie2 (2024)/
-       │       └── movie.mkv
-       ├── TV/
-       │   └── Show Name/
-       │       ├── Season 01/
-       │       └── Season 02/
-       └── Music/
-           └── Artist/
-               └── Album (Year)/
+Example structure::
 
-2. **File Naming**: Use clear, consistent file naming:
-   - Avoid special characters that might cause issues
-   - Include relevant metadata in folder names (year, quality, etc.)
-   - Use appropriate file extensions
+    parent_directory/
+    ├── movie1/
+    │   ├── movie1.mkv
+    │   └── subtitles/
+    ├── movie2/
+    │   ├── movie2.mkv
+    │   └── extras/
+    └── movie3/
+        └── movie3.mkv
 
-3. **Clean Content**:
-   - Remove unnecessary files (`.DS_Store`, `Thumbs.db`, etc.)
-   - Delete partial downloads or temporary files
-   - Consider using ``--skip-empty-files`` for robustness
+Piece Size Optimization
+---------------------
 
-Optimizing Piece Sizes
---------------------
+Understanding Piece Sizes
+~~~~~~~~~~~~~~~~~~~~~~~
 
-The tool automatically calculates optimal piece sizes, but you can fine-tune for specific scenarios:
+Piece size affects both torrent creation and download performance:
 
-1. **Large 4K Movies** (50GB+):
+- Smaller pieces (16 KiB - 1 MiB):
+  - Better for small files
+  - More precise resume capability
+  - Larger .torrent files
+  - More CPU usage during verification
 
-   .. code-block:: bash
+- Larger pieces (1 MiB - 16 MiB):
+  - Better for large files
+  - Smaller .torrent files
+  - Less CPU usage during verification
+  - Less precise resume capability
 
-       torrent-directories file "Movie (2024)/movie.mkv" \
-           http://tracker.example.com/announce \
-           --min-piece-size 4M \
-           --max-piece-size 32M
+Recommended Settings
+~~~~~~~~~~~~~~~~~~
 
-   This reduces the number of pieces while maintaining reasonable chunk sizes for verification.
+Based on content type:
 
-2. **Small Files** (under 100MB):
+- Small files (< 100 MB):
+  ``--min-piece-size 16K --max-piece-size 1M``
 
-   .. code-block:: bash
+- Medium files (100 MB - 1 GB):
+  ``--min-piece-size 256K --max-piece-size 4M``
 
-       torrent-directories file "Small Content/" \
-           http://tracker.example.com/announce \
-           --min-piece-size 32K \
-           --max-piece-size 256K
+- Large files (1 GB - 10 GB):
+  ``--min-piece-size 1M --max-piece-size 16M``
 
-   Smaller piece sizes help with partial downloading and reduce wasted bandwidth.
-
-3. **Mixed Content** (TV seasons with varying episode sizes):
-
-   .. code-block:: bash
-
-       torrent-directories file "TV Show/Season 01/" \
-           http://tracker.example.com/announce \
-           --min-piece-size 512K \
-           --max-piece-size 4M
-
-   This provides a good balance for mixed file sizes.
+- Very large files (> 10 GB):
+  ``--min-piece-size 4M --max-piece-size 32M``
 
 Batch Processing Strategies
-------------------------
+-------------------------
 
-1. **Incremental Updates**:
+Efficient Processing
+~~~~~~~~~~~~~~~~~~
 
-   When regularly adding new content:
+When processing multiple directories:
 
-   .. code-block:: bash
+1. Start with a dry run::
 
-       # First run - process everything
-       torrent-directories batch ./media http://tracker.example.com/announce \
-           -o ./torrents \
-           --skip-empty-files
+    torrent-directories --dry-run batch ./content http://tracker.example.com/announce
 
-       # Later runs - only process new content
-       torrent-directories batch ./media http://tracker.example.com/announce \
-           -o ./torrents \
-           --skip-empty-files
+2. Use the manifest system effectively:
+   - Clean periodically with ``--clean``
+   - Use ``--force`` only when needed
+   - Set appropriate ``--max-failures``
 
-   The manifest system tracks what's been processed, so only new content is handled.
+3. Monitor progress with verbose output::
 
-2. **Parallel Processing**:
+    torrent-directories -v batch ./content http://tracker.example.com/announce
 
-   For large collections, process different types simultaneously:
+4. Use output directory organization::
 
-   .. code-block:: bash
+    torrent-directories batch ./content http://tracker.example.com/announce \
+        -o ./torrents/%Y/%m/%d
 
-       # In terminal 1 - Process movies
-       torrent-directories batch ./media/Movies \
-           http://tracker.example.com/announce \
-           -o ./torrents/movies
+Resume and Recovery
+~~~~~~~~~~~~~~~~~
 
-       # In terminal 2 - Process TV shows
-       torrent-directories batch ./media/TV \
-           http://tracker.example.com/announce \
-           -o ./torrents/tv
+Handle interruptions gracefully:
 
-3. **Staged Processing**:
-
-   For very large collections:
-
-   .. code-block:: bash
-
-       # Stage 1: Process with higher failure tolerance
-       torrent-directories batch ./media \
-           http://tracker.example.com/announce \
-           -o ./torrents \
-           --skip-empty-files \
-           --max-failures 100
-
-       # Stage 2: Clean up the manifest
-       torrent-directories batch ./media \
-           http://tracker.example.com/announce \
-           -o ./torrents \
-           --clean
-
-       # Stage 3: Retry with stricter settings
-       torrent-directories batch ./media \
-           http://tracker.example.com/announce \
-           -o ./torrents \
-           --max-failures 0
+1. The manifest tracks progress automatically
+2. Use ``--clean`` to remove invalid entries
+3. Set ``--max-failures`` based on your needs
+4. Check logs for detailed error information
 
 Metadata Best Practices
---------------------
+---------------------
 
-1. **Consistent Source Tags**:
+Consistent Information
+~~~~~~~~~~~~~~~~~~~~
 
-   .. code-block:: bash
+Maintain consistent metadata across your torrents:
 
-       torrent-directories batch ./media http://tracker.example.com/announce \
-           --source "MyGroup" \
-           --comment "Release Info: {directory_name}"
+1. Use a standard source tag::
 
-2. **Informative Comments**:
+    torrent-directories file ./content http://tracker.example.com/announce \
+        --source "MyReleaseGroup"
 
-   Include relevant information in comments:
+2. Add helpful comments::
 
-   - Release specifications
-   - Encoding details
-   - Source information
-   - Special notes
+    torrent-directories file ./content http://tracker.example.com/announce \
+        --comment "Release details: ..."
 
-   .. code-block:: bash
+3. Consider privacy settings carefully::
 
-       torrent-directories file "Movie (2024)/movie.mkv" \
-           http://tracker.example.com/announce \
-           --comment "2160p HDR | Source: REMUX | Audio: TrueHD 7.1"
+    # Private tracker
+    torrent-directories file ./content http://tracker.example.com/announce --private
 
-3. **Private Flag Usage**:
+    # Public tracker
+    torrent-directories file ./content http://tracker.example.com/announce --public
 
-   - Use ``--private`` (default) for private tracker releases
-   - Use ``--public`` for public trackers or DHT/PEX enabled releases
+Error Handling
+-------------
 
-Error Handling and Recovery
-------------------------
+Preventive Measures
+~~~~~~~~~~~~~~~~~
 
-1. **Graceful Failure Handling**:
+1. Check permissions before starting
+2. Verify content integrity
+3. Use ``--skip-empty-files`` when appropriate
+4. Set reasonable ``--max-failures`` limits
 
-   .. code-block:: bash
+Recovery Steps
+~~~~~~~~~~~~
 
-       torrent-directories batch ./media http://tracker.example.com/announce \
-           --skip-empty-files \
-           --max-failures 5 \
-           --log-file errors.log
+When errors occur:
 
-2. **Recovery Process**:
-
-   If batch processing fails:
-
-   .. code-block:: bash
-
-       # 1. Clean the manifest
-       torrent-directories batch ./media \
-           http://tracker.example.com/announce \
-           --clean
-
-       # 2. Force reprocess problem directories
-       torrent-directories batch ./media \
-           http://tracker.example.com/announce \
-           --force
-
-3. **Verification**:
-
-   Always verify created torrents:
-
-   .. code-block:: bash
-
-       # Use dry-run first
-       torrent-directories --dry-run batch ./media \
-           http://tracker.example.com/announce
-
-       # Then process with verbose output
-       torrent-directories -v batch ./media \
-           http://tracker.example.com/announce
+1. Check logs for detailed information
+2. Use ``--clean`` to fix manifest issues
+3. Verify output directory permissions
+4. Check for conflicting files
 
 Automation Tips
 -------------
 
-1. **Shell Scripts**:
+Scripting Integration
+~~~~~~~~~~~~~~~~~~~
 
-   Create wrapper scripts for common operations:
+When integrating with scripts:
 
-   .. code-block:: bash
+1. Use exit codes for flow control::
 
-       #!/bin/bash
+    if torrent-directories file ./content http://tracker.example.com/announce; then
+        echo "Success"
+    else
+        echo "Failed"
+    fi
 
-       # process_new_content.sh
-       MEDIA_DIR="./media"
-       TORRENTS_DIR="./torrents"
-       TRACKER="http://tracker.example.com/announce"
+2. Parse JSON output in verbose mode
+3. Use log files for record keeping
+4. Implement proper error handling
 
-       # Process new content
-       torrent-directories batch "$MEDIA_DIR" "$TRACKER" \
-           -o "$TORRENTS_DIR" \
-           --skip-empty-files \
-           --source "MyGroup" \
-           --comment "Auto-processed: $(date)"
+Scheduled Tasks
+~~~~~~~~~~~~~
 
-2. **Cron Jobs**:
+For automated processing:
 
-   Schedule regular processing:
-
-   .. code-block:: bash
-
-       # Add to crontab:
-       0 4 * * * /path/to/process_new_content.sh >> /var/log/torrent-processing.log 2>&1
-
-3. **Integration Scripts**:
-
-   Example script to process and upload:
-
-   .. code-block:: python
-
-       from pathlib import Path
-       from torrent.torrent_creator import TorrentCreator
-       from torrent.utils.config import TorrentConfig
-
-       def process_and_upload(media_dir, tracker_url):
-           config = TorrentConfig(
-               tracker_url=tracker_url,
-               private=True,
-               skip_empty_files=True
-           )
-
-           creator = TorrentCreator(config)
-
-           for item in Path(media_dir).iterdir():
-               if item.is_dir():
-                   torrent_path = f"torrents/{item.name}.torrent"
-                   creator.create(str(item), torrent_path)
-                   # Add your upload logic here
-                   upload_torrent(torrent_path)
+1. Use absolute paths
+2. Set up proper logging
+3. Handle errors appropriately
+4. Monitor disk space
 
 Performance Optimization
----------------------
+----------------------
 
-1. **Memory Usage**:
-   - Process larger directories in segments
-   - Use appropriate piece sizes for content type
-   - Monitor system resources during batch operations
+System Resources
+~~~~~~~~~~~~~~
 
-2. **Disk I/O**:
-   - Place output torrents on a different disk than source content
-   - Consider using SSD for manifest and temporary files
-   - Avoid processing while content is being written
+Optimize resource usage:
 
-3. **Network Considerations**:
-   - Use local tracker URLs during testing
-   - Consider bandwidth when verifying large torrents
-   - Use appropriate piece sizes for network conditions
+1. Set appropriate piece sizes
+2. Use manifest caching
+3. Monitor memory usage
+4. Consider disk I/O
+
+Concurrent Processing
+~~~~~~~~~~~~~~~~~~~
+
+When running multiple instances:
+
+1. Use separate output directories
+2. Monitor system resources
+3. Set appropriate timeouts
+4. Handle lock files properly
 
 Security Considerations
---------------------
+---------------------
 
-1. **Private Torrents**:
-   - Always use ``--private`` for private tracker releases
-   - Verify tracker URLs are correct
-   - Don't include sensitive information in metadata
+File System Safety
+~~~~~~~~~~~~~~~~
 
-2. **File Permissions**:
-   - Ensure appropriate read permissions on source content
-   - Set appropriate write permissions for output directories
-   - Protect manifest files from unauthorized access
+Protect your data:
 
-3. **API Keys and Credentials**:
-   - Never include API keys in torrent metadata
-   - Use environment variables for sensitive information
-   - Regularly rotate credentials used in automation
+1. Use appropriate permissions
+2. Create backups before operations
+3. Verify file integrity
+4. Handle special files safely
+
+Network Security
+~~~~~~~~~~~~~~
+
+When using trackers:
+
+1. Verify tracker URLs
+2. Use HTTPS when available
+3. Handle redirects carefully
+4. Validate tracker responses
+
+Testing Guidelines
+----------------
+
+Test Coverage
+~~~~~~~~~~~
+
+Maintain comprehensive tests:
+
+1. Test both success and failure paths
+2. Include edge cases
+3. Verify error handling
+4. Test progress reporting
+5. Validate torrent metadata
+6. Test with various file types
+
+Test Organization
+~~~~~~~~~~~~~~
+
+Structure tests effectively:
+
+1. Use fixtures for common setup
+2. Test at multiple levels:
+   - Unit tests
+   - Integration tests
+   - CLI tests
+   - End-to-end tests
+3. Include performance tests
+4. Test concurrent operations
+
+Maintenance
+----------
+
+Regular Tasks
+~~~~~~~~~~~
+
+Keep your system healthy:
+
+1. Clean manifests regularly
+2. Archive old torrent files
+3. Monitor disk space
+4. Update configurations
+
+Troubleshooting
+~~~~~~~~~~~~~
+
+When issues arise:
+
+1. Check logs first
+2. Verify file permissions
+3. Test in isolation
+4. Use verbose output
