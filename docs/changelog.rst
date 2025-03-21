@@ -1,6 +1,17 @@
 Changelog
 =========
 
+[1.4.1] - 2025-03-21
+====================
+
+
+
+Changed
+*  improve code quality, testing, and documentation ([0fb3cf5])(https://github.com/friedhardware/TorrentDirectories/commit/0fb3cf5) (friedhardware)
+
+
+Fixed
+* update error code consistency test to explicitly specify output file ([3466d0e])(https://github.com/friedhardware/TorrentDirectories/commit/3466d0e) (friedhardware)
 [1.4.0] - 2025-03-20
 ====================
 
