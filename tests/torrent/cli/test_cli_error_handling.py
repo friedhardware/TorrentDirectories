@@ -317,7 +317,14 @@ def test_error_code_consistency(runner: CliRunner, tmp_path: Path) -> None:
     output_file.write_text("existing torrent")
 
     result = runner.invoke(
-        cli, ["file", str(test_file), "http://tracker.example.com/announce"]
+        cli,
+        [
+            "file",
+            str(test_file),
+            "http://tracker.example.com/announce",
+            "-o",
+            str(output_file),
+        ],
     )
     assert result.exit_code == 12  # FILE_EXISTS error code
     assert "already exists" in result.output.lower()
