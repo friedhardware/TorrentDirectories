@@ -1,6 +1,13 @@
 Changelog
 =========
 
+[1.4.3] - 2025-03-21
+====================
+
+
+
+Fixed
+* type checking improvements and bug fixes * Added py.typed marker file for type checking * Fixed type errors in main.py for optional source and comment parameters * Updated mypy configuration for better type checking * Fixed ignore_func in torrent_creator.py to handle system files correctly * Updated test cases to reflect changes ([70c186b])(https://github.com/friedhardware/TorrentDirectories/commit/70c186b) (friedhardware)
 [1.4.2] - 2025-03-21
 ====================
 
