@@ -1,6 +1,18 @@
 Changelog
 =========
 
+[1.4.5] - 2025-03-22
+====================
+
+
+
+Changed
+*  reorganize codebase and fix formatting ([bb7c62b])(https://github.com/friedhardware/TorrentDirectories/commit/bb7c62b) (friedhardware)
+
+
+Other
+* chore: Remove generated manifest file ([73c1a19])(https://github.com/friedhardware/TorrentDirectories/commit/73c1a19) (friedhardware)
+* move click out of commands.py ([6aabb27])(https://github.com/friedhardware/TorrentDirectories/commit/6aabb27) (friedhardware)
 [1.4.4] - 2025-03-21
 ====================
 
