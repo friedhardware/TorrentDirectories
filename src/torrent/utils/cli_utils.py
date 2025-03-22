@@ -8,6 +8,8 @@ import os
 from pathlib import Path
 from typing import List, Union
 
+import click
+
 
 def parse_size(size_str: str) -> int:
     """Parse a size string with units into bytes.
@@ -69,3 +71,12 @@ def list_files(path: Union[str, Path], relative: bool = True) -> List[str]:
             else:
                 files.append(str(file_path))
     return sorted(files)
+
+def log_to_console(message: str, **kwargs) -> None:
+    """Log a message to the console using click.echo().
+
+    Args:
+        message: The message to log
+        **kwargs: Additional keyword arguments to pass to click.echo()
+    """
+    click.echo(message, **kwargs)

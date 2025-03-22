@@ -8,8 +8,6 @@ import logging
 import os
 from typing import Optional, Union
 
-import click
-
 from ..exceptions import ErrorCode, NoDataError, OutputFileExistsError, TorrentError
 from ..manifest import ManifestManager
 from ..torrent_creator import TorrentCreator
@@ -20,6 +18,7 @@ from ..utils.file_utils import (
     is_directory_empty,
     list_files,
 )
+from ..utils.cli_utils import log_to_console
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +47,9 @@ def handle_dry_run(
                 error_code=ErrorCode.DIRECTORY_NOT_FOUND,
             )
 
-        click.echo(f"Would process directory: {path}")
+        log_to_console(f"Would process directory: {path}")
         output_dir = output or os.path.join(path, "torrents")
-        click.echo(f"Would save torrents to: {output_dir}")
+        log_to_console(f"Would save torrents to: {output_dir}")
 
         files = list_files(
             path,
@@ -58,13 +57,13 @@ def handle_dry_run(
             skip_system=config.skip_system_files if config else True,
         )
         if not files:
-            click.echo("Warning: Directory is empty")
+            log_to_console("Warning: Directory is empty")
         else:
             total_size = get_total_size([path])
-            click.echo(f"Total size: {format_size(total_size)}")
-            click.echo(f"\nDirectories that would be processed ({len(files)} total):")
+            log_to_console(f"Total size: {format_size(total_size)}")
+            log_to_console(f"\nDirectories that would be processed ({len(files)} total):")
             for f in sorted(files):
-                click.echo(f"  {f}")
+                log_to_console(f"  {f}")
     else:
         # Handle single file/directory dry run
         if not os.path.exists(path):
@@ -73,20 +72,20 @@ def handle_dry_run(
                 error_code=ErrorCode.FILE_NOT_FOUND,
             )
 
-        click.echo(f"Would create torrent from: {path}")
+        log_to_console(f"Would create torrent from: {path}")
         output_path = output or f"{path}.torrent"
-        click.echo(f"Would save to: {output_path}")
+        log_to_console(f"Would save to: {output_path}")
         if os.path.exists(output_path):
             if force:
-                click.echo("Would overwrite existing output file")
+                log_to_console("Would overwrite existing output file")
             else:
-                click.echo(
+                log_to_console(
                     "Note: Output file already exists (use --force to overwrite)"
                 )
 
         if os.path.isfile(path):
             size = os.path.getsize(path)
-            click.echo(f"File size: {format_size(size)}")
+            log_to_console(f"File size: {format_size(size)}")
         else:
             files = list_files(
                 path,
@@ -94,27 +93,27 @@ def handle_dry_run(
                 skip_system=config.skip_system_files if config else True,
             )
             if not files:
-                click.echo("Warning: Directory is empty")
+                log_to_console("Warning: Directory is empty")
             else:
                 total_size = get_total_size([path])
-                click.echo(f"Directory size: {format_size(total_size)}")
-                click.echo(f"\nFiles that would be included ({len(files)} total):")
+                log_to_console(f"Directory size: {format_size(total_size)}")
+                log_to_console(f"\nFiles that would be included ({len(files)} total):")
                 for f in sorted(files):
                     file_size = os.path.getsize(os.path.join(path, f))
-                    click.echo(f"  {f} ({format_size(file_size)})")
+                    log_to_console(f"  {f} ({format_size(file_size)})")
 
     # Show configuration that would be used
     if config:
-        click.echo("\nConfiguration:")
-        click.echo(f"  Private: {config.private}")
-        click.echo(f"  Min piece size: {format_size(config.min_piece_size)}")
-        click.echo(f"  Max piece size: {format_size(config.max_piece_size)}")
+        log_to_console("\nConfiguration:")
+        log_to_console(f"  Private: {config.private}")
+        log_to_console(f"  Min piece size: {format_size(config.min_piece_size)}")
+        log_to_console(f"  Max piece size: {format_size(config.max_piece_size)}")
         if config.source:
-            click.echo(f"  Source: {config.source}")
+            log_to_console(f"  Source: {config.source}")
         if config.comment:
-            click.echo(f"  Comment: {config.comment}")
-        click.echo(f"  Skip hidden files: {config.skip_hidden}")
-        click.echo(f"  Skip system files: {config.skip_system_files}")
+            log_to_console(f"  Comment: {config.comment}")
+        log_to_console(f"  Skip hidden files: {config.skip_hidden}")
+        log_to_console(f"  Skip system files: {config.skip_system_files}")
 
 
 def process_single(
@@ -199,11 +198,11 @@ def process_single(
             )
             torrent_path = torrent_creator.create(path, output_path)
             logger.debug("Torrent created successfully at: %s", torrent_path)
-            click.echo(f"\nTorrent created successfully: {torrent_path}")
+            log_to_console(f"\nTorrent created successfully: {torrent_path}")
             return 0
         except OutputFileExistsError as e:
             logger.error("Output file exists: %s", e)
-            click.echo(f"Error: {e}", err=True)
+            log_to_console(f"Error: {e}", err=True)
             return TorrentError(
                 message=str(e),
                 error_code=ErrorCode.FILE_EXISTS,
@@ -296,11 +295,11 @@ def process_batch(
         missing_files = manifest.get_missing_torrents()
         if missing_files:
             if clean:
-                click.echo(
+                log_to_console(
                     f"Found {len(missing_files)} missing torrent files. Cleaning manifest..."
                 )
                 manifest.clean_manifest()
-                click.echo("Manifest cleaned. Proceeding with processing...")
+                log_to_console("Manifest cleaned. Proceeding with processing...")
             else:
                 return TorrentError(
                     message=f"Found {len(missing_files)} missing torrent files. Use --clean to remove invalid entries.",
@@ -320,7 +319,7 @@ def process_batch(
             try:
                 # Skip if already processed and not forcing update
                 if manifest.is_directory_processed(dir_path) and not force:
-                    click.echo(f"Skipping {subdir} (already processed)")
+                    log_to_console(f"Skipping {subdir} (already processed)")
                     continue
 
                 # Check if directory is empty before attempting to create torrent
@@ -332,7 +331,7 @@ def process_batch(
                     )
                     last_error = error
                     error_codes.add(error.error_code)
-                    click.echo(f"Error: {error.message}", err=True)
+                    log_to_console(f"Error: {error.message}", err=True)
                     if max_failures >= 0 and failures >= max_failures:
                         return TorrentError(
                             message=f"Maximum failures reached ({failures})",
@@ -349,7 +348,7 @@ def process_batch(
                     )
                     last_error = error
                     error_codes.add(error.error_code)
-                    click.echo(f"Error: {error.message}", err=True)
+                    log_to_console(f"Error: {error.message}", err=True)
                     if max_failures >= 0 and failures >= max_failures:
                         return TorrentError(
                             message=f"Maximum failures reached ({failures})",
@@ -367,7 +366,7 @@ def process_batch(
                     torrent_path = torrent_creator.create(dir_path, output_path)
                     manifest.add_entry(dir_path, torrent_path, force=force)
                     processed += 1
-                    click.echo(f"Created torrent for {subdir}")
+                    log_to_console(f"Created torrent for {subdir}")
                 except NoDataError as e:
                     empty_files += 1
                     failures += 1
@@ -382,7 +381,7 @@ def process_batch(
                             message=f"Maximum failures reached ({failures})",
                             error_code=ErrorCode.MAX_FAILURES_EXCEEDED,
                         )
-                    click.echo(f"Error: {error.message}", err=True)
+                    log_to_console(f"Error: {error.message}", err=True)
                     continue
                 except Exception as e:
                     if isinstance(e, TorrentError):
@@ -395,7 +394,7 @@ def process_batch(
 
             except Exception as e:
                 failures += 1
-                click.echo(f"Error processing {subdir}: {e}", err=True)
+                log_to_console(f"Error processing {subdir}: {e}", err=True)
                 if max_failures >= 0 and failures >= max_failures:
                     return TorrentError(
                         message=f"Maximum failures reached ({failures})",
@@ -403,12 +402,12 @@ def process_batch(
                     )
 
         # Print summary
-        click.echo("\nProcessing complete:")
-        click.echo(f"✓ Processed: {processed}")
+        log_to_console("\nProcessing complete:")
+        log_to_console(f"✓ Processed: {processed}")
         if empty_files > 0:
-            click.echo(f"⚠ Empty files/directories: {empty_files}")
+            log_to_console(f"⚠ Empty files/directories: {empty_files}")
         if failures > 0:
-            click.echo(f"❌ Failed: {failures}")
+            log_to_console(f"❌ Failed: {failures}")
             # If only one directory was attempted and it failed, return its specific error
             if len(subdirs) == 1:
                 return last_error or TorrentError(
