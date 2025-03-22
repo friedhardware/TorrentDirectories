@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.4.4] - 2025-03-21
+
+
+### Other
+- Fix test_include_system_files_option and test_error_code_propagation tests - Added verbose logging, fixed --force flag handling, updated assertions for system files, aligned with Click's path validation ([b7c871d])(https://github.com/friedhardware/TorrentDirectories/commit/b7c871d) (friedhardware)
 ## [1.4.3] - 2025-03-21
 
 
