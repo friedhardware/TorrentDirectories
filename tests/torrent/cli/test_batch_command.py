@@ -9,7 +9,7 @@ from click.testing import CliRunner
 
 from tests.utils import create_test_files, create_test_torrent_file
 from torrent.cli.main import cli
-from torrent.manifest import ManifestManager
+from torrent.core.manifest.manifest import ManifestManager
 
 ContentType = Union[str, bytes]
 FileContent = List[Tuple[str, ContentType]]

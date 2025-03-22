@@ -13,7 +13,7 @@ import click
 import pytest
 from click.testing import CliRunner
 
-from torrent.utils.logging_utils import log_batch_progress, log_progress, setup_logging
+from torrent.utils.logging import log_batch_progress, log_progress, setup_logging
 
 
 @pytest.fixture

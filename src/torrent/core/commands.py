@@ -8,17 +8,18 @@ import logging
 import os
 from typing import Optional, Union
 
-from ..exceptions import ErrorCode, NoDataError, OutputFileExistsError, TorrentError
-from ..manifest import ManifestManager
-from ..torrent_creator import TorrentCreator
-from ..utils.config import TorrentConfig
-from ..utils.file_utils import (
-    format_size,
-    get_total_size,
-    is_directory_empty,
-    list_files,
+from torrent.cli.utils import log_to_console
+
+from ..errors.exceptions import (
+    ErrorCode,
+    NoDataError,
+    OutputFileExistsError,
+    TorrentError,
 )
-from ..utils.cli_utils import log_to_console
+from ..utils.file import format_size, get_total_size, is_directory_empty, list_files
+from .config import TorrentConfig
+from .manifest.manifest import ManifestManager
+from .torrent_creator import TorrentCreator
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,9 @@ def handle_dry_run(
         else:
             total_size = get_total_size([path])
             log_to_console(f"Total size: {format_size(total_size)}")
-            log_to_console(f"\nDirectories that would be processed ({len(files)} total):")
+            log_to_console(
+                f"\nDirectories that would be processed ({len(files)} total):"
+            )
             for f in sorted(files):
                 log_to_console(f"  {f}")
     else:

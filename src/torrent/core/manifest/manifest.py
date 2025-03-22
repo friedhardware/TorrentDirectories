@@ -11,20 +11,18 @@ import os
 from datetime import datetime
 from typing import List, Optional, Set
 
-import click  # Import at function level to avoid circular dependency
+import click
 
-from .utils.file_utils import FileLock, backup_file, sync_to_disk
-from .utils.manifest_cache import ManifestCache
+from torrent.core.manifest.exceptions import (  # Import at function level to avoid circular dependency
+    ManifestError,
+)
+
+from ...utils.file import FileLock, backup_file, sync_to_disk
+from .cache import ManifestCache
 
 logger = logging.getLogger(__name__)
 
 MANIFEST_FILENAME = "manifest.csv"
-
-
-class ManifestError(Exception):
-    """Base class for manifest-related errors."""
-
-    pass
 
 
 class ManifestManager:

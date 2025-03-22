@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from torrent.utils.cli_utils import list_files, parse_size
+from torrent.cli.utils import list_files, parse_size
 
 
 def test_parse_size_valid_units() -> None:

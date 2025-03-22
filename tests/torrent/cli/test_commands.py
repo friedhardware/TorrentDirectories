@@ -8,9 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from torrent.cli.commands import handle_dry_run, process_batch, process_single
-from torrent.exceptions import ErrorCode, TorrentError
-from torrent.utils.config import TorrentConfig
+from torrent.core.commands import handle_dry_run, process_batch, process_single
+from torrent.core.config import TorrentConfig
+from torrent.errors.exceptions import ErrorCode, TorrentError
 
 
 @pytest.fixture

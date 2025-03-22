@@ -16,9 +16,13 @@ from typing import Optional, Union
 
 import libtorrent as lt
 
-from torrent.exceptions import NoDataError, OutputFileExistsError, TorrentCreationError
-from torrent.utils.config import TorrentConfig
-from torrent.utils.file_utils import is_hidden, is_system_file
+from torrent.core.config import TorrentConfig
+from torrent.errors.exceptions import (
+    NoDataError,
+    OutputFileExistsError,
+    TorrentCreationError,
+)
+from torrent.utils.file import is_hidden, is_system_file
 from torrent.version import __version__
 
 logger = logging.getLogger(__name__)

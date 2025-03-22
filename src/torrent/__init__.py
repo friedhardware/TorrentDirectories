@@ -36,8 +36,8 @@ For programmatic usage, see the TorrentCreator and ManifestManager classes.
 from __future__ import annotations
 
 from torrent.cli import main as cli_main
-from torrent.manifest import ManifestError, ManifestManager
-from torrent.torrent_creator import TorrentCreator
+from torrent.core.manifest.manifest import ManifestError, ManifestManager
+from torrent.core.torrent_creator import TorrentCreator
 
 from .version import __version__
 

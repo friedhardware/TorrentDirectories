@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import List, Union
+from typing import Any, List, Union
 
 import click
 
@@ -72,7 +72,8 @@ def list_files(path: Union[str, Path], relative: bool = True) -> List[str]:
                 files.append(str(file_path))
     return sorted(files)
 
-def log_to_console(message: str, **kwargs) -> None:
+
+def log_to_console(message: str, **kwargs: Any) -> None:
     """Log a message to the console using click.echo().
 
     Args:

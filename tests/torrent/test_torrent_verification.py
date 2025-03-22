@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from torrent.torrent_creator import TorrentCreator
-from torrent.utils.config import TorrentConfig
+from torrent.core.config import TorrentConfig
+from torrent.core.torrent_creator import TorrentCreator
 
 
 @pytest.fixture
@@ -80,7 +80,7 @@ def test_verification_error_handling(
     output_path = str(tmp_path / "test.torrent")
 
     # First create a torrent using process_single
-    from torrent.cli.commands import process_single
+    from torrent.core.commands import process_single
 
     result = process_single(
         path=str(temp_content),

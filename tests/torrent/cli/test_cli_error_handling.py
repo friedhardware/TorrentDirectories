@@ -10,7 +10,7 @@ import pytest
 from click.testing import CliRunner
 
 from torrent.cli.main import cli
-from torrent.exceptions import ErrorCode
+from torrent.errors.exceptions import ErrorCode
 
 
 @pytest.fixture

@@ -16,7 +16,7 @@ Utility Modules
 .. toctree::
    :maxdepth: 2
 
-   torrent.utils.cli_utils
+   torrent.cli.utils
    torrent.utils.config
    torrent.utils.file_utils
    torrent.utils.logging_utils

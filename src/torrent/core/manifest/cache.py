@@ -11,13 +11,9 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict, Optional
 
+from torrent.core.manifest.exceptions import ManifestCacheError
+
 logger = logging.getLogger(__name__)
-
-
-class ManifestCacheError(Exception):
-    """Exception raised for manifest cache errors."""
-
-    pass
 
 
 @dataclass

@@ -242,20 +242,6 @@ class InvalidDirectoryStructureError(TorrentError):
         )
 
 
-# Processing exceptions
-class ManifestError(TorrentError):
-    """Raised when there's an error with the manifest file."""
-
-    def __init__(self, message: str, details: Optional[dict[str, Any]] = None) -> None:
-        """Initialize the error.
-
-        Args:
-            message: The error message.
-            details: Additional details about the error.
-        """
-        super().__init__(message, ErrorCode.ERROR, details)
-
-
 class PieceSizeError(TorrentError):
     """Raised when there's an error with piece size calculations."""
 

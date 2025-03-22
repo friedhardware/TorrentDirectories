@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-from torrent.exceptions import (
+from torrent.core.manifest.exceptions import ManifestError
+from torrent.errors.exceptions import (
     BatchProcessingError,
     DirectoryNotFoundError,
     ErrorCode,
@@ -10,7 +11,6 @@ from torrent.exceptions import (
     InvalidDirectoryStructureError,
     InvalidMetadataError,
     InvalidTrackerURLError,
-    ManifestError,
     MaxFailuresExceededError,
     MissingTorrentFilesError,
     NoDataError,
@@ -273,8 +273,12 @@ def test_manifest_error() -> None:
 
     # Test with details
     details = {"file": "manifest.csv", "line": 10}
-    error = ManifestError("manifest error", details)
+    error = ManifestError("manifest error", details=details)
+    assert (
+        str(error) == "manifest error (details: {'file': 'manifest.csv', 'line': 10})"
+    )
     assert error.details == details
+    assert error.error_code == ErrorCode.ERROR
 
 
 def test_piece_size_error() -> None:

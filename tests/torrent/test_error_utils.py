@@ -7,13 +7,13 @@ from __future__ import annotations
 import click
 import pytest
 
-from torrent.error_handling import (
+from torrent.errors.error_handling import (
     _format_error_details,
     _get_error_help_text,
     convert_to_click_error,
     get_error_message,
 )
-from torrent.exceptions import ErrorCode, TorrentError
+from torrent.errors.exceptions import ErrorCode, TorrentError
 
 
 def test_convert_to_click_error_with_details() -> None:

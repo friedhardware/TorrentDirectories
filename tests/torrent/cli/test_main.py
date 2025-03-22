@@ -12,8 +12,8 @@ import pytest
 from click.testing import CliRunner
 from pytest_mock import MockerFixture
 
-from torrent.cli.commands import TorrentConfig
 from torrent.cli.main import cli
+from torrent.core.commands import TorrentConfig
 
 
 @pytest.fixture
@@ -76,7 +76,7 @@ def test_batch_command(
 ) -> None:
     """Test batch command."""
     # Mock TorrentCreator
-    mock_creator = mocker.patch("torrent.cli.commands.TorrentCreator")
+    mock_creator = mocker.patch("torrent.core.commands.TorrentCreator")
     mock_creator.return_value.create.return_value = "test.torrent"
     mock_creator.return_value.config = TorrentConfig(
         tracker_url="http://tracker.example.com/announce"
@@ -139,7 +139,7 @@ def test_force_option(runner: CliRunner, test_dir: Path) -> None:
 def test_clean_option(runner: CliRunner, test_dir: Path, mocker: MockerFixture) -> None:
     """Test clean option for batch command."""
     # Mock TorrentCreator
-    mock_creator = mocker.patch("torrent.cli.commands.TorrentCreator")
+    mock_creator = mocker.patch("torrent.core.commands.TorrentCreator")
     mock_creator.return_value.create.return_value = "test.torrent"
     mock_creator.return_value.config = TorrentConfig(
         tracker_url="http://tracker.example.com/announce"
@@ -233,7 +233,7 @@ def test_force_updates_timestamps_file(
 ) -> None:
     """Test that --force option updates file timestamps for single file command."""
     # Mock TorrentCreator
-    mock_creator = mocker.patch("torrent.cli.commands.TorrentCreator")
+    mock_creator = mocker.patch("torrent.core.commands.TorrentCreator")
 
     def create_mock_torrent(path: str, output_path: str) -> str:
         # Create a mock torrent file
@@ -304,9 +304,9 @@ def test_force_updates_timestamps_file(
 def test_force_updates_timestamps_batch(
     runner: CliRunner, test_dir: Path, mocker: MockerFixture
 ) -> None:
-    """Test that --force option updates timestamps in batch mode."""
+    """Test that --force option updates file timestamps for batch command."""
     # Mock TorrentCreator
-    mock_creator = mocker.patch("torrent.cli.commands.TorrentCreator")
+    mock_creator = mocker.patch("torrent.core.commands.TorrentCreator")
 
     def create_mock_torrent(path: str, output_path: str) -> str:
         # Create a mock torrent file

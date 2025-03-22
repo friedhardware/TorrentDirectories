@@ -11,7 +11,7 @@ from click.testing import CliRunner
 
 from tests.utils import create_binary_file, create_empty_files, create_test_files
 from torrent.cli.main import cli
-from torrent.exceptions import ErrorCode
+from torrent.errors.exceptions import ErrorCode
 
 
 @pytest.fixture

@@ -11,8 +11,8 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from click.testing import CliRunner
 
-from torrent.cli.commands import process_batch, process_single
-from torrent.utils.config import TorrentConfig
+from torrent.core.commands import process_batch, process_single
+from torrent.core.config import TorrentConfig
 
 
 def create_test_files(directory: Path, file_count: int = 3) -> None:

@@ -14,14 +14,15 @@ from typing import List, Optional, cast
 import click
 from click import Context
 
-from ..error_handling import convert_to_click_error
-from ..exceptions import ErrorCode, NoDataError, TorrentError
-from ..torrent_creator import TorrentConfig
-from ..utils.cli_utils import parse_size
-from ..utils.file_utils import is_system_file
-from ..utils.logging_utils import setup_logging
+from torrent.cli.utils import parse_size
+
+from ..core.commands import handle_dry_run, process_batch, process_single
+from ..core.torrent_creator import TorrentConfig
+from ..errors.error_handling import convert_to_click_error
+from ..errors.exceptions import ErrorCode, NoDataError, TorrentError
+from ..utils.file import is_system_file
+from ..utils.logging import setup_logging
 from ..version import __version__
-from .commands import handle_dry_run, process_batch, process_single
 
 logger = logging.getLogger(__name__)
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from torrent.utils.config import TorrentConfig
+from torrent.core.config import TorrentConfig
 
 
 def test_torrent_config_defaults() -> None:

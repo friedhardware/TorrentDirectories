@@ -13,7 +13,7 @@ import pytest
 from _pytest.logging import LogCaptureFixture
 from click.testing import CliRunner
 
-from torrent.utils.config import TorrentConfig
+from torrent.core.config import TorrentConfig
 
 
 @pytest.fixture

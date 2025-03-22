@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from torrent.utils.manifest_cache import CacheEntry, ManifestCache, ManifestCacheError
+from torrent.core.manifest.cache import CacheEntry, ManifestCache, ManifestCacheError
 
 
 @pytest.fixture

@@ -14,7 +14,11 @@ from typing import Generator
 import psutil
 import pytest
 
-from torrent.manifest import MANIFEST_FILENAME, ManifestError, ManifestManager
+from torrent.core.manifest.manifest import (
+    MANIFEST_FILENAME,
+    ManifestError,
+    ManifestManager,
+)
 
 
 @pytest.fixture

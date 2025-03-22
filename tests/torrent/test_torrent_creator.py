@@ -4,9 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from torrent.exceptions import NoDataError, OutputFileExistsError, TorrentCreationError
-from torrent.torrent_creator import TorrentCreator
-from torrent.utils.config import TorrentConfig
+from torrent.core.config import TorrentConfig
+from torrent.core.torrent_creator import TorrentCreator
+from torrent.errors.exceptions import (
+    NoDataError,
+    OutputFileExistsError,
+    TorrentCreationError,
+)
 
 
 @pytest.fixture
