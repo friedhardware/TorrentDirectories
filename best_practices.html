@@ -1,0 +1,446 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Best Practices Guide &mdash; TorrentDirectories 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="API Reference" href="api/index.html" />
+    <link rel="prev" title="Usage Guide" href="usage.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            TorrentDirectories
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Best Practices Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#directory-organization">Directory Organization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#structure-your-content">Structure Your Content</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#piece-size-optimization">Piece Size Optimization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#understanding-piece-sizes">Understanding Piece Sizes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#recommended-settings">Recommended Settings</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#batch-processing-strategies">Batch Processing Strategies</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#efficient-processing">Efficient Processing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#resume-and-recovery">Resume and Recovery</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#metadata-best-practices">Metadata Best Practices</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#consistent-information">Consistent Information</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#preventive-measures">Preventive Measures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#recovery-steps">Recovery Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#automation-tips">Automation Tips</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#scripting-integration">Scripting Integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#scheduled-tasks">Scheduled Tasks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-optimization">Performance Optimization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#system-resources">System Resources</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#concurrent-processing">Concurrent Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#security-considerations">Security Considerations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#file-system-safety">File System Safety</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#network-security">Network Security</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#testing-guidelines">Testing Guidelines</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#test-coverage">Test Coverage</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-organization">Test Organization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#maintenance">Maintenance</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#regular-tasks">Regular Tasks</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html#id1">[1.4.5] - 2025-03-22</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">TorrentDirectories</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Best Practices Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/best_practices.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="best-practices-guide">
+<h1>Best Practices Guide<a class="headerlink" href="#best-practices-guide" title="Link to this heading"></a></h1>
+<p>This guide provides best practices for using TorrentDirectories effectively.</p>
+<section id="directory-organization">
+<h2>Directory Organization<a class="headerlink" href="#directory-organization" title="Link to this heading"></a></h2>
+<section id="structure-your-content">
+<h3>Structure Your Content<a class="headerlink" href="#structure-your-content" title="Link to this heading"></a></h3>
+<p>Organize your content in a way that makes sense for batch processing:</p>
+<ul class="simple">
+<li><p>Keep related content in separate directories</p></li>
+<li><p>Use consistent naming conventions</p></li>
+<li><p>Avoid deeply nested directories</p></li>
+<li><p>Keep file and directory names simple and descriptive</p></li>
+</ul>
+<p>Example structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>parent_directory/
+├── movie1/
+│   ├── movie1.mkv
+│   └── subtitles/
+├── movie2/
+│   ├── movie2.mkv
+│   └── extras/
+└── movie3/
+    └── movie3.mkv
+</pre></div>
+</div>
+</section>
+</section>
+<section id="piece-size-optimization">
+<h2>Piece Size Optimization<a class="headerlink" href="#piece-size-optimization" title="Link to this heading"></a></h2>
+<section id="understanding-piece-sizes">
+<h3>Understanding Piece Sizes<a class="headerlink" href="#understanding-piece-sizes" title="Link to this heading"></a></h3>
+<p>Piece size affects both torrent creation and download performance:</p>
+<ul class="simple">
+<li><p>Smaller pieces (16 KiB - 1 MiB):
+- Better for small files
+- More precise resume capability
+- Larger .torrent files
+- More CPU usage during verification</p></li>
+<li><p>Larger pieces (1 MiB - 16 MiB):
+- Better for large files
+- Smaller .torrent files
+- Less CPU usage during verification
+- Less precise resume capability</p></li>
+</ul>
+</section>
+<section id="recommended-settings">
+<h3>Recommended Settings<a class="headerlink" href="#recommended-settings" title="Link to this heading"></a></h3>
+<p>Based on content type:</p>
+<ul class="simple">
+<li><p>Small files (&lt; 100 MB):
+<code class="docutils literal notranslate"><span class="pre">--min-piece-size</span> <span class="pre">16K</span> <span class="pre">--max-piece-size</span> <span class="pre">1M</span></code></p></li>
+<li><p>Medium files (100 MB - 1 GB):
+<code class="docutils literal notranslate"><span class="pre">--min-piece-size</span> <span class="pre">256K</span> <span class="pre">--max-piece-size</span> <span class="pre">4M</span></code></p></li>
+<li><p>Large files (1 GB - 10 GB):
+<code class="docutils literal notranslate"><span class="pre">--min-piece-size</span> <span class="pre">1M</span> <span class="pre">--max-piece-size</span> <span class="pre">16M</span></code></p></li>
+<li><p>Very large files (&gt; 10 GB):
+<code class="docutils literal notranslate"><span class="pre">--min-piece-size</span> <span class="pre">4M</span> <span class="pre">--max-piece-size</span> <span class="pre">32M</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="batch-processing-strategies">
+<h2>Batch Processing Strategies<a class="headerlink" href="#batch-processing-strategies" title="Link to this heading"></a></h2>
+<section id="efficient-processing">
+<h3>Efficient Processing<a class="headerlink" href="#efficient-processing" title="Link to this heading"></a></h3>
+<p>When processing multiple directories:</p>
+<ol class="arabic">
+<li><p>Start with a dry run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="o">--</span><span class="n">dry</span><span class="o">-</span><span class="n">run</span> <span class="n">batch</span> <span class="o">./</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use the manifest system effectively:
+- Clean periodically with <code class="docutils literal notranslate"><span class="pre">--clean</span></code>
+- Use <code class="docutils literal notranslate"><span class="pre">--force</span></code> only when needed
+- Set appropriate <code class="docutils literal notranslate"><span class="pre">--max-failures</span></code></p></li>
+<li><p>Monitor progress with verbose output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="o">-</span><span class="n">v</span> <span class="n">batch</span> <span class="o">./</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use output directory organization:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">batch</span> <span class="o">./</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> \
+    <span class="o">-</span><span class="n">o</span> <span class="o">./</span><span class="n">torrents</span><span class="o">/%</span><span class="n">Y</span><span class="o">/%</span><span class="n">m</span><span class="o">/%</span><span class="n">d</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="resume-and-recovery">
+<h3>Resume and Recovery<a class="headerlink" href="#resume-and-recovery" title="Link to this heading"></a></h3>
+<p>Handle interruptions gracefully:</p>
+<ol class="arabic simple">
+<li><p>The manifest tracks progress automatically</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">--clean</span></code> to remove invalid entries</p></li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">--max-failures</span></code> based on your needs</p></li>
+<li><p>Check logs for detailed error information</p></li>
+</ol>
+</section>
+</section>
+<section id="metadata-best-practices">
+<h2>Metadata Best Practices<a class="headerlink" href="#metadata-best-practices" title="Link to this heading"></a></h2>
+<section id="consistent-information">
+<h3>Consistent Information<a class="headerlink" href="#consistent-information" title="Link to this heading"></a></h3>
+<p>Maintain consistent metadata across your torrents:</p>
+<ol class="arabic">
+<li><p>Use a standard source tag:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="o">./</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> \
+    <span class="o">--</span><span class="n">source</span> <span class="s2">&quot;MyReleaseGroup&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Add helpful comments:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="o">./</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> \
+    <span class="o">--</span><span class="n">comment</span> <span class="s2">&quot;Release details: ...&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Consider privacy settings carefully:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Private tracker</span>
+<span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="o">./</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> <span class="o">--</span><span class="n">private</span>
+
+<span class="c1"># Public tracker</span>
+<span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="o">./</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> <span class="o">--</span><span class="n">public</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<section id="preventive-measures">
+<h3>Preventive Measures<a class="headerlink" href="#preventive-measures" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Check permissions before starting</p></li>
+<li><p>Verify content integrity</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">--skip-empty-files</span></code> when appropriate</p></li>
+<li><p>Set reasonable <code class="docutils literal notranslate"><span class="pre">--max-failures</span></code> limits</p></li>
+</ol>
+</section>
+<section id="recovery-steps">
+<h3>Recovery Steps<a class="headerlink" href="#recovery-steps" title="Link to this heading"></a></h3>
+<p>When errors occur:</p>
+<ol class="arabic simple">
+<li><p>Check logs for detailed information</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">--clean</span></code> to fix manifest issues</p></li>
+<li><p>Verify output directory permissions</p></li>
+<li><p>Check for conflicting files</p></li>
+</ol>
+</section>
+</section>
+<section id="automation-tips">
+<h2>Automation Tips<a class="headerlink" href="#automation-tips" title="Link to this heading"></a></h2>
+<section id="scripting-integration">
+<h3>Scripting Integration<a class="headerlink" href="#scripting-integration" title="Link to this heading"></a></h3>
+<p>When integrating with scripts:</p>
+<ol class="arabic">
+<li><p>Use exit codes for flow control:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">if</span> <span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="o">./</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span><span class="p">;</span> <span class="n">then</span>
+    <span class="n">echo</span> <span class="s2">&quot;Success&quot;</span>
+<span class="k">else</span>
+    <span class="n">echo</span> <span class="s2">&quot;Failed&quot;</span>
+<span class="n">fi</span>
+</pre></div>
+</div>
+</li>
+<li><p>Parse JSON output in verbose mode</p></li>
+<li><p>Use log files for record keeping</p></li>
+<li><p>Implement proper error handling</p></li>
+</ol>
+</section>
+<section id="scheduled-tasks">
+<h3>Scheduled Tasks<a class="headerlink" href="#scheduled-tasks" title="Link to this heading"></a></h3>
+<p>For automated processing:</p>
+<ol class="arabic simple">
+<li><p>Use absolute paths</p></li>
+<li><p>Set up proper logging</p></li>
+<li><p>Handle errors appropriately</p></li>
+<li><p>Monitor disk space</p></li>
+</ol>
+</section>
+</section>
+<section id="performance-optimization">
+<h2>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h2>
+<section id="system-resources">
+<h3>System Resources<a class="headerlink" href="#system-resources" title="Link to this heading"></a></h3>
+<p>Optimize resource usage:</p>
+<ol class="arabic simple">
+<li><p>Set appropriate piece sizes</p></li>
+<li><p>Use manifest caching</p></li>
+<li><p>Monitor memory usage</p></li>
+<li><p>Consider disk I/O</p></li>
+</ol>
+</section>
+<section id="concurrent-processing">
+<h3>Concurrent Processing<a class="headerlink" href="#concurrent-processing" title="Link to this heading"></a></h3>
+<p>When running multiple instances:</p>
+<ol class="arabic simple">
+<li><p>Use separate output directories</p></li>
+<li><p>Monitor system resources</p></li>
+<li><p>Set appropriate timeouts</p></li>
+<li><p>Handle lock files properly</p></li>
+</ol>
+</section>
+</section>
+<section id="security-considerations">
+<h2>Security Considerations<a class="headerlink" href="#security-considerations" title="Link to this heading"></a></h2>
+<section id="file-system-safety">
+<h3>File System Safety<a class="headerlink" href="#file-system-safety" title="Link to this heading"></a></h3>
+<p>Protect your data:</p>
+<ol class="arabic simple">
+<li><p>Use appropriate permissions</p></li>
+<li><p>Create backups before operations</p></li>
+<li><p>Verify file integrity</p></li>
+<li><p>Handle special files safely</p></li>
+</ol>
+</section>
+<section id="network-security">
+<h3>Network Security<a class="headerlink" href="#network-security" title="Link to this heading"></a></h3>
+<p>When using trackers:</p>
+<ol class="arabic simple">
+<li><p>Verify tracker URLs</p></li>
+<li><p>Use HTTPS when available</p></li>
+<li><p>Handle redirects carefully</p></li>
+<li><p>Validate tracker responses</p></li>
+</ol>
+</section>
+</section>
+<section id="testing-guidelines">
+<h2>Testing Guidelines<a class="headerlink" href="#testing-guidelines" title="Link to this heading"></a></h2>
+<section id="test-coverage">
+<h3>Test Coverage<a class="headerlink" href="#test-coverage" title="Link to this heading"></a></h3>
+<p>Maintain comprehensive tests:</p>
+<ol class="arabic simple">
+<li><p>Test both success and failure paths</p></li>
+<li><p>Include edge cases</p></li>
+<li><p>Verify error handling</p></li>
+<li><p>Test progress reporting</p></li>
+<li><p>Validate torrent metadata</p></li>
+<li><p>Test with various file types</p></li>
+</ol>
+</section>
+<section id="test-organization">
+<h3>Test Organization<a class="headerlink" href="#test-organization" title="Link to this heading"></a></h3>
+<p>Structure tests effectively:</p>
+<ol class="arabic simple">
+<li><p>Use fixtures for common setup</p></li>
+<li><p>Test at multiple levels:
+- Unit tests
+- Integration tests
+- CLI tests
+- End-to-end tests</p></li>
+<li><p>Include performance tests</p></li>
+<li><p>Test concurrent operations</p></li>
+</ol>
+</section>
+</section>
+<section id="maintenance">
+<h2>Maintenance<a class="headerlink" href="#maintenance" title="Link to this heading"></a></h2>
+<section id="regular-tasks">
+<h3>Regular Tasks<a class="headerlink" href="#regular-tasks" title="Link to this heading"></a></h3>
+<p>Keep your system healthy:</p>
+<ol class="arabic simple">
+<li><p>Clean manifests regularly</p></li>
+<li><p>Archive old torrent files</p></li>
+<li><p>Monitor disk space</p></li>
+<li><p>Update configurations</p></li>
+</ol>
+</section>
+<section id="troubleshooting">
+<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h3>
+<p>When issues arise:</p>
+<ol class="arabic simple">
+<li><p>Check logs first</p></li>
+<li><p>Verify file permissions</p></li>
+<li><p>Test in isolation</p></li>
+<li><p>Use verbose output</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="usage.html" class="btn btn-neutral float-left" title="Usage Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="api/index.html" class="btn btn-neutral float-right" title="API Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, friedhardware.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

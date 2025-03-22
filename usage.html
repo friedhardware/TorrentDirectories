@@ -1,0 +1,340 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Usage Guide &mdash; TorrentDirectories 1.0.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=8d563738"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Best Practices Guide" href="best_practices.html" />
+    <link rel="prev" title="Quick Start Guide" href="quickstart.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            TorrentDirectories
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quick Start Guide</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Usage Guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#basic-usage">Basic Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#creating-a-single-torrent">Creating a Single Torrent</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-processing">Batch Processing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#common-options">Common Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#global-options">Global Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#torrent-options">Torrent Options</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#batch-specific-options">Batch-specific Options</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#error-handling">Error Handling</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#file-existence">File Existence</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#progress-reporting">Progress Reporting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#maximum-failures">Maximum Failures</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#manifest-system">Manifest System</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#structure">Structure</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#features">Features</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cache-system">Cache System</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-usage">Advanced Usage</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dry-run-mode">Dry Run Mode</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging">Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#performance-optimization">Performance Optimization</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#security-features">Security Features</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">Best Practices Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api/index.html">API Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">Changelog</a></li>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html#id1">[1.4.5] - 2025-03-22</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">TorrentDirectories</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Usage Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/usage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="usage-guide">
+<h1>Usage Guide<a class="headerlink" href="#usage-guide" title="Link to this heading"></a></h1>
+<p>This guide covers the main features and usage patterns of TorrentDirectories.</p>
+<section id="basic-usage">
+<h2>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h2>
+<section id="creating-a-single-torrent">
+<h3>Creating a Single Torrent<a class="headerlink" href="#creating-a-single-torrent" title="Link to this heading"></a></h3>
+<p>To create a torrent from a single file or directory:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="o">&lt;</span><span class="n">path</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">tracker_url</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create a private torrent (default)</span>
+<span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span>
+
+<span class="c1"># Specify output location</span>
+<span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> <span class="o">-</span><span class="n">o</span> <span class="n">output</span><span class="o">.</span><span class="n">torrent</span>
+
+<span class="c1"># Create a public torrent with metadata</span>
+<span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">file</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">content</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> \
+    <span class="o">--</span><span class="n">public</span> \
+    <span class="o">--</span><span class="n">source</span> <span class="s2">&quot;My Release Group&quot;</span> \
+    <span class="o">--</span><span class="n">comment</span> <span class="s2">&quot;Great content!&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="batch-processing">
+<h3>Batch Processing<a class="headerlink" href="#batch-processing" title="Link to this heading"></a></h3>
+<p>Process multiple directories at once:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">batch</span> <span class="o">&lt;</span><span class="n">parent_directory</span><span class="o">&gt;</span> <span class="o">&lt;</span><span class="n">tracker_url</span><span class="o">&gt;</span> <span class="p">[</span><span class="n">options</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Process all subdirectories</span>
+<span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">batch</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">parent</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span>
+
+<span class="c1"># Specify output directory and clean manifest</span>
+<span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">batch</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">parent</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> \
+    <span class="o">-</span><span class="n">o</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">torrents</span> \
+    <span class="o">--</span><span class="n">clean</span>
+
+<span class="c1"># Process with custom settings and force rebuild</span>
+<span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="n">batch</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">parent</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span> \
+    <span class="o">--</span><span class="nb">min</span><span class="o">-</span><span class="n">piece</span><span class="o">-</span><span class="n">size</span> <span class="mi">1</span><span class="n">M</span> \
+    <span class="o">--</span><span class="nb">max</span><span class="o">-</span><span class="n">piece</span><span class="o">-</span><span class="n">size</span> <span class="mi">32</span><span class="n">M</span> \
+    <span class="o">--</span><span class="n">force</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-options">
+<h2>Common Options<a class="headerlink" href="#common-options" title="Link to this heading"></a></h2>
+<section id="global-options">
+<h3>Global Options<a class="headerlink" href="#global-options" title="Link to this heading"></a></h3>
+<p>These options can be used with any command:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--version</span></code>: Show version information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--verbose</span></code> or <code class="docutils literal notranslate"><span class="pre">-v</span></code>: Show detailed progress</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--dry-run</span></code>: Preview changes without making them</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--log-file</span> <span class="pre">FILE</span></code>: Write logs to file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--force</span></code>: Overwrite existing torrent files</p></li>
+</ul>
+</section>
+<section id="torrent-options">
+<h3>Torrent Options<a class="headerlink" href="#torrent-options" title="Link to this heading"></a></h3>
+<p>These options control torrent creation:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--private</span> <span class="pre">|</span> <span class="pre">--public</span></code>: Set torrent privacy (default: private)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--min-piece-size</span> <span class="pre">SIZE</span></code>: Minimum piece size (e.g., 16K, 1M, default: 256K)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max-piece-size</span> <span class="pre">SIZE</span></code>: Maximum piece size (e.g., 16M, 64M, default: 16M)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--include-system</span></code>: Include system files (default: False)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--source</span> <span class="pre">TEXT</span></code>: Add a source string to the torrent metadata</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--comment</span> <span class="pre">TEXT</span></code>: Add a comment to the torrent metadata</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o/--output</span> <span class="pre">OUTPUT</span></code>: Output path for the torrent(s)</p></li>
+</ul>
+</section>
+<section id="batch-specific-options">
+<h3>Batch-specific Options<a class="headerlink" href="#batch-specific-options" title="Link to this heading"></a></h3>
+<p>Additional options for batch processing:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--clean</span></code>: Clean the manifest by removing missing entries</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--max-failures</span> <span class="pre">N</span></code>: Maximum failures before stopping (0 for unlimited)</p></li>
+</ul>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>The tool provides detailed error messages and appropriate exit codes:</p>
+<section id="file-existence">
+<h3>File Existence<a class="headerlink" href="#file-existence" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Checks for existing files before creation</p></li>
+<li><p>Provides clear messages about using <code class="docutils literal notranslate"><span class="pre">--force</span></code> to overwrite</p></li>
+<li><p>Creates backups when overwriting with <code class="docutils literal notranslate"><span class="pre">--force</span></code></p></li>
+</ul>
+</section>
+<section id="progress-reporting">
+<h3>Progress Reporting<a class="headerlink" href="#progress-reporting" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Shows real-time progress in verbose mode</p></li>
+<li><p>Reports file counts and sizes</p></li>
+<li><p>Displays percentage completion for large operations</p></li>
+</ul>
+</section>
+<section id="maximum-failures">
+<h3>Maximum Failures<a class="headerlink" href="#maximum-failures" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>In batch mode, use <code class="docutils literal notranslate"><span class="pre">--max-failures</span> <span class="pre">N</span></code> to control error tolerance</p></li>
+<li><p>0 means continue regardless of failures</p></li>
+<li><p>Reports failed items in summary</p></li>
+</ul>
+</section>
+</section>
+<section id="manifest-system">
+<h2>Manifest System<a class="headerlink" href="#manifest-system" title="Link to this heading"></a></h2>
+<p>The manifest system tracks processed directories in batch mode:</p>
+<section id="structure">
+<h3>Structure<a class="headerlink" href="#structure" title="Link to this heading"></a></h3>
+<p>The manifest is stored as a CSV file with the following format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;directory_path&quot;</span><span class="p">,</span><span class="s2">&quot;torrent_file&quot;</span><span class="p">,</span><span class="s2">&quot;processed_at&quot;</span>
+<span class="s2">&quot;/path/to/movie1&quot;</span><span class="p">,</span><span class="s2">&quot;movie1.torrent&quot;</span><span class="p">,</span><span class="s2">&quot;2024-03-15T14:30:00&quot;</span>
+<span class="s2">&quot;/path/to/movie2&quot;</span><span class="p">,</span><span class="s2">&quot;movie2.torrent&quot;</span><span class="p">,</span><span class="s2">&quot;2024-03-15T14:31:00&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="features">
+<h3>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Automatic skipping of already processed directories</p></li>
+<li><p>Manifest cleaning with <code class="docutils literal notranslate"><span class="pre">--clean</span></code> option</p></li>
+<li><p>Automatic backup before cleaning</p></li>
+<li><p>Thread-safe operations for concurrent access</p></li>
+<li><p>Caching system for improved performance</p></li>
+</ul>
+</section>
+<section id="cache-system">
+<h3>Cache System<a class="headerlink" href="#cache-system" title="Link to this heading"></a></h3>
+<p>The manifest cache system provides:</p>
+<ul class="simple">
+<li><p>Efficient lookup of processed directories</p></li>
+<li><p>Automatic cache invalidation on changes</p></li>
+<li><p>Size-limited caching to control memory usage</p></li>
+<li><p>Thread-safe cache operations</p></li>
+</ul>
+</section>
+</section>
+<section id="advanced-usage">
+<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
+<section id="dry-run-mode">
+<h3>Dry Run Mode<a class="headerlink" href="#dry-run-mode" title="Link to this heading"></a></h3>
+<p>Use <code class="docutils literal notranslate"><span class="pre">--dry-run</span></code> to preview changes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">torrent</span><span class="o">-</span><span class="n">directories</span> <span class="o">--</span><span class="n">dry</span><span class="o">-</span><span class="n">run</span> <span class="n">batch</span> <span class="o">./</span><span class="n">movies</span> <span class="n">http</span><span class="p">:</span><span class="o">//</span><span class="n">tracker</span><span class="o">.</span><span class="n">example</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">announce</span>
+</pre></div>
+</div>
+<p>This shows:</p>
+<ul class="simple">
+<li><p>Files that would be processed</p></li>
+<li><p>Output locations</p></li>
+<li><p>Total size and file counts</p></li>
+<li><p>Configuration that would be used</p></li>
+</ul>
+</section>
+<section id="logging">
+<h3>Logging<a class="headerlink" href="#logging" title="Link to this heading"></a></h3>
+<p>Control logging output:</p>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">-v</span></code> for detailed progress</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">--log-file</span></code> to save logs</p></li>
+<li><p>Logs include timestamps and operation details</p></li>
+<li><p>Unicode support for international file names</p></li>
+</ul>
+</section>
+<section id="performance-optimization">
+<h3>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h3>
+<p>The tool automatically optimizes:</p>
+<ul class="simple">
+<li><p>Piece sizes based on content</p></li>
+<li><p>Cache usage for batch operations</p></li>
+<li><p>File system operations</p></li>
+<li><p>Progress reporting frequency</p></li>
+</ul>
+</section>
+<section id="security-features">
+<h3>Security Features<a class="headerlink" href="#security-features" title="Link to this heading"></a></h3>
+<p>Built-in security measures:</p>
+<ul class="simple">
+<li><p>File locking for concurrent access</p></li>
+<li><p>Backup creation before modifications</p></li>
+<li><p>Permission checking</p></li>
+<li><p>Safe handling of special files</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="quickstart.html" class="btn btn-neutral float-left" title="Quick Start Guide" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="best_practices.html" class="btn btn-neutral float-right" title="Best Practices Guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, friedhardware.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
