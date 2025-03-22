@@ -1,4 +1,6 @@
-"""Tests for the file command functionality."""
+"""Tests for the file command."""
+
+from __future__ import annotations
 
 from pathlib import Path
 from typing import Callable
@@ -9,6 +11,7 @@ from click.testing import CliRunner
 
 from tests.utils import create_binary_file, create_empty_files, create_test_files
 from torrent.cli.main import cli
+from torrent.exceptions import ErrorCode
 
 
 @pytest.fixture
@@ -299,51 +302,44 @@ def test_file_command_piece_size_calculation(runner: CliRunner, tmp_path: Path) 
             assert torrent_data[b"info"][b"piece length"] == expected_piece_size
 
 
-def test_file_command_tracker_url_validation(runner: CliRunner) -> None:
-    """
-    Test tracker URL validation in the file command.
+def test_file_command_tracker_url_validation(runner: CliRunner, test_dir: Path) -> None:
+    """Test validation of tracker URLs."""
+    # Create a test file
+    create_test_files(test_dir, {"test.txt": "test content"})
+    test_file = test_dir / "test.txt"
+    output_file = test_dir / "test.torrent"
 
-    Verifies that:
-    1. Valid tracker URLs are accepted
-    2. Invalid URLs are rejected with appropriate error messages
-    3. The command handles various URL formats correctly
-    """
-    with runner.isolated_filesystem() as td:
-        test_file = Path(td) / "test.txt"
-        create_binary_file(test_file, 1024 * 1024)  # 1MB file
-        output_path = Path(td) / "test.torrent"
+    # Test with invalid URL
+    result = runner.invoke(
+        cli,
+        [
+            "file",
+            str(test_file),
+            "invalid-url",
+            "--output",
+            str(output_file),
+        ],
+    )
+    assert (
+        result.exit_code == ErrorCode.INVALID_TRACKER_URL.value
+    )  # Invalid URLs return tracker URL error
+    assert "invalid tracker url" in result.output.lower()
+    assert "must start with http://, https://, or udp://" in result.output.lower()
+    assert not output_file.exists()  # Verify that no output file was created
 
-        # Test invalid tracker URL
-        result = runner.invoke(
-            cli,
-            [
-                "file",
-                str(test_file),
-                "invalid-url",
-                "--output",
-                str(output_path),
-            ],
-            standalone_mode=True,
-        )
-
-        assert result.exit_code == 2  # Invalid URLs return usage error
-        assert not output_path.exists()
-
-        # Test valid tracker URL
-        result = runner.invoke(
-            cli,
-            [
-                "file",
-                str(test_file),
-                "http://tracker.example.com/announce",
-                "--output",
-                str(output_path),
-            ],
-            standalone_mode=True,
-        )
-
-        assert result.exit_code == 0
-        assert output_path.exists()
+    # Test with valid URL
+    result = runner.invoke(
+        cli,
+        [
+            "file",
+            str(test_file),
+            "http://tracker.example.com/announce",
+            "--output",
+            str(output_file),
+        ],
+    )
+    assert result.exit_code == 0  # Valid URL should succeed
+    assert output_file.exists()  # Verify that the output file was created
 
 
 def test_file_command_torrent_verification(runner: CliRunner) -> None:

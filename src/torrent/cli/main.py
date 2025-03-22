@@ -18,6 +18,7 @@ from ..error_handling import convert_to_click_error
 from ..exceptions import ErrorCode, NoDataError, TorrentError
 from ..torrent_creator import TorrentConfig
 from ..utils.cli_utils import parse_size
+from ..utils.file_utils import is_system_file
 from ..utils.logging_utils import setup_logging
 from ..version import __version__
 from .commands import handle_dry_run, process_batch, process_single
@@ -65,8 +66,9 @@ def create_torrent_config(
 
     # Validate tracker URL
     if not tracker_url.startswith(("http://", "https://", "udp://")):
-        raise click.BadParameter(
-            f"Invalid tracker URL: {tracker_url}. Must start with http://, https://, or udp://"
+        raise TorrentError(
+            message=f"Invalid tracker URL: {tracker_url}. Must start with http://, https://, or udp://",
+            error_code=ErrorCode.INVALID_TRACKER_URL,
         )
 
     return TorrentConfig(
@@ -81,26 +83,33 @@ def create_torrent_config(
 
 @click.group()
 @click.version_option(version=__version__)
-@click.option("-v", "--verbose", count=True, help="Increase verbosity")
+@click.option(
+    "-v", "--verbose", count=True, help="Increase verbosity level (-v, -vv, -vvv)"
+)
 @click.option("--log-file", type=str, help="Log file path")
 @click.option(
     "--dry-run", is_flag=True, help="Show what would be done without making changes"
 )
-@click.option("--force", is_flag=True, help="Overwrite existing torrent files")
+@click.option("--force", is_flag=True, help="Force overwrite of existing files")
 @click.pass_context
 def cli(
-    ctx: Context, verbose: int, log_file: Optional[str], dry_run: bool, force: bool
+    ctx: click.Context,
+    verbose: int,
+    log_file: Optional[str],
+    dry_run: bool,
+    force: bool,
 ) -> None:
-    """Create torrent files from directories with optimal settings."""
+    """Create torrent files from files or directories."""
     # Set up signal handlers
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
+    setup_logging(verbose, log_file)
     ctx.ensure_object(dict)
     ctx.obj["dry_run"] = dry_run
     ctx.obj["force"] = force
     ctx.obj["interrupted"] = False  # Add interrupted flag to context
-    setup_logging(verbose > 0, log_file)
+    ctx.obj["verbose"] = verbose
 
 
 @cli.command()
@@ -140,6 +149,13 @@ def file(
 ) -> None:
     """Create a torrent from a single file or directory."""
     try:
+        # Check if trying to create torrent directly from system file
+        if os.path.isfile(path) and is_system_file(path):
+            raise click.UsageError(
+                f"Cannot create torrent directly from system file: {path}\n"
+                "The --include-system flag only applies when creating torrents from directories."
+            )
+
         config = create_torrent_config(
             ctx,
             min_piece_size,
@@ -152,7 +168,7 @@ def file(
         config.comment = comment or ""
 
         if ctx.obj["dry_run"]:
-            handle_dry_run(path, output, config)
+            handle_dry_run(path, output, config, is_batch=False, force=ctx.obj["force"])
             return  # Let Click handle the exit
 
         result = process_single(
@@ -254,7 +270,9 @@ def batch(
 
         if ctx.obj["dry_run"]:
             try:
-                handle_dry_run(directory, output, config, is_batch=True)
+                handle_dry_run(
+                    directory, output, config, is_batch=True, force=ctx.obj["force"]
+                )
                 return  # Let Click handle the exit
             except TorrentError as e:
                 raise convert_to_click_error(e)

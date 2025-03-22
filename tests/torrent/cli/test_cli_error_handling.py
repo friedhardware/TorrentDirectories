@@ -10,6 +10,7 @@ import pytest
 from click.testing import CliRunner
 
 from torrent.cli.main import cli
+from torrent.exceptions import ErrorCode
 
 
 @pytest.fixture
@@ -73,11 +74,17 @@ def test_min_piece_size_greater_than_max(runner: CliRunner, empty_file: Path) ->
 
 
 def test_invalid_tracker_url(runner: CliRunner, empty_file: Path) -> None:
-    """Test error handling for invalid tracker URL."""
-    result = runner.invoke(cli, ["file", str(empty_file), "not_a_url"])
-    assert result.exit_code == 2  # Click usage error
-    assert "Invalid tracker URL: not_a_url" in result.output
-    assert "Must start with http://, https://, or udp://" in result.output
+    """Test error code with invalid tracker URL."""
+    result = runner.invoke(
+        cli,
+        [
+            "file",
+            str(empty_file),
+            "invalid-url",
+        ],
+    )
+    assert result.exit_code == ErrorCode.INVALID_TRACKER_URL.value
+    assert "invalid tracker url" in result.output.lower()
 
 
 def test_empty_file_error(runner: CliRunner, empty_file: Path) -> None:

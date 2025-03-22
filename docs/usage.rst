@@ -73,7 +73,6 @@ These options control torrent creation:
 - ``--min-piece-size SIZE``: Minimum piece size (e.g., 16K, 1M, default: 256K)
 - ``--max-piece-size SIZE``: Maximum piece size (e.g., 16M, 64M, default: 16M)
 - ``--include-system``: Include system files (default: False)
-- ``--skip-empty-files``: Skip empty files instead of failing (default: False)
 - ``--source TEXT``: Add a source string to the torrent metadata
 - ``--comment TEXT``: Add a comment to the torrent metadata
 - ``-o/--output OUTPUT``: Output path for the torrent(s)
@@ -105,12 +104,6 @@ Progress Reporting
 - Reports file counts and sizes
 - Displays percentage completion for large operations
 
-Empty Files
-~~~~~~~~~~
-
-- By default, fails when encountering empty files
-- Use ``--skip-empty-files`` to ignore empty files
-- Reports skipped files in batch mode
 
 Maximum Failures
 ~~~~~~~~~~~~~~

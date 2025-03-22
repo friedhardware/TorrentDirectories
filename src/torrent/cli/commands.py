@@ -29,6 +29,7 @@ def handle_dry_run(
     output: Optional[str],
     config: Optional[TorrentConfig],
     is_batch: bool = False,
+    force: bool = False,
 ) -> None:
     """Handle the dry run logic for both single and batch processing.
 
@@ -37,6 +38,7 @@ def handle_dry_run(
         output: Output path for torrent file(s)
         config: Torrent configuration
         is_batch: Whether this is a batch operation
+        force: Whether to overwrite existing files
     """
     if is_batch:
         # Handle batch processing dry run
@@ -50,7 +52,11 @@ def handle_dry_run(
         output_dir = output or os.path.join(path, "torrents")
         click.echo(f"Would save torrents to: {output_dir}")
 
-        files = list_files(path)
+        files = list_files(
+            path,
+            skip_hidden=config.skip_hidden if config else True,
+            skip_system=config.skip_system_files if config else True,
+        )
         if not files:
             click.echo("Warning: Directory is empty")
         else:
@@ -71,13 +77,22 @@ def handle_dry_run(
         output_path = output or f"{path}.torrent"
         click.echo(f"Would save to: {output_path}")
         if os.path.exists(output_path):
-            click.echo("Note: Output file already exists (use --force to overwrite)")
+            if force:
+                click.echo("Would overwrite existing output file")
+            else:
+                click.echo(
+                    "Note: Output file already exists (use --force to overwrite)"
+                )
 
         if os.path.isfile(path):
             size = os.path.getsize(path)
             click.echo(f"File size: {format_size(size)}")
         else:
-            files = list_files(path)
+            files = list_files(
+                path,
+                skip_hidden=config.skip_hidden if config else True,
+                skip_system=config.skip_system_files if config else True,
+            )
             if not files:
                 click.echo("Warning: Directory is empty")
             else:
@@ -98,6 +113,8 @@ def handle_dry_run(
             click.echo(f"  Source: {config.source}")
         if config.comment:
             click.echo(f"  Comment: {config.comment}")
+        click.echo(f"  Skip hidden files: {config.skip_hidden}")
+        click.echo(f"  Skip system files: {config.skip_system_files}")
 
 
 def process_single(
@@ -123,8 +140,13 @@ def process_single(
         0 for success, TorrentError for failures
     """
     try:
+        logger.debug("Starting process_single with path: %s", path)
+        logger.info("Processing file: %s", path)
+        logger.debug("Using tracker URL: %s", tracker_url)
+
         # Check if path exists
         if not os.path.exists(path):
+            logger.error("Path does not exist: %s", path)
             return TorrentError(
                 message=f"Path does not exist: {path}",
                 error_code=ErrorCode.FILE_NOT_FOUND,
@@ -134,33 +156,53 @@ def process_single(
         output_path = (
             output if output is not None else f"{os.path.basename(path)}.torrent"
         )
-        if os.path.exists(output_path) and not force:
-            return TorrentError(
-                message=f"Output file already exists: {output_path}",
-                error_code=ErrorCode.FILE_EXISTS,
-            )
+        logger.debug("Output path: %s", output_path)
+
+        if os.path.exists(output_path):
+            if not force:
+                logger.warning("Output file already exists: %s", output_path)
+                return TorrentError(
+                    message=f"Output file already exists: {output_path}",
+                    error_code=ErrorCode.FILE_EXISTS,
+                )
+            else:
+                logger.debug(
+                    "Force flag set, will overwrite existing file: %s", output_path
+                )
 
         # Create config if not provided
         if config is None:
+            logger.debug("Creating default config with tracker URL: %s", tracker_url)
             config = TorrentConfig(tracker_url=tracker_url)
         else:
             # Update tracker URL in existing config
+            logger.debug("Updating tracker URL in existing config: %s", tracker_url)
             config.tracker_url = tracker_url
 
         if dry_run:
-            handle_dry_run(path, output, config, is_batch=False)
+            logger.debug("Performing dry run")
+            handle_dry_run(path, output, config, is_batch=False, force=force)
             return 0
 
         # If force is True and file exists, remove it first
         if force and os.path.exists(output_path):
+            logger.debug("Removing existing file: %s", output_path)
             os.remove(output_path)
 
+        logger.info("Creating torrent file...")
         torrent_creator = TorrentCreator(config)
         try:
+            logger.debug(
+                "Calling TorrentCreator.create with path: %s, output: %s",
+                path,
+                output_path,
+            )
             torrent_path = torrent_creator.create(path, output_path)
+            logger.debug("Torrent created successfully at: %s", torrent_path)
             click.echo(f"\nTorrent created successfully: {torrent_path}")
             return 0
         except OutputFileExistsError as e:
+            logger.error("Output file exists: %s", e)
             click.echo(f"Error: {e}", err=True)
             return TorrentError(
                 message=str(e),
@@ -168,6 +210,7 @@ def process_single(
                 details={"path": str(e)},
             )
         except Exception as e:
+            logger.error("Failed to create torrent: %s", e)
             if isinstance(e, TorrentError):
                 return e
             return TorrentError(
@@ -177,6 +220,7 @@ def process_single(
             )
 
     except Exception as e:
+        logger.error("Unexpected error: %s", e)
         if isinstance(e, TorrentError):
             return e
         return TorrentError(
@@ -240,7 +284,7 @@ def process_batch(
             config.tracker_url = tracker_url
 
         if dry_run:
-            handle_dry_run(parent_dir, output_dir, config, is_batch=True)
+            handle_dry_run(parent_dir, output_dir, config, is_batch=True, force=force)
             return 0
 
         # Create output directory if not in dry run mode

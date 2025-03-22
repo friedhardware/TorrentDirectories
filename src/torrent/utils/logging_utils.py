@@ -10,18 +10,59 @@ import click
 logger = logging.getLogger(__name__)
 
 
-def setup_logging(verbose: bool = False, log_file: Optional[str] = None) -> None:
-    """Configure logging with appropriate level and format."""
+def setup_logging(verbose: bool | int = False, log_file: Optional[str] = None) -> None:
+    """Configure logging with appropriate level and format.
+
+    Args:
+        verbose: If True, enables more detailed logging. The number of -v flags determines the level:
+                -v: DEBUG with basic progress
+                -vv: DEBUG with detailed progress
+                -vvv: DEBUG with extra debug information
+        log_file: Optional path to a log file where logs will be written
+    """
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+    # Set log level based on verbosity
+    if isinstance(verbose, bool):
+        # Backward compatibility for bool verbose
+        root_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+    else:
+        # Handle multiple verbosity levels
+        if verbose >= 3:
+            root_logger.setLevel(logging.DEBUG)
+            logging.getLogger("torrent").setLevel(logging.DEBUG)
+        elif verbose >= 2:
+            root_logger.setLevel(logging.DEBUG)
+            logging.getLogger("torrent").setLevel(logging.DEBUG)
+        elif verbose >= 1:
+            root_logger.setLevel(logging.DEBUG)
+            logging.getLogger("torrent").setLevel(logging.DEBUG)
+        else:
+            root_logger.setLevel(logging.WARNING)
+            logging.getLogger("torrent").setLevel(logging.INFO)
 
     # Remove any existing handlers
     for handler in root_logger.handlers[:]:
         root_logger.removeHandler(handler)
 
-    # File handler if specified
+    # Create console handler with appropriate formatting
+    console_handler = logging.StreamHandler()
+    if verbose >= 3:
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+    elif verbose >= 2:
+        formatter = logging.Formatter("%(levelname)s - %(message)s")
+    else:
+        formatter = logging.Formatter("%(message)s")
+
+    console_handler.setFormatter(formatter)
+    root_logger.addHandler(console_handler)
+
+    # File handler if specified - always use debug level and detailed format for log files
     if log_file:
         file_handler = logging.FileHandler(log_file)
+        file_handler.setLevel(logging.DEBUG)  # Always use DEBUG level for file logging
         file_handler.setFormatter(
             logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         )

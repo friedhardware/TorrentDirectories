@@ -120,7 +120,6 @@ torrent-directories file ./my_movie http://tracker.example.com/announce \
 
 # Skip empty files and include system files
 torrent-directories file ./my_movie http://tracker.example.com/announce \
-    --skip-empty-files \
     --include-system
 
 # Preview changes without creating files (dry run)
@@ -148,8 +147,7 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
 torrent-directories batch ./movies http://tracker.example.com/announce \
     --min-piece-size 1M \
     --force \
-    --include-system \
-    --skip-empty-files
+    --include-system
 
 # Clean manifest and process directories with metadata
 torrent-directories batch ./movies http://tracker.example.com/announce \
@@ -171,7 +169,6 @@ torrent-directories batch ./movies http://tracker.example.com/announce \
   - `--min-piece-size SIZE`: Minimum piece size (e.g., 16K, 1M, default: 256K)
   - `--max-piece-size SIZE`: Maximum piece size (e.g., 16M, 64M, default: 16M)
   - `--include-system`: Include system files (default: False)
-  - `--skip-empty-files`: Skip empty files instead of failing (default: False)
   - `--force`: Overwrite existing torrents
   - `--source TEXT`: Add a source string to the torrent metadata
   - `--comment TEXT`: Add a comment to the torrent metadata
@@ -197,14 +194,8 @@ The tool handles various error conditions with clear messages and appropriate ex
   - Clear percentage and file count display
   - Real-time updates in verbose mode
 
-- **Empty Files**:
-  - By default, attempting to create a torrent from an empty file will fail
-  - Use `--skip-empty-files` to skip empty files instead of failing
-  - In batch mode with `--skip-empty-files`, empty files are counted separately
-
 - **Maximum Failures**:
   - In batch mode, use `--max-failures N` to stop after N failures
-  - Empty files are only counted as failures if `--skip-empty-files` is not used
   - A value of 0 (default) means no limit
 
 ## Manifest System
@@ -249,26 +240,21 @@ See our [Best Practices Guide](docs/best_practices.rst) in the documentation.
 
 ### Common Issues
 
-1. **Empty File Errors**:
-   ```
-   Error: File path/to/file.txt is empty (0 bytes)
-   ```
-   - **Solution**: Use `--skip-empty-files` option if you want to skip empty files instead of failing
 
-2. **File Already Exists**:
+1. **File Already Exists**:
    ```
    Error: Output file already exists: path/to/output.torrent
    ```
    - **Solution**: Use `--force` to overwrite existing files
 
-3. **Missing Torrent Files in Batch Mode**:
+2. **Missing Torrent Files in Batch Mode**:
    ```
    Error: Found X missing torrent files.
    Use --clean to remove invalid entries from manifest.
    ```
    - **Solution**: Use `--clean` option to fix the manifest and recreate missing torrents
 
-4. **Maximum Failures Reached**:
+3. **Maximum Failures Reached**:
    ```
    Maximum failures reached
    Error: Failed to process directories

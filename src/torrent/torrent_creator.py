@@ -10,11 +10,9 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
-import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Set, Union
+from typing import Optional, Union
 
 import libtorrent as lt
 
@@ -86,167 +84,166 @@ class TorrentCreator:
         """
         self.config = config
 
+    def _should_include_file(self, path: str) -> bool:
+        """Determine if a file should be included in the torrent.
+
+        Args:
+            path: Path to the file to check
+
+        Returns:
+            bool: True if the file should be included, False otherwise
+        """
+        if self.config.skip_hidden and is_hidden(path):
+            logger.debug("self.config.skip_hidden: %s", self.config.skip_hidden)
+            logger.debug("Skipping hidden file: %s", path)
+            return False
+        if self.config.skip_system_files and is_system_file(path):
+            logger.debug(
+                "self.config.skip_system_files: %s", self.config.skip_system_files
+            )
+            logger.debug("Skipping system file: %s", path)
+            return False
+        return True
+
     def create(
         self, input_path: Union[str, Path], output_path: Union[str, Path]
     ) -> str:
         """Create a torrent file from a file or directory.
 
         Args:
-            input_path: Path to the input file or directory to create a torrent from
+            input_path: Path to the file or directory to create a torrent from
             output_path: Path where the torrent file should be saved
 
         Returns:
             str: Path to the created torrent file
 
         Raises:
-            TorrentCreationError: If the torrent creation fails for any reason
-            OutputFileExistsError: If the output file already exists
-            NoDataError: If the total size of all files is 0 bytes. Note that individual
-                empty files are allowed, but there must be at least some data overall
-                to create pieces from.
+            NoDataError: If the input path contains no data
+            OutputFileExistsError: If the output file exists and force is False
+            TorrentCreationError: If there is an error creating the torrent
         """
         input_path = Path(input_path)
         output_path = Path(output_path)
 
+        logger.debug("Creating torrent from %s", input_path)
+        logger.debug("Output path: %s", output_path)
+
+        # Check if input exists
         if not input_path.exists():
+            logger.error("Input path does not exist: %s", input_path)
             raise TorrentCreationError(
                 message=f"Input path does not exist: {input_path}",
                 details={"path": str(input_path)},
             )
 
+        # Check if output file exists
         if output_path.exists():
+            logger.warning("Output file already exists: %s", output_path)
             raise OutputFileExistsError(str(output_path))
 
-        with tempfile.TemporaryDirectory() as tmpdirname:
-            tmpdir = Path(tmpdirname)
+        fs = lt.file_storage()
+        try:
+            logger.debug("Adding files with filtering")
+            # Add files with filtering
+            lt.add_files(fs, str(input_path), lambda p: self._should_include_file(p))
+        except RuntimeError as e:
+            if "no files" in str(e):
+                # This error means no files were found at all
+                logger.error("No files found in input path: %s", input_path)
+                raise NoDataError(str(input_path), is_directory=True)
+            logger.error("Failed to add files: %s", e)
+            raise TorrentCreationError(
+                message=f"Failed to add files: {e}",
+                details={"error": str(e)},
+                original_error=e,
+            )
 
-            # Define the ignore function for copytree
-            def ignore_func(src: str, names: list[str]) -> Set[str]:
-                ignored = set()
-                for name in names:
-                    full_path = os.path.join(src, name)
-                    # Skip if it's a hidden file and skip_hidden is True
-                    if self.config.skip_hidden and is_hidden(full_path):
-                        # If it's a system file, only skip if skip_system_files is also True
-                        if (
-                            not is_system_file(full_path)
-                            or self.config.skip_system_files
-                        ):
-                            ignored.add(name)
-                    # Skip if it's a system file and skip_system_files is True
-                    elif self.config.skip_system_files and is_system_file(full_path):
-                        ignored.add(name)
-                return ignored
+        if fs.total_size() == 0:
+            # This error means files were found but their total size is 0 bytes
+            logger.error("Total size is 0 bytes")
+            raise NoDataError(str(input_path), is_directory=input_path.is_dir())
 
-            # Copy the input path to the temporary directory
-            tmp_input_path = tmpdir / input_path.name
-            if input_path.is_dir():
-                shutil.copytree(input_path, tmp_input_path, ignore=ignore_func)
-            else:
-                # For single files, only skip if the respective skip flag is True
-                if (
-                    self.config.skip_hidden
-                    and is_hidden(str(input_path))
-                    and (
-                        not is_system_file(str(input_path))
-                        or self.config.skip_system_files
-                    )
-                ) or (
-                    self.config.skip_system_files and is_system_file(str(input_path))
-                ):
-                    raise TorrentCreationError(
-                        message=f"Input file is hidden or system file: {input_path}",
-                        details={"path": str(input_path)},
-                    )
-                shutil.copy2(input_path, tmp_input_path)
+        try:
+            # Calculate optimal piece size based on total size
+            total_size = fs.total_size()
+            piece_size = self.calculate_optimal_piece_size(total_size)
+            logger.debug(
+                "Using piece size: %d KiB for %.1f MiB content",
+                piece_size / 1024,
+                total_size / 1024 / 1024,
+            )
 
-            fs = lt.file_storage()
+            # Create the torrent
+            logger.debug("Creating torrent with piece size: %d bytes", piece_size)
+            t = lt.create_torrent(fs, piece_size)
+            t.set_creator(f"TorrentDirectories v{__version__}")
+            t.set_comment(self.config.comment)
+            t.set_priv(self.config.private)
+            t.add_tracker(self.config.tracker_url)
+
+            # Set piece hashes before generating
+            logger.info("Calculating piece hashes...")
             try:
-                lt.add_files(fs, str(tmp_input_path))
-            except RuntimeError as e:
-                if "no files" in str(e):
-                    # This error means no files were found at all
-                    raise NoDataError(str(tmp_input_path), is_directory=True)
-                raise TorrentCreationError(
-                    message=f"Failed to add files: {e}",
-                    details={"error": str(e)},
-                    original_error=e,
-                )
-
-            if fs.total_size() == 0:
-                # This error means files were found but their total size is 0 bytes
-                raise NoDataError(
-                    str(tmp_input_path), is_directory=tmp_input_path.is_dir()
-                )
-
-            try:
-                # Calculate optimal piece size based on total size
-                total_size = fs.total_size()
-                piece_size = self.calculate_optimal_piece_size(total_size)
-                logger.debug(
-                    f"Using piece size: {piece_size / 1024:.0f} KiB for {total_size / 1024 / 1024:.1f} MiB content"
-                )
-
-                # Create the torrent
-                t = lt.create_torrent(fs, piece_size)
-                t.set_creator(f"TorrentDirectories v{__version__}")
-                t.set_comment(self.config.comment)
-                t.set_priv(self.config.private)
-                t.add_tracker(self.config.tracker_url)
-
-                # Set piece hashes before generating
-                try:
-                    lt.set_piece_hashes(t, str(tmp_input_path.parent))
-                except RuntimeError:
-                    # Check if we were interrupted
-                    if interrupted:
-                        logger.info("Torrent creation interrupted by user")
-                        raise TorrentCreationError(
-                            message="Torrent creation interrupted by user",
-                            details={"path": str(output_path)},
-                        )
-                    raise  # Re-raise if not interrupted
-
-                # Generate torrent file
-                torrent = t.generate()
-
-                # Add source as a custom field in the info dictionary
-                if self.config.source:
-                    torrent[b"info"][b"source"] = self.config.source.encode()
-
-                # Save the torrent file
-                with open(output_path, "wb") as f:
-                    f.write(lt.bencode(torrent))
-
-                # Verify the created torrent
-                verification_result = self.verify_torrent_file(str(output_path))
-                if not verification_result.success:
-                    # If verification fails, try to clean up and raise an error
-                    try:
-                        os.remove(output_path)
-                    except OSError:
-                        pass  # Ignore cleanup errors
+                lt.set_piece_hashes(t, str(input_path.parent))
+            except RuntimeError:
+                # Check if we were interrupted
+                if interrupted:
+                    logger.info("Torrent creation interrupted by user")
                     raise TorrentCreationError(
-                        message=f"Failed to verify torrent: {verification_result.error}",
-                        details={"verification_error": verification_result.error},
+                        message="Torrent creation interrupted by user",
+                        details={"path": str(output_path)},
                     )
+                raise  # Re-raise if not interrupted
 
-                return str(output_path)
+            # Generate torrent file
+            logger.debug("Generating torrent file")
+            torrent = t.generate()
 
-            except Exception as e:
-                # Clean up the output file if it exists
+            # Add source as a custom field in the info dictionary
+            if self.config.source:
+                logger.debug("Adding source tag: %s", self.config.source)
+                torrent[b"info"][b"source"] = self.config.source.encode()
+
+            # Save the torrent file
+            logger.debug("Writing torrent file to: %s", output_path)
+            with open(output_path, "wb") as f:
+                f.write(lt.bencode(torrent))
+
+            # Verify the created torrent
+            logger.debug("Verifying torrent file")
+            verification_result = self.verify_torrent_file(str(output_path))
+            if not verification_result.success:
+                # If verification fails, try to clean up and raise an error
+                logger.error(
+                    "Torrent verification failed: %s", verification_result.error
+                )
                 try:
-                    if os.path.exists(output_path):
-                        os.remove(output_path)
+                    os.remove(output_path)
                 except OSError:
                     pass  # Ignore cleanup errors
-                if isinstance(e, TorrentCreationError):
-                    raise
                 raise TorrentCreationError(
-                    message=f"Failed to create torrent: {e}",
-                    details={"error": str(e)},
-                    original_error=e,
+                    message=f"Failed to verify torrent: {verification_result.error}",
+                    details={"verification_error": verification_result.error},
                 )
+
+            logger.info("Torrent file created successfully")
+            return str(output_path)
+
+        except Exception as e:
+            logger.error("Error during torrent creation: %s", e)
+            # Clean up the output file if it exists
+            try:
+                if os.path.exists(output_path):
+                    os.remove(output_path)
+            except OSError:
+                pass  # Ignore cleanup errors
+            if isinstance(e, TorrentCreationError):
+                raise
+            raise TorrentCreationError(
+                message=f"Failed to create torrent: {e}",
+                details={"error": str(e)},
+                original_error=e,
+            )
 
     def _bound_piece_size(self, size: int) -> int:
         """Ensure piece size is within configured bounds.
